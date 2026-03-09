@@ -1,6 +1,8 @@
 # Ignore Moqui-generated artifacts within the component
+/build/
 /classes/
 /lib/
+.DS_Store
 
 # Compiled class file
 *.class

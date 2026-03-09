@@ -1,0 +1,23 @@
+{
+  "Content is not allowed in prolog": "Check for whitespaces, blank lines, or hidden characters before the <?xml version=\"1.0\" encoding=\"UTF-8\"?> tag at the very top of the file. The file must start exactly with '<'.",
+  
+  "could not find field with name": "This occurs if a field is implicitly defined via auto-parameters but used inside a complex <field-layout>. Explicitly define the field (e.g., <field name=\"yourField\"><default-field><hidden/></default-field></field>) BEFORE the <field-layout> block.",
+  
+  "formInstance was null": "CRITICAL: Caused by placing widgets directly inside a <field-layout>. You CANNOT use widgets like <container>, <display-entity>, <label>, or <link> directly inside field-layout. Define the widget inside a <field> tag first, then reference it using <field-ref name=\"yourField\"/>.",
+  
+  "Template Error": "Often caused by placing widgets directly inside <field-layout> or missing a closing tag. Check that <field-layout> only contains <field-col-row>, <field-col>, or <field-group>. To use a widget, define it inside a <field> tag first, then reference it using <field-ref>.",
+  
+  "Doing nothing for element": "Occurs when an XML tag is used in a context where the Moqui renderer doesn't support it (e.g., trying to use a raw Quasar <q-card> or <row> tag). Ensure you are using Moqui-compatible tags like <container style=\"row q-card\">.",
+  
+  "condition attribute invalid": "Adding condition=\"...\" directly to a <link> or <container> tag is invalid according to the Moqui screen XSD. To conditionally render these, wrap the widget inside a <section name=\"SomeName\" condition=\"...\"> element.",
+  
+  "Persistent Tabs in UI": "If tabs remain on the screen after changing a subscreens-panel to 'popup', it is likely a browser Vue/Quasar cache issue. Instruct the user to perform a hard refresh (Cmd+Shift+R) in their browser.",
+  
+  "Empty Form Lists": "Verify that <field-ref> is used inside your <form-list-column>s. Also, ensure the 'list' attribute in the <form-list> exactly matches the list name produced by the <entity-find> in the <actions> block.",
+  
+  "null appearing in UI": "A defensive programming failure. In the <actions> block, use Groovy's null-safe operator (?.) or Elvis operator (?:) to set a default label if a lookup fails. Example: statusDesc = statusItem?.description ?: 'Not Set'",
+  
+  "Link disabled in ScreenTestRender": "If a screen with a 'Close View' or 'Back' link is rendered in a ScreenTest, the link might appear disabled in the HTML output. Ensure the lastScreenUrl passed to the test resolves to a valid absolute or relative path.",
+  
+  "Invalid URL or Routing errors": "Internal links across modules are failing. Always set a consistent appRoot variable in the <always-actions> of your main parent screen to simplify links (e.g., url=\"//${appRoot}/Module/Screen\"), and ensure you are using relative paths (../../) correctly."
+}

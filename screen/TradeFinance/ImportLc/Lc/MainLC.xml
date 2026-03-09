@@ -241,14 +241,7 @@
                         </field>
                         
                         <field-layout>
-                            <container style="row justify-between items-center q-mb-md">
-                                <container style="row items-center q-gutter-md">
-                                    <label text="MT700 - Full Issuance Details" type="h5" style="text-primary text-weight-bold"/>
-                                    <container style="row items-center q-gutter-xs">
-                                        <label text="Lifecycle: ${lcStatusDesc}" style="q-chip bg-${lcStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
-                                        <label text="Transaction: ${txStatusDesc}" style="q-chip bg-${txStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
-                                    </container>
-                                </container>
+                            <container style="row justify-end items-center q-mb-md">
                                 <container style="row items-center q-gutter-sm">
                                     <field-ref name="submitButton"/>
                                     <link url="IssueLc" text="Issue LC" parameter-map="[lcId:lc.lcId]"
@@ -259,6 +252,7 @@
                             </container>
 
                             <field-ref name="lcId"/>
+
                             
                             <container style="q-card q-mb-md shadow-1 border">
                                 <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">1. REFERENCE &amp; BASIC INFO</container>

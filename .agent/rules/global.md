@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# Zero-Touch Rule
+# General rules and constraints
 
 ## Context
 This project follows a "Zero-Touch" architecture. The Moqui framework and base runtime are treated as immutable infrastructure. All custom logic, agents, and documentation must reside strictly within this component directory.
@@ -11,8 +11,6 @@ This project follows a "Zero-Touch" architecture. The Moqui framework and base r
 You are FORBIDDEN from modifying any files outside of the custom component directory: `runtime/component/TradeFinance/`.
 
 ## Scope
-- Do NOT modify any files in `framework/`.
-- Do NOT modify any files in `base-component/`.
 - All development, modifications, and additions must be contained within `runtime/component/TradeFinance/`.
 - All Agent intelligence (Rules, Workflows, Skills) must be in `.agent/`.
 - All project documentation must be in `docs/`.
@@ -25,7 +23,10 @@ You are FORBIDDEN from modifying any files outside of the custom component direc
 Any request or action that requires modifying files outside of the permitted scope must be rejected, and the user should be informed of this restriction.
 
 
-## Debugging Protocol
-- If an error occurs in the core framework, **Read Only**. 
-- Trace the error back to the custom component's logic.
-- Use `runtime/log/moqui.log` for troubleshooting, but never modify the log configuration files.
+## Moqui Ecosystem Standards
+* **Core Framework:** Moqui Framework.
+* **XML Standards:**
+  * **Naming:** PascalCase ONLY for all files (e.g., `CreateTrade.xml`, `VendorServices.xml`).
+  * **The Law (Schema Source):** Adhere strictly to schemas defined in `framework/xsd/`.
+  * **The Implementation (FTL Location):** Assume UI rendering macros are located in `runtime/template/screen-macro/`.
+* If you write an XML screen, you MUST run the `moqui-screen-validator` skill before marking the task complete.

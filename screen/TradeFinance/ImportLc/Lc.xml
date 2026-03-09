@@ -21,10 +21,17 @@
             <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
             <if condition="lc">
+                <set field="statusColorMap" from="[LcLfDraft:'grey-7', LcLfApplied:'orange-8', LcLfIssued:'green-8', LcLfAdvised:'blue-8', LcLfAmended:'indigo-8', LcLfNegotiated:'teal-8', LcLfRevoked:'red-8', LcLfExpired:'brown-7', LcLfClosed:'blue-grey-8', LcTxDraft:'grey-7', LcTxSubmitted:'blue-8', LcTxApproved:'green-8', LcTxRejected:'red-8', LcTxCancelled:'red-7', LcTxClosed:'blue-grey-8']"/>
+                
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatus" is-pk="true">
                     <field-map field-name="statusId" from="lc.lcStatusId"/></entity-find-one>
+                <set field="lcStatusDesc" from="lcStatus?.description ?: (lc.lcStatusId ?: 'N/A')"/>
+                <set field="lcStatusColor" from="statusColorMap[lc.lcStatusId] ?: 'grey-7'"/>
+
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="txStatus" is-pk="true">
                     <field-map field-name="statusId" from="lc.transactionStatusId"/></entity-find-one>
+                <set field="txStatusDesc" from="txStatus?.description ?: (lc.transactionStatusId ?: 'N/A')"/>
+                <set field="txStatusColor" from="statusColorMap[lc.transactionStatusId] ?: 'grey-7'"/>
                 
                 <!-- Fetch valid Transaction Transitions -->
                 <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
@@ -50,13 +57,17 @@
     </subscreens>
 
     <widgets>
-        <section name="LcDetailHeader" condition="lcId &amp;&amp; lc &amp;&amp; !['FindLc', 'Lc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="LcDetailHeader" condition="lcId &amp;&amp; lc &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindLc'">
             <widgets>
-                <container style="q-pa-md">
+                <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
                         <container>
                             <label text="Letter of Credit Detail" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
-                            <label text="${lc.lcNumber ?: lcId} | ${lcStatus?.description ?: (lc.lcStatusId ?: 'N/A')} | ${txStatus?.description ?: (lc.transactionStatusId ?: 'N/A')}" style="text-subtitle2 text-grey-7"/>
+                            <container style="row items-center q-gutter-sm">
+                                <label text="${lc.lcNumber ?: lcId}" style="text-subtitle2 text-grey-7"/>
+                                <label text="${lcStatusDesc}" style="q-chip bg-${lcStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                <label text="${txStatusDesc}" style="q-chip bg-${txStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                            </container>
                         </container>
                         <container style="q-gutter-sm row items-center">
                             <section name="HeaderTransitionsSection" condition="!isReadOnly">
@@ -73,11 +84,18 @@
                             <link url="." text="Back to List" url-type="screen" parameter-map="[lcId:null]" style="q-btn-flat text-grey-7 q-ml-md" condition="!isReadOnly"/>
                             <section name="CloseViewSection" condition="isReadOnly">
                                 <widgets>
-                                    <link url="${lastScreenUrl ?: '.'}" text="Close View" url-type="screen" parameter-map="[lcId:lcIdToPass, amendmentSeqId:amndSeqToPass, drawingId:drSeqToPass]" style="q-btn-flat text-grey-7 q-ml-md"/>
+                                    <link url="${lastScreenUrl ?: '.'}" text="Back" url-type="screen" parameter-map="[lcId:lcIdToPass, amendmentSeqId:amndSeqToPass, drawingId:drSeqToPass]" style="q-btn-flat text-grey-7 q-ml-md"/>
                                 </widgets>
                             </section>
                         </container>
                     </container>
+                </container>
+            </widgets>
+        </section>
+
+        <section name="LcContentTabs" condition="lcId &amp;&amp; lc &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindLc'">
+            <widgets>
+                <container style="q-pa-md pt-none">
                     <subscreens-panel id="LcDetailTabs" type="tab"/>
                 </container>
             </widgets>
@@ -86,4 +104,6 @@
             </fail-widgets>
         </section>
     </widgets>
+
+
 </screen>

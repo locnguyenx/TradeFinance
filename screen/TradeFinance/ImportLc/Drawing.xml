@@ -20,8 +20,13 @@
                 <field-map field-name="drawingSeqId" from="drawingId"/>
             </entity-find-one>
             <if condition="drawing">
+                <set field="statusColorMap" from="[LcDrReceived:'grey-7', LcDrCompliant:'blue-8', LcDrDiscrepant:'orange-8', LcDrAccepted:'green-8', LcDrUnderTrust:'indigo-8', LcDrPaid:'teal-8', LcDrRejected:'red-8']"/>
+
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="drStatus" is-pk="true">
                     <field-map field-name="statusId" from="drawing.drawingStatusId"/></entity-find-one>
+                <set field="drStatusDesc" from="drStatus?.description ?: (drawing.drawingStatusId ?: 'N/A')"/>
+                <set field="drStatusColor" from="statusColorMap[drawing.drawingStatusId] ?: 'grey-7'"/>
+
                 <!-- Fetch valid Drawing Transitions -->
                 <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
                     <econdition field-name="statusFlowId" value="LcDrawingStatus"/>
@@ -37,13 +42,16 @@
     </subscreens>
 
     <widgets>
-        <section name="DrawingDetailWrapper" condition="drawingId &amp;&amp; drawing &amp;&amp; !['FindDrawing', 'Drawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="DrawingDetailHeader" condition="drawingId &amp;&amp; drawing &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindDrawing'">
             <widgets>
-                <container style="q-pa-md">
+                <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
                         <container>
-                            <label text="Drawing Detail" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
-                            <label text="LC: ${lc?.lcNumber} | Drawing: ${drawingId} | Status: ${drStatus?.description ?: 'N/A'}" style="text-subtitle2 text-grey-7"/>
+                            <label text="Letter of Credit Drawing" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
+                            <container style="row items-center q-gutter-sm">
+                                <label text="LC: ${lc?.lcNumber} | Drawing: ${drawingId}" style="text-subtitle2 text-grey-7"/>
+                                <label text="${drStatusDesc}" style="q-chip bg-${drStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                            </container>
                         </container>
                         <container style="q-gutter-sm row items-center">
                             <link url="ExamineDocs" text="Automated Exam" parameter-map="[lcId:lcId, drawingSeqId:drawingId]"
@@ -58,6 +66,13 @@
                             <link url="." text="Back to List" parameter-map="[drawingId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
                         </container>
                     </container>
+                </container>
+            </widgets>
+        </section>
+
+        <section name="DrawingContentTabs" condition="drawingId &amp;&amp; drawing &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindDrawing'">
+            <widgets>
+                <container style="q-pa-md pt-none">
                     <subscreens-panel id="DrawingDetailTabs" type="tab"/>
                 </container>
             </widgets>
@@ -66,4 +81,6 @@
             </fail-widgets>
         </section>
     </widgets>
+
+
 </screen>

@@ -19,10 +19,17 @@
                 <field-map field-name="amendmentSeqId" from="amendmentSeqId"/>
             </entity-find-one>
             <if condition="amendment">
+                <set field="statusColorMap" from="[LcTxDraft:'grey-7', LcTxSubmitted:'blue-8', LcTxApproved:'green-8', LcTxRejected:'red-8', LcTxCancelled:'red-7', LcTxClosed:'blue-grey-8', LcAmndPending:'orange-8', LcAmndConfirmed:'green-8', LcAmndRejected:'red-8']"/>
+
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="amndStatus" is-pk="true">
                     <field-map field-name="statusId" from="amendment.amendmentStatusId"/></entity-find-one>
+                <set field="amndStatusDesc" from="amndStatus?.description ?: (amendment.amendmentStatusId ?: 'N/A')"/>
+                <set field="amndStatusColor" from="statusColorMap[amendment.amendmentStatusId] ?: 'grey-7'"/>
+
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="confStatus" is-pk="true">
                     <field-map field-name="statusId" from="amendment.confirmationStatusId"/></entity-find-one>
+                <set field="confStatusDesc" from="confStatus?.description ?: (amendment.confirmationStatusId ?: 'N/A')"/>
+                <set field="confStatusColor" from="statusColorMap[amendment.confirmationStatusId] ?: 'grey-7'"/>
             </if>
         </if>
     </actions>
@@ -35,22 +42,26 @@
     </subscreens>
 
     <widgets>
-        <section name="AmendmentDetailWrapper" condition="amendmentSeqId &amp;&amp; amendment &amp;&amp; !['FindAmendment', 'Amendment'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="AmendmentDetailHeader" condition="amendmentSeqId &amp;&amp; amendment &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindAmendment'">
             <widgets>
-                <container style="q-pa-md">
+                <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
                         <container>
-                            <label text="Amendment Detail" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
-                            <label text="LC: ${lc?.lcNumber} | Seq: ${amendmentSeqId} | Processing: ${amndStatus?.description ?: 'N/A'} | Confirmation: ${confStatus?.description ?: 'N/A'}" style="text-subtitle2 text-grey-7"/>
+                            <label text="Letter of Credit Amendment" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
+                            <container style="row items-center q-gutter-sm">
+                                <label text="LC: ${lc?.lcNumber} | Seq: ${amendmentSeqId}" style="text-subtitle2 text-grey-7"/>
+                                <label text="Processing: ${amndStatusDesc}" style="q-chip bg-${amndStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                <label text="Confirmation: ${confStatusDesc}" style="q-chip bg-${confStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                            </container>
                         </container>
                         <container style="q-gutter-sm row items-center">
                             <section name="SubmitAmndSection" condition="amendment.amendmentStatusId == 'LcTxDraft'">
                                 <widgets><link url="SubmitAmendment" text="Submit" parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"
-                                              style="q-btn bg-primary text-white"/></widgets>
+                                               style="q-btn bg-primary text-white"/></widgets>
                             </section>
                             <section name="ApproveAmndSection" condition="amendment.amendmentStatusId == 'LcTxSubmitted'">
                                 <widgets><link url="ApproveAmendment" text="Approve" parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"
-                                              style="q-btn bg-teal text-white"/></widgets>
+                                               style="q-btn bg-teal text-white"/></widgets>
                             </section>
                             <container-dialog id="ConfirmAmndDialog" button-text="Confirm" condition="amendment.amendmentStatusId == 'LcTxApproved' &amp;&amp; amendment.confirmationStatusId == 'LcAmndPending'">
                                 <form-single name="ConfirmAmndForm" transition="ConfirmAmendment">
@@ -63,6 +74,13 @@
                             <link url="." text="Back to List" parameter-map="[amendmentSeqId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
                         </container>
                     </container>
+                </container>
+            </widgets>
+        </section>
+
+        <section name="AmendmentContentTabs" condition="amendmentSeqId &amp;&amp; amendment &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindAmendment'">
+            <widgets>
+                <container style="q-pa-md pt-none">
                     <subscreens-panel id="AmendmentDetailTabs" type="tab"/>
                 </container>
             </widgets>
@@ -71,4 +89,6 @@
             </fail-widgets>
         </section>
     </widgets>
+
+
 </screen>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="lcId" required="true"/>
+    <parameter name="drawingId" required="true"/>
+    
+    <transition name="transitionDrawingStatus">
+        <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"/>
+        <default-response url="."/></transition>
+    <transition name="ExamineDocs"><service-call name="moqui.trade.finance.DrawingServices.examine#LcDrawing"/><default-response url="."/></transition>
+    <transition name="ResolveDiscrepancy"><service-call name="moqui.trade.finance.DiscrepancyServices.resolve#LcDiscrepancy"/><default-response url="."/></transition>
+    
+    <actions>
+        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="moqui.trade.finance.LcDrawing" value-field="drawing">
+            <field-map field-name="lcId" from="lcId"/>
+            <field-map field-name="drawingSeqId" from="drawingId"/>
+        </entity-find-one>
+        
+        <if condition="drawing">
+            <set field="statusColorMap" from="[LcDrReceived:'blue-8', LcDrCompliant:'green-8', LcDrDiscrepant:'orange-9', LcDrAccepted:'teal-8', LcDrUnderTrust:'indigo-8', LcDrPaid:'green-9', LcDrRejected:'red-8']"/>
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="drStatus">
+                <field-map field-name="statusId" from="drawing.drawingStatusId"/></entity-find-one>
+            <set field="drStatusDesc" from="drStatus?.description ?: drawing.drawingStatusId"/>
+            <set field="drStatusColor" from="statusColorMap[drawing.drawingStatusId] ?: 'grey-7'"/>
+
+            <entity-find entity-name="moqui.trade.finance.LcDiscrepancy" list="discrepancyList">
+                <field-map field-name="lcId" from="lcId"/>
+                <field-map field-name="drawingSeqId" from="drawing.drawingSeqId"/>
+            </entity-find>
+            
+            <!-- Fetch valid Drawing Transitions -->
+            <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
+                <econdition field-name="statusFlowId" value="LcDrawingStatus"/>
+                <econdition field-name="statusId" from="drawing.drawingStatusId"/>
+            </entity-find>
+        </if>
+    </actions>
+    
+    <widgets>
+        <section name="DrawingFoundSection" condition="drawing">
+            <widgets>
+                <container style="q-pa-md">
+                    <container style="row q-col-gutter-md q-mb-md">
+                        <container style="col-12 col-md-6">
+                            <container style="q-card shadow-1 border">
+                                <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">DRAWING FINANCIALS</container>
+                                <container style="q-pa-md">
+                                    <label text="Presentation Date: ${ec.l10n.format(drawing.presentationDate, 'dd-MMM-yyyy') ?: 'N/A'}" style="display-block q-mb-sm"/>
+                                    <label text="Maturity Date: ${ec.l10n.format(drawing.maturityDate, 'dd-MMM-yyyy') ?: 'N/A'}" style="display-block q-mb-sm"/>
+                                    <label text="Payment Date: ${ec.l10n.format(drawing.paymentDate, 'dd-MMM-yyyy') ?: 'N/A'}" style="display-block q-mb-sm"/>
+                                    <label text="Payment Ref: ${drawing.paymentReference ?: 'N/A'}" style="display-block"/>
+                                </container>
+                            </container>
+                        </container>
+                        <container style="col-12 col-md-6">
+                            <container style="q-card shadow-1 border">
+                                <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">PRESENTATION METRICS</container>
+                                <container style="q-pa-md">
+                                    <label text="Total Documents: ${drawing.documentCount ?: 0}" style="display-block q-mb-sm"/>
+                                    <label text="Remarks: ${drawing.remarks ?: 'No remarks'}" style="display-block"/>
+                                </container>
+                            </container>
+                        </container>
+                    </container>
+
+                    <label text="Discrepancy Management" type="h5" style="q-mb-md text-primary"/>
+                    <form-list name="DiscrepancyList" list="discrepancyList" skip-form="true">
+                        <field name="discrepancyTypeEnumId"><default-field title="Type">
+                            <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
+                        </default-field></field>
+                        <field name="description"><default-field title="Findings"><display/></default-field></field>
+                        <field name="resolutionEnumId"><default-field title="Resolution">
+                            <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
+                        </default-field></field>
+                    </form-list>
+
+                    <container style="q-card q-mt-lg shadow-1 border">
+                        <container style="q-pa-sm bg-red-1 text-red-10 text-weight-bold">LOG NEW DISCREPANCY</container>
+                        <container style="q-pa-md">
+                            <!-- Form to add discrepancy would go here -->
+                            <label text="Dialog to record discrepancy findings and generate MT734." style="italic text-grey-7"/>
+                        </container>
+                    </container>
+                </container>
+            </widgets>
+            <fail-widgets>
+                <container style="q-pa-md">
+                    <label text="Drawing record not found." type="h5" style="text-negative"/>
+                </container>
+            </fail-widgets>
+        </section>
+    </widgets>
+</screen>

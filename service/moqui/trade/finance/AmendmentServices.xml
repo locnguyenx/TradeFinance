@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AmendmentServices.xml
+     Services for managing LC amendments. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Create LC Amendment Service                               -->
+    <!-- ========================================================= -->
+    <service verb="create" noun="LcAmendment">
+        <description>Creates a new amendment request (Draft) shadowing the current LC state.</description>
+        <in-parameters>
+            <auto-parameters entity-name="moqui.trade.finance.LcAmendment" include="nonpk"/>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentStatusId" default-value="LcTxDraft"/>
+            <parameter name="remarks"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="amendmentSeqId"/>
+            <parameter name="requestId"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- Create a Mantle Request for the amendment workflow -->
+            <service-call name="create#mantle.request.Request" out-map="reqOut"
+                in-map="[requestTypeEnumId:'RqtLcAmendment', statusId:'ReqDraft',
+                         requestName:('LC Amendment: ' + lc.lcNumber),
+                         description:('Amendment request for LC ' + lc.lcNumber)]"/>
+            <set field="requestId" from="reqOut.requestId"/>
+
+            <!-- Automated Shadow Copy: Copy all amendable fields from LC to Amendment -->
+            <set field="amendmentMap" from="[:]"/>
+            <script><![CDATA[
+                def amendableFields = [
+                    'lcProductTypeEnumId', 'formOfCredit_40A', 'applicableRules_40E', 'expiryDate', 'expiryPlace_31D',
+                    'amount', 'amountCurrencyUomId', 'amountTolerance_39A', 'maxCreditAmount_39B', 'additionalAmountsCovered_39C',
+                    'beneficiaryPartyId', 'beneficiaryName', 'beneficiaryAddress', 'advisingBankPartyId', 'advisingBankName',
+                    'partialShipment_43P', 'transhipment_43T', 'latestShipDate_44C', 'placeOfReceipt_44A', 'portOfLoading_44E',
+                    'portOfDischarge_44F', 'placeOfFinalDestination_44B', 'descriptionOfGoods_45A', 'shipmentPeriod_44D',
+                    'docsRequired_46A', 'additionalConditions_47A', 'instructionsToBank_78', 'periodForPresentation_48',
+                    'charges_71B', 'senderToReceiverInfo_72Z', 'availableWithBy_41A', 'availableWithBankName',
+                    'draftsAt_42C', 'confirmationInstructions_49'
+                ]
+                
+                if (context.fieldName) {
+                    if (!amendableFields.contains(context.fieldName)) {
+                        ec.message.addError("Field ${context.fieldName} cannot be amended.")
+                    } else {
+                        context.oldValue = lc[context.fieldName]
+                    }
+                }
+                
+                amendableFields.each { field -> 
+                    amendmentMap[field] = (field == context.fieldName && context.newValue != null) ? context.newValue : lc[field] 
+                }
+            ]]></script>
+            <check-errors/>
+
+            <!-- Create the LcAmendment record with shadow data -->
+            <service-call name="create#moqui.trade.finance.LcAmendment" 
+                in-map="context + amendmentMap + [requestId:requestId, confirmationStatusId:'LcAmndPending']" out-map="newAmOut"/>
+            <set field="amendmentSeqId" from="newAmOut.amendmentSeqId"/>
+
+            <log level="info" message="Created shadow LC Amendment Draft for LC: ${lcId}, Seq: ${amendmentSeqId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Submit LC Amendment Service                               -->
+    <!-- ========================================================= -->
+    <service verb="submit" noun="LcAmendment">
+        <description>Submits the drafted LC amendment for review.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+        </in-parameters>
+        <actions>
+            <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxSubmitted']"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Approve LC Amendment Service                              -->
+    <!-- ========================================================= -->
+    <service verb="approve" noun="LcAmendment">
+        <description>Approves the LC amendment internally.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+        </in-parameters>
+        <actions>
+            <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxApproved']"/>
+        </actions>
+    </service>
+    <service verb="confirm" noun="LcAmendment">
+        <description>Confirms the amendment and applies ALL shadow fields back to the master LC.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+            <parameter name="isAccepted" type="Boolean" default="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment" for-update="true"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found."/></if>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc" for-update="true"/>
+
+            <if condition="isAccepted">
+                <!-- Automated Apply: Copy all shadow fields from Amendment back to LC -->
+                <script>
+                    def amendableFields = [
+                        'lcProductTypeEnumId', 'formOfCredit_40A', 'applicableRules_40E', 'expiryDate', 'expiryPlace_31D',
+                        'amount', 'amountCurrencyUomId', 'amountTolerance_39A', 'maxCreditAmount_39B', 'additionalAmountsCovered_39C',
+                        'beneficiaryPartyId', 'beneficiaryName', 'beneficiaryAddress', 'advisingBankPartyId', 'advisingBankName',
+                        'partialShipment_43P', 'transhipment_43T', 'latestShipDate_44C', 'placeOfReceipt_44A', 'portOfLoading_44E',
+                        'portOfDischarge_44F', 'placeOfFinalDestination_44B', 'descriptionOfGoods_45A', 'shipmentPeriod_44D',
+                        'docsRequired_46A', 'additionalConditions_47A', 'instructionsToBank_78', 'periodForPresentation_48',
+                        'charges_71B', 'senderToReceiverInfo_72Z', 'availableWithBy_41A', 'availableWithBankName',
+                        'draftsAt_42C', 'confirmationInstructions_49'
+                    ]
+                    def updateMap = [:]
+                    amendableFields.each { field -> if (amendment[field] != null) updateMap[field] = amendment[field] }
+                    lc.setAll(updateMap)
+                </script>
+                
+                <set field="lc.amendmentNumber" from="(lc.amendmentNumber ?: 0) + 1"/>
+                <entity-update value-field="lc"/>
+
+                <!-- Mark Amendment as Confirmed -->
+                <set field="amendment.confirmationStatusId" value="LcAmndConfirmed"/>
+                <set field="amendment.amendmentNumber" from="lc.amendmentNumber"/>
+                <entity-update value-field="amendment"/>
+                
+                <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
+                    in-map="[lcId:lcId, toStatusId:'LcLfAmended', comments:('Amendment #' + lc.amendmentNumber + ' confirmed.')]"/>
+
+                <!-- Mark Amendment as Closed -->
+                <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxClosed']"/>
+                
+                <!-- Refresh objects to avoid overwriting status changes with stale local objects -->
+                <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+                <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+
+                <!-- Generate MT707 Amendment Advice -->
+                <service-call name="moqui.trade.finance.SwiftServices.generate#SwiftMt707"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
+            <else>
+                <set field="amendment.confirmationStatusId" value="LcAmndRej"/>
+            </else></if>
+
+            <set field="amendment.confirmationDate" from="ec.user.nowTimestamp"/>
+            <entity-update value-field="amendment"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Transition Amendment Status Service                       -->
+    <!-- ========================================================= -->
+    <service verb="transition" noun="AmendmentStatus">
+        <description>Internal service for amendment status transitions.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+            <parameter name="toStatusId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment" for-update="true"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found."/></if>
+
+            <!-- Validate transition using LcTransaction Flow -->
+            <entity-find entity-name="moqui.basic.StatusFlowTransition" list="validTransitions">
+                <econdition field-name="statusFlowId" value="LcTransaction"/>
+                <econdition field-name="statusId" from="amendment.amendmentStatusId"/>
+                <econdition field-name="toStatusId" from="toStatusId"/>
+            </entity-find>
+            
+            <script>ec.logger.info(">>> AMENDMENT TRANSITION VALID: " + validTransitions?.size() + " from " + amendment.amendmentStatusId + " to " + toStatusId)</script>
+            
+            <if condition="!validTransitions">
+                <return error="true" message="Invalid amendment status transition from ${amendment.amendmentStatusId} to ${toStatusId}."/>
+            </if>
+
+            <set field="amendment.amendmentStatusId" from="toStatusId"/>
+            <entity-update value-field="amendment"/>
+            
+
+            <!-- Update linked Mantle Request status -->
+            <if condition="amendment.requestId">
+                <set field="reqStatusId" value=""/>
+                <if condition="toStatusId == 'LcTxDraft'"><set field="reqStatusId" value="ReqDraft"/></if>
+                <if condition="toStatusId == 'LcTxSubmitted'"><set field="reqStatusId" value="ReqSubmitted"/></if>
+                <if condition="toStatusId == 'LcTxApproved'"><set field="reqStatusId" value="ReqReviewed"/></if>
+                <if condition="toStatusId == 'LcTxClosed'"><set field="reqStatusId" value="ReqCompleted"/></if>
+                <if condition="toStatusId == 'LcTxRejected'"><set field="reqStatusId" value="ReqCancelled"/></if>
+                <if condition="toStatusId == 'LcTxCancelled'"><set field="reqStatusId" value="ReqCancelled"/></if>
+                
+                <if condition="reqStatusId">
+                    <service-call name="update#mantle.request.Request" in-map="[requestId:amendment.requestId, statusId:reqStatusId]"/>
+                </if>
+            </if>
+        </actions>
+    </service>
+
+</services>

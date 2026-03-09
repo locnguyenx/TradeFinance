@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ScheduledServices.xml
+     Services intended to be run automatically by the Moqui Job Scheduler. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Scheduled LC Expiry Processing                            -->
+    <!-- ========================================================= -->
+    <service verb="check" noun="LcExpiry">
+        <description>Scheduled Job: Finds Active LCs that have passed their Expiry Date and transitions them to Expired.</description>
+        <actions>
+            <log level="info" message="Starting Scheduled Job: check#LcExpiry"/>
+            
+            <!-- Find LCs in an active state that have expired -->
+            <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="expiredLcs">
+                <econdition field-name="lcStatusId" operator="in" value="LcLfIssued,LcLfAdvised,LcLfAmended"/>
+                <!-- Ensure they actually have an expiry date, and it's less than now -->
+                <econdition field-name="expiryDate" operator="is-not-null"/>
+                <econdition field-name="expiryDate" operator="less" from="ec.user.nowTimestamp"/>
+            </entity-find>
+
+            <set field="processedCount" value="0"/>
+            <iterate list="expiredLcs" entry="lc">
+                <log level="info" message="Auto-expiring Letter of Credit: ${lc.lcId} (Expiry Date: ${lc.expiryDate})"/>
+                <!-- Transition status to Expired -->
+                <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
+                              in-map="[lcId:lc.lcId, toStatusId:'LcLfExpired', comments:'System Auto-Expiry']"
+                              ignore-error="true"/>
+                <set field="processedCount" from="processedCount + 1"/>
+            </iterate>
+
+            <log level="info" message="Finished Scheduled Job: check#LcExpiry. Processed ${processedCount} expired LCs."/>
+        </actions>
+    </service>
+
+</services>

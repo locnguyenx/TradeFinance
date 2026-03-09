@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="amendmentSeqId" required="true"/>
+    
+    <actions>
+        <entity-find entity-name="moqui.trade.finance.LcHistory" list="historyList">
+            <econdition field-name="amendmentSeqId"/>
+            <order-by field-name="-changeDate"/>
+        </entity-find>
+    </actions>
+    
+    <widgets>
+        <container style="q-pa-md">
+            <label text="Amendment History &amp; Audit Log" type="h5" style="text-primary text-weight-bold q-mb-md"/>
+            <form-list name="HistoryList" list="historyList" skip-form="true">
+                <field name="changeDate"><default-field title="Date/Time"><display/></default-field></field>
+                <field name="changedByUserId"><default-field title="User"><display/></default-field></field>
+                <field name="fieldName"><default-field title="Action/Field"><display/></default-field></field>
+                <field name="oldValue"><default-field title="From"><display/></default-field></field>
+                <field name="newValue"><default-field title="To"><display/></default-field></field>
+            </form-list>
+        </container>
+    </widgets>
+</screen>

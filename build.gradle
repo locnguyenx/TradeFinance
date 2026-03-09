@@ -1,0 +1,40 @@
+apply plugin: 'groovy'
+
+def moquiDir = file(projectDir.absolutePath + '/../../..')
+def frameworkDir = file(moquiDir.absolutePath + '/framework')
+
+repositories {
+    flatDir name: 'localLib', dirs: frameworkDir.absolutePath + '/lib'
+    mavenCentral()
+}
+
+tasks.withType(JavaCompile) { options.compilerArgs << "-proc:none" }
+tasks.withType(GroovyCompile) { options.compilerArgs << "-proc:none" }
+
+dependencies {
+    implementation project(':framework')
+    testImplementation project(':framework').configurations.testImplementation.allDependencies
+}
+
+check.dependsOn.clear()
+
+test {
+    dependsOn cleanTest
+    useJUnitPlatform()
+    // Only run through the suite class to prevent double execution of specs
+    filter {
+        includeTestsMatching 'moqui.trade.finance.TradeFinanceSuite'
+    }
+
+    systemProperty 'moqui.runtime', moquiDir.absolutePath + '/runtime'
+    systemProperty 'moqui.conf', 'conf/MoquiDevConf.xml'
+    systemProperty 'moqui.init.static', 'true'
+
+    testLogging.showStandardStreams = true
+    testLogging.showExceptions = true
+
+    classpath += files(sourceSets.main.output.classesDirs)
+    classpath = classpath.filter { it.exists() }
+
+    beforeTest { descriptor -> logger.lifecycle("Running test: ${descriptor}") }
+}

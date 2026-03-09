@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <actions>
+        <!-- Import LC Stats -->
+        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="importLcList"/>
+        <set field="importLcTotal" from="importLcList.size()"/>
+        <set field="importLcActive" from="importLcList.findAll({ it.lcStatusId == 'LcLfIssued' }).size()"/>
+        <set field="importLcPending" from="importLcList.findAll({ it.lcStatusId == 'LcLfApplied' }).size()"/>
+
+        <!-- Global Stats -->
+        <set field="globalTotal" from="importLcTotal"/> <!-- Add collections when implemented -->
+        <set field="globalActive" from="importLcActive"/>
+        <set field="globalPending" from="importLcPending"/>
+
+        <!-- Placeholders -->
+        <set field="importCollTotal" from="0"/>
+        <set field="exportLcTotal" from="0"/>
+        <set field="exportCollTotal" from="0"/>
+
+        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="recentActivityList" limit="10">
+            <order-by field-name="-lcId"/>
+        </entity-find>
+    </actions>
+    <widgets>
+        <container style="q-pa-md">
+            <!-- Header & Global KPIs -->
+            <container style="q-mb-xl text-center">
+                <label text="Trade Finance System" type="h3" style="text-primary text-weight-bold q-mb-xs"/>
+                <label text="Global Letter of Credit &amp; Collections Management" style="text-subtitle2 text-grey-7 q-mb-lg"/>
+                
+                <container style="row justify-center q-gutter-md q-mt-lg">
+                    <container style="col-12 col-md-3">
+                        <container style="bg-primary text-white q-pa-md rounded-borders shadow-2">
+                            <label text="System Total" style="text-caption text-uppercase op-80"/>
+                            <label text="${globalTotal}" style="text-h4 text-weight-bolder"/>
+                        </container>
+                    </container>
+                    <container style="col-12 col-md-3">
+                        <container style="bg-green-8 text-white q-pa-md rounded-borders shadow-2">
+                            <label text="Active Assets" style="text-caption text-uppercase op-80"/>
+                            <label text="${globalActive}" style="text-h4 text-weight-bolder"/>
+                        </container>
+                    </container>
+                    <container style="col-12 col-md-3">
+                        <container style="bg-orange-8 text-white q-pa-md rounded-borders shadow-2">
+                            <label text="Pending Review" style="text-caption text-uppercase op-80"/>
+                            <label text="${globalPending}" style="text-h4 text-weight-bolder"/>
+                        </container>
+                    </container>
+                </container>
+            </container>
+            
+            <!-- 2x2 Modular Grid -->
+            <container style="row q-col-gutter-lg q-mb-xl">
+                <!-- Module 1: Import LC -->
+                <container style="col-12 col-lg-6">
+                    <container style="bg-blue-1 text-blue-10 q-pa-lg rounded-borders shadow-2 border h-100">
+                        <container style="display: flex; justify-content: space-between;">
+                            <container>
+                                <label text="Import LC" type="h5" style="text-weight-bold q-mb-sm"/>
+                                <container style="display: flex; gap: 20px; margin-bottom: 20px;">
+                                    <container>
+                                        <label text="Total" style="text-caption text-uppercase op-60"/>
+                                        <label text="${importLcTotal}" style="text-h5 text-weight-bolder"/>
+                                    </container>
+                                    <container>
+                                        <label text="Active" style="text-caption text-uppercase op-60"/>
+                                        <label text="${importLcActive}" style="text-h5 text-weight-bolder text-green-8"/>
+                                    </container>
+                                    <container>
+                                        <label text="Pending" style="text-caption text-uppercase op-60"/>
+                                        <label text="${importLcPending}" style="text-h5 text-weight-bolder text-orange-8"/>
+                                    </container>
+                                </container>
+                            </container>
+                            <container>
+                                <label text="fa-sharp fa-solid fa-file-import" type="i" style="font-size: 3rem; opacity: 0.2"/>
+                            </container>
+                        </container>
+                        <container style="display: flex; gap: 8px; margin-top: 10px;">
+                            <link url="../ImportLc/ImportLcList" text="Apply New" style="q-btn-primary"/>
+                            <link url="../ImportLc" text="Manage Pipeline" style="q-btn-outline"/>
+                        </container>
+                    </container>
+                </container>
+
+                <!-- Module 2: Import Collection -->
+                <container style="col-12 col-lg-6">
+                    <container style="bg-cyan-1 text-cyan-10 q-pa-lg rounded-borders shadow-2 border h-100">
+                        <container style="display: flex; justify-content: space-between;">
+                            <container>
+                                <label text="Import Collection" type="h5" style="text-weight-bold q-mb-sm"/>
+                                <container style="display: flex; gap: 20px; margin-bottom: 20px;">
+                                    <container>
+                                        <label text="Total" style="text-caption text-uppercase op-60"/>
+                                        <label text="${importCollTotal}" style="text-h5 text-weight-bolder"/>
+                                    </container>
+                                    <container>
+                                        <label text="Processing" style="text-caption text-uppercase op-60"/>
+                                        <label text="0" style="text-h5 text-weight-bolder"/>
+                                    </container>
+                                </container>
+                            </container>
+                            <container>
+                                <label text="fa-sharp fa-solid fa-vault" type="i" style="font-size: 3rem; opacity: 0.2"/>
+                            </container>
+                        </container>
+                        <container style="display: flex; margin-top: 10px;">
+                            <link url="../ImportCollection" text="Open Module" style="q-btn-primary"/>
+                        </container>
+                    </container>
+                </container>
+
+                <!-- Module 3: Export LC -->
+                <container style="col-12 col-lg-6">
+                    <container style="bg-green-1 text-green-10 q-pa-lg rounded-borders shadow-2 border h-100">
+                        <container style="display: flex; justify-content: space-between;">
+                            <container>
+                                <label text="Export LC" type="h5" style="text-weight-bold q-mb-sm"/>
+                                <container style="display: flex; gap: 20px; margin-bottom: 20px;">
+                                    <container>
+                                        <label text="Total" style="text-caption text-uppercase op-60"/>
+                                        <label text="${exportLcTotal}" style="text-h5 text-weight-bolder"/>
+                                    </container>
+                                    <container>
+                                        <label text="Confirmed" style="text-caption text-uppercase op-60"/>
+                                        <label text="0" style="text-h5 text-weight-bolder text-green-8"/>
+                                    </container>
+                                </container>
+                            </container>
+                            <container>
+                                <label text="fa-sharp fa-solid fa-file-export" type="i" style="font-size: 3rem; opacity: 0.2"/>
+                            </container>
+                        </container>
+                        <container style="display: flex; margin-top: 10px;">
+                            <link url="../ExportLc" text="Open Module" style="q-btn-primary"/>
+                        </container>
+                    </container>
+                </container>
+
+                <!-- Module 4: Export Collection -->
+                <container style="col-12 col-lg-6">
+                    <container style="bg-purple-1 text-purple-10 q-pa-lg rounded-borders shadow-2 border h-100">
+                        <container style="display: flex; justify-content: space-between;">
+                            <container>
+                                <label text="Export Collection" type="h5" style="text-weight-bold q-mb-sm"/>
+                                <container style="display: flex; gap: 20px; margin-bottom: 20px;">
+                                    <container>
+                                        <label text="Total" style="text-caption text-uppercase op-60"/>
+                                        <label text="${exportCollTotal}" style="text-h5 text-weight-bolder"/>
+                                    </container>
+                                    <container>
+                                        <label text="Sent" style="text-caption text-uppercase op-60"/>
+                                        <label text="0" style="text-h5 text-weight-bolder"/>
+                                    </container>
+                                </container>
+                            </container>
+                            <container>
+                                <label text="fa-sharp fa-solid fa-truck-fast" type="i" style="font-size: 3rem; opacity: 0.2"/>
+                            </container>
+                        </container>
+                        <container style="display: flex; margin-top: 10px;">
+                            <link url="../ExportCollection" text="Open Module" style="q-btn-primary"/>
+                        </container>
+                    </container>
+                </container>
+            </container>
+
+            <!-- Unified Recent Activity -->
+            <container style="q-pa-md bg-white rounded-borders shadow-1 border">
+                <container style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <label text="Recent Global Activity" type="h6" style="text-primary text-weight-bold"/>
+                    <link url="../../tools/Entity/EntityAuditLog" text="View Audit Logs" link-type="anchor" style="text-caption text-grey-7"/>
+                </container>
+                
+                <form-list name="RecentActivityList" list="recentActivityList" skip-form="true">
+                    <field name="module"><default-field title="Module"><label text="Import LC" style="text-weight-medium text-blue-8"/></default-field></field>
+                    <field name="lcNumber"><default-field title="Reference #"><display style="text-weight-bold"/></default-field></field>
+                    <field name="applicantName"><default-field title="Counterparty"><display/></default-field></field>
+                    <field name="amount"><default-field title="Value">
+                        <display currency-uom-id="${amountCurrencyUomId}" style="text-weight-medium"/>
+                    </default-field></field>
+                    <field name="lcStatusId"><default-field title="Lifecycle Status">
+                        <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                    </default-field></field>
+                    <field name="detail"><default-field title="">
+                        <link url="../ImportLc/LcDetail" text="View" link-type="anchor" style="text-primary text-weight-bold" parameter-map="[lcId:lcId]"/>
+                    </default-field></field>
+                </form-list>
+            </container>
+        </container>
+    </widgets>
+</screen>

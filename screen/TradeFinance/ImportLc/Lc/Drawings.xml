@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="lcId" required="true"/>
+    <parameter name="readOnly"/>
+    <transition name="CreateDrawing"><service-call name="moqui.trade.finance.DrawingServices.create#LcDrawing"/><default-response url="."/></transition>
+    
+    <actions>
+        <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
+        <entity-find entity-name="moqui.trade.finance.LcDrawing" list="drawingList">
+            <econdition field-name="lcId"/>
+            <order-by field-name="-drawingSeqId"/>
+        </entity-find>
+    </actions>
+    
+    <widgets>
+        <container style="q-pa-md">
+            <container style="row justify-between items-center q-mb-md">
+                <label text="Drawings &amp; Presentations" type="h5" style="text-primary text-weight-bold"/>
+                <container-dialog id="RegisterDrawingDialog" button-text="Register Drawing" condition="!isReadOnly">
+                    <form-single name="CreateDrawingForm" transition="CreateDrawing">
+                        <field name="lcId"><default-field><hidden/></default-field></field>
+                        <field name="drawingAmount"><default-field title="Drawing Amount"><text-line/></default-field></field>
+                        <field name="presentationDate"><default-field title="Presentation Date"><date-time type="date"/></default-field></field>
+                        <field name="remarks"><default-field title="Remarks"><text-area rows="3"/></default-field></field>
+                        <field name="submit"><default-field title="Register Drawing"><submit/></default-field></field>
+                    </form-single>
+                </container-dialog>
+            </container>
+
+            <form-list name="DrawingList" list="drawingList" skip-form="true" header-dialog="true">
+                <field name="drawingSeqId"><header-field show-order-by="true" title="Seq"/><default-field><display/></default-field></field>
+                <field name="drawingAmount"><header-field show-order-by="true" title="Amount"/><default-field><display/></default-field></field>
+                <field name="presentationDate"><header-field show-order-by="true" title="Presented"/><default-field><display/></default-field></field>
+                <field name="drawingStatusId"><header-field title="Status">
+                   <drop-down allow-empty="true"><entity-options key="${statusId}" text="${description}">
+                        <entity-find entity-name="moqui.basic.StatusItem"><econdition field-name="statusTypeId" value="LcDrawing"/><order-by field-name="description"/></entity-find>
+                    </entity-options></drop-down>
+                </header-field><default-field>
+                    <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                </default-field></field>
+                <field name="viewDetail"><default-field title="">
+                    <link url="../../DrawingDetail" text="Examine Docs" link-type="anchor" parameter-map="[lcId:lcId, drawingId:drawingSeqId]"/>
+                </default-field></field>
+            </form-list>
+        </container>
+    </widgets>
+</screen>

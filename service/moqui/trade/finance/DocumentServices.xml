@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DocumentServices.xml
+     Services for managing LC documents using Mantle RequestContent. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Attach LC Document Service                                -->
+    <!-- ========================================================= -->
+    <service verb="attach" noun="LcDocument">
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="documentTypeEnumId" required="true"/>
+            <parameter name="documentReference"/>
+            <parameter name="file" type="org.apache.commons.fileupload.FileItem"/>
+            <parameter name="description"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="LC not found."/></if>
+            <if condition="!lc.requestId"><return error="true" message="No linked request found for this LC."/></if>
+
+            <!-- Save as Mantle RequestContent -->
+            <service-call name="mantle.request.RequestServices.create#RequestContent" out-map="contentOut"
+                in-map="[requestId:lc.requestId, contentTypeEnumId:'RctLetterOfCredit', 
+                         contentLocation:('dbresource://trade-finance/lc/' + lcId + '/' + (file?.name ?: 'doc')),
+                         description:(description ?: documentTypeEnumId)]"/>
+            
+            <!-- Create record in LcDocument for LC-specific tracking -->
+            <service-call name="create#moqui.trade.finance.LcDocument"
+                in-map="[lcId:lcId, documentTypeEnumId:documentTypeEnumId, 
+                         documentReference:documentReference, documentDate:ec.user.nowTimestamp,
+                         description:description, contentLocation:contentOut.contentLocation,
+                         uploadedByUserId:ec.user.userId]"/>
+
+            <log level="info" message="Attached document to LC: ${lcId}, Location: ${contentOut.contentLocation}"/>
+        </actions>
+    </service>
+
+</services>

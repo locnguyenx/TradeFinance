@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TradeFinanceSecurityData.xml
+     Structural security configuration for the Trade Finance component.
+     Defines artifact groups, user groups (roles), and authorization mappings.
+
+     User accounts are defined separately in TradeFinanceDemoData.xml.
+
+     Load order: seed,seed-initial
+-->
+<entity-facade-xml type="seed" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-facade-xml-3.xsd">
+
+    <!-- ========================================================= -->
+    <!-- Artifact Groups                                           -->
+    <!-- ========================================================= -->
+
+    <!-- Trade Finance Application: screens, screen transitions, services, entities -->
+    <moqui.security.ArtifactGroup artifactGroupId="TRADE_FINANCE_APP"
+        description="Trade Finance Application - All Artifacts"/>
+
+    <!-- Screens: all XML screens under the TradeFinance component -->
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_APP"
+        artifactName="component://TradeFinance/.*" nameIsPattern="Y"
+        artifactTypeEnumId="AT_XML_SCREEN" inheritAuthz="Y"/>
+    <!-- Screen Transitions -->
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_APP"
+        artifactName="component://TradeFinance/.*" nameIsPattern="Y"
+        artifactTypeEnumId="AT_XML_SCREEN_TRANS" inheritAuthz="Y"/>
+    <!-- Services: all services under moqui.trade.finance package -->
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_APP"
+        artifactName="moqui\.trade\.finance\..*" nameIsPattern="Y"
+        artifactTypeEnumId="AT_SERVICE" inheritAuthz="Y"/>
+    <!-- Entities: all entities under moqui.trade.finance package -->
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_APP"
+        artifactName="moqui\.trade\.finance\..*" nameIsPattern="Y"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+
+    <!-- Mantle Request Entities: required for LC-Request workflow integration -->
+    <moqui.security.ArtifactGroup artifactGroupId="TRADE_FINANCE_MANTLE"
+        description="Trade Finance - Mantle Request Access"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_MANTLE"
+        artifactName="mantle\.request\..*" nameIsPattern="Y"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <!-- Mantle Request services (for future Request-based workflows) -->
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_MANTLE"
+        artifactName="mantle\.request\..*" nameIsPattern="Y"
+        artifactTypeEnumId="AT_SERVICE" inheritAuthz="Y"/>
+
+    <!-- Moqui Status/Enumeration entities: required for StatusFlow lookups -->
+    <moqui.security.ArtifactGroup artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        description="Trade Finance - Framework Entity Access"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        artifactName="moqui\.basic\.StatusItem" nameIsPattern="N"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        artifactName="moqui\.basic\.StatusFlowItem" nameIsPattern="N"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        artifactName="moqui\.basic\.StatusFlowTransition" nameIsPattern="N"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        artifactName="moqui\.basic\.Enumeration" nameIsPattern="N"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        artifactName="moqui\.basic\.EnumerationType" nameIsPattern="N"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        artifactName="moqui\.basic\.Uom" nameIsPattern="N"
+        artifactTypeEnumId="AT_ENTITY" inheritAuthz="Y"/>
+
+    <!-- ========================================================= -->
+    <!-- User Groups (Roles)                                       -->
+    <!-- ========================================================= -->
+
+    <!-- TF Admin: Full access to all Trade Finance functions -->
+    <moqui.security.UserGroup userGroupId="TF_ADMIN"
+        description="Trade Finance Administrator - Full Access"/>
+
+    <!-- TF Maker: Create, edit, submit LCs (cannot approve) -->
+    <moqui.security.UserGroup userGroupId="TF_MAKER"
+        description="Trade Finance Maker - Create and Submit LCs"/>
+
+    <!-- TF Checker: Review and approve/reject LCs (cannot create) -->
+    <moqui.security.UserGroup userGroupId="TF_CHECKER"
+        description="Trade Finance Checker - Approve and Reject LCs"/>
+
+    <!-- TF Viewer: Read-only access to Trade Finance screens -->
+    <moqui.security.UserGroup userGroupId="TF_VIEWER"
+        description="Trade Finance Viewer - Read Only Access"/>
+
+    <!-- ========================================================= -->
+    <!-- Authorization: User Groups -> Artifact Groups             -->
+    <!-- ========================================================= -->
+
+    <!-- TF Admin: full access to everything -->
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_ADMIN_APP"
+        userGroupId="TF_ADMIN" artifactGroupId="TRADE_FINANCE_APP"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_ADMIN_MANTLE"
+        userGroupId="TF_ADMIN" artifactGroupId="TRADE_FINANCE_MANTLE"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_ADMIN_FW"
+        userGroupId="TF_ADMIN" artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+
+    <!-- TF Maker: full access (create, edit, submit) -->
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_MAKER_APP"
+        userGroupId="TF_MAKER" artifactGroupId="TRADE_FINANCE_APP"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_MAKER_MANTLE"
+        userGroupId="TF_MAKER" artifactGroupId="TRADE_FINANCE_MANTLE"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_MAKER_FW"
+        userGroupId="TF_MAKER" artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+
+    <!-- TF Checker: full access (review, approve, reject) -->
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_CHECKER_APP"
+        userGroupId="TF_CHECKER" artifactGroupId="TRADE_FINANCE_APP"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_CHECKER_MANTLE"
+        userGroupId="TF_CHECKER" artifactGroupId="TRADE_FINANCE_MANTLE"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_CHECKER_FW"
+        userGroupId="TF_CHECKER" artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+
+    <!-- TF Viewer: view-only access -->
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_VIEWER_APP"
+        userGroupId="TF_VIEWER" artifactGroupId="TRADE_FINANCE_APP"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_VIEW"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_VIEWER_MANTLE"
+        userGroupId="TF_VIEWER" artifactGroupId="TRADE_FINANCE_MANTLE"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_VIEW"/>
+    <moqui.security.ArtifactAuthz artifactAuthzId="TF_VIEWER_FW"
+        userGroupId="TF_VIEWER" artifactGroupId="TRADE_FINANCE_FRAMEWORK"
+        authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_VIEW"/>
+
+    <!-- ========================================================= -->
+    <!-- Note: UserGroupMember records are moved to DemoData.xml   -->
+    <!-- to avoid referential integrity issues during seed loading -->
+    <!-- since UserAccounts are defined as demo data.              -->
+    <!-- ========================================================= -->
+
+</entity-facade-xml>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Letter of Credit" default-menu-index="2">
+
+    <parameter name="lcId"/>
+    <parameter name="readOnly"/>
+    <parameter name="lastScreenUrl"/>
+    <parameter name="amendmentSeqId"/>
+    <parameter name="drawingId"/>
+
+    <transition name="transitionTransactionStatus">
+        <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"/>
+        <default-response url="."/>
+    </transition>
+
+    <actions>
+        <set field="lcIdToPass" from="null"/>
+        <set field="amndSeqToPass" from="null"/>
+        <set field="drSeqToPass" from="null"/>
+        <if condition="lcId">
+            <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="lc">
+                <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatus" is-pk="true">
+                    <field-map field-name="statusId" from="lc.lcStatusId"/></entity-find-one>
+                <entity-find-one entity-name="moqui.basic.StatusItem" value-field="txStatus" is-pk="true">
+                    <field-map field-name="statusId" from="lc.transactionStatusId"/></entity-find-one>
+                
+                <!-- Fetch valid Transaction Transitions -->
+                <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
+                    <econdition field-name="statusFlowId" value="LcTransaction"/>
+                    <econdition field-name="statusId" from="lc.transactionStatusId"/>
+                </entity-find>
+            </if>
+            <set field="lcIdToPass" from="lastScreenUrl ? lcId : null"/>
+            <if condition="lastScreenUrl &amp;&amp; !lastScreenUrl.contains('Find')">
+                <set field="amndSeqToPass" from="amendmentSeqId"/>
+                <set field="drSeqToPass" from="drawingId"/>
+            </if>
+        </if>
+    </actions>
+
+    <subscreens default-item="FindLc">
+        <subscreens-item name="FindLc" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/FindLc.xml" menu-include="false"/>
+        <subscreens-item name="MainLC" menu-title="Main LC" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/MainLC.xml" menu-index="1"/>
+        <subscreens-item name="Financials" menu-title="Financials" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/Financials.xml" menu-index="2"/>
+        <subscreens-item name="Amendments" menu-title="Amendments" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/Amendments.xml" menu-index="3"/>
+        <subscreens-item name="Drawings" menu-title="Drawings" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/Drawings.xml" menu-index="4"/>
+        <subscreens-item name="History" menu-title="History" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/History.xml" menu-index="5"/>
+    </subscreens>
+
+    <widgets>
+        <section name="LcDetailHeader" condition="lcId &amp;&amp; lc &amp;&amp; !['FindLc', 'Lc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+            <widgets>
+                <container style="q-pa-md">
+                    <container style="row justify-between items-center q-mb-md">
+                        <container>
+                            <label text="Letter of Credit Detail" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
+                            <label text="${lc.lcNumber ?: lcId} | ${lcStatus?.description ?: (lc.lcStatusId ?: 'N/A')} | ${txStatus?.description ?: (lc.transactionStatusId ?: 'N/A')}" style="text-subtitle2 text-grey-7"/>
+                        </container>
+                        <container style="q-gutter-sm row items-center">
+                            <section name="HeaderTransitionsSection" condition="!isReadOnly">
+                                <widgets>
+                                    <section-iterate name="TransactionTransitions" list="stList" entry="st">
+                                        <widgets>
+                                            <link url="transitionTransactionStatus" text="${st.transitionName}" 
+                                                  parameter-map="[lcId:lcId, toStatusId:st.toStatusId]"
+                                                  style="${st.toStatusId == 'LcTxCancelled' || st.toStatusId == 'LcTxRejected' ? 'q-btn-outline text-red' : 'q-btn bg-primary text-white'}"/>
+                                        </widgets>
+                                    </section-iterate>
+                                </widgets>
+                            </section>
+                            <link url="." text="Back to List" url-type="screen" parameter-map="[lcId:null]" style="q-btn-flat text-grey-7 q-ml-md" condition="!isReadOnly"/>
+                            <section name="CloseViewSection" condition="isReadOnly">
+                                <widgets>
+                                    <link url="${lastScreenUrl ?: '.'}" text="Close View" url-type="screen" parameter-map="[lcId:lcIdToPass, amendmentSeqId:amndSeqToPass, drawingId:drSeqToPass]" style="q-btn-flat text-grey-7 q-ml-md"/>
+                                </widgets>
+                            </section>
+                        </container>
+                    </container>
+                    <subscreens-panel id="LcDetailTabs" type="tab"/>
+                </container>
+            </widgets>
+            <fail-widgets>
+                <subscreens-panel id="LcMainPanel" type="popup"/>
+            </fail-widgets>
+        </section>
+    </widgets>
+</screen>

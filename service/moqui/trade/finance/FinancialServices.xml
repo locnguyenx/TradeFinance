@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FinancialServices.xml
+     Services for managing LC charges and provisions. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Calculate LC Charges Service                               -->
+    <!-- ========================================================= -->
+    <service verb="calculate" noun="LcCharges">
+        <description>Calculates standard charges for an LC based on its product type.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- Mock Charge Calculation Logic -->
+            <!-- 1. Issuance Commission: 0.1% of LC amount, min $100 -->
+            <set field="issuanceComm" from="(lc.amount ?: 0) * 0.001"/>
+            <if condition="issuanceComm &lt; 100"><set field="issuanceComm" value="100"/></if>
+            
+            <service-call name="create#moqui.trade.finance.LcCharge"
+                in-map="[lcId:lcId, chargeTypeEnumId:'LC_CHG_ISSUANCE', 
+                         chargeAmount:issuanceComm, chargeCurrencyUomId:lc.amountCurrencyUomId,
+                         chargeDate:ec.user.nowTimestamp]"/>
+
+            <!-- 2. SWIFT Charges: Fixed $50 -->
+            <service-call name="create#moqui.trade.finance.LcCharge"
+                in-map="[lcId:lcId, chargeTypeEnumId:'LC_CHG_SWIFT', 
+                         chargeAmount:50, chargeCurrencyUomId:lc.amountCurrencyUomId,
+                         chargeDate:ec.user.nowTimestamp]"/>
+
+            <log level="info" message="Calculated initial charges for LC: ${lcId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Manage LC Provision Service                                -->
+    <!-- ========================================================= -->
+    <service verb="hold" noun="LcProvision">
+        <description>Places a provision hold on the applicant's account via the CBS integration.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="provisionRate" type="BigDecimal" default-value="1.0"/> <!-- 100% by default -->
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <set field="provisionAmount" from="(lc.amount ?: 0) * provisionRate"/>
+
+            <!-- 1. Call the CBS Integration to physically hold the funds -->
+            <service-call name="moqui.trade.finance.CbsIntegrationServices.hold#Funds" 
+                          in-map="[partyId:lc.applicantPartyId, 
+                                   amount:provisionAmount, 
+                                   currencyUomId:lc.amountCurrencyUomId, 
+                                   referenceId:lc.lcNumber]" 
+                          out-map="holdOut"/>
+
+            <if condition="!holdOut.success">
+                <return error="true" message="Failed to hold funds via CBS: ${holdOut.message}"/>
+            </if>
+
+            <!-- 2. Record the provision and save the CBS hold reference ID -->
+            <service-call name="create#moqui.trade.finance.LcProvision"
+                in-map="[lcId:lcId, provisionAmount:provisionAmount, 
+                         provisionCurrencyUomId:lc.amountCurrencyUomId,
+                         provisionRate:provisionRate, effectiveDate:ec.user.nowTimestamp,
+                         provisionStatusId: 'LcPrvActive', 
+                         cbsHoldReference: holdOut.holdReference]"/>
+
+            <log level="info" message="Placed provision hold of ${provisionAmount} ${lc.amountCurrencyUomId} for LC: ${lcId}. CBS Hold Ref: ${holdOut.holdReference}"/>
+        </actions>
+    </service>
+
+    <service verb="release" noun="LcProvision">
+        <description>Releases existing provision holds for an LC via the CBS integration.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            
+            <entity-find entity-name="moqui.trade.finance.LcProvision" list="provisions">
+                <econdition field-name="lcId"/>
+                <econdition field-name="provisionStatusId" value="LcPrvActive"/>
+            </entity-find>
+            
+            <iterate list="provisions" entry="provision">
+                <!-- Call the CBS to release the hold -->
+                <if condition="provision.cbsHoldReference">
+                    <service-call name="moqui.trade.finance.CbsIntegrationServices.release#Funds"
+                                  in-map="[holdReference: provision.cbsHoldReference,
+                                           partyId: lc.applicantPartyId,
+                                           amount: provision.provisionAmount]"
+                                  out-map="releaseOut"/>
+                                  
+                    <if condition="!releaseOut.success">
+                        <log level="error" message="Failed to release CBS hold ${provision.cbsHoldReference}. Continuing anyway."/>
+                    </if>
+                </if>
+
+                <set field="provision.provisionStatusId" value="LcPrvReleased"/>
+                <set field="provision.releaseDate" from="ec.user.nowTimestamp"/>
+                <entity-update value-field="provision"/>
+            </iterate>
+
+            <log level="info" message="Released active provisions for LC: ${lcId}"/>
+        </actions>
+    </service>
+
+</services>

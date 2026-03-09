@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.xsd">
+
+    <!-- ========================================================= -->
+    <!-- moqui.trade.finance - Core Entities                       -->
+    <!-- ========================================================= -->
+
+    <!-- Master Entity: Letter of Credit -->
+    <entity entity-name="LetterOfCredit" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+
+        <!-- === LC Lifecycle Status (StatusFlow: LcLifecycle) === -->
+        <!-- Tracks the actual instrument state: Draft, Issued, Amended, etc. -->
+        <field name="lcStatusId" type="id" enable-audit-log="true"/>
+
+        <!-- === Transaction Processing Status (StatusFlow: LcTransaction) === -->
+        <!-- Tracks internal processing state: Draft, Submitted, Approved, etc. -->
+        <field name="transactionStatusId" type="id" enable-audit-log="true"/>
+
+        <!-- === Mantle Request Link === -->
+        <!-- Links to mantle.request.Request for inter-department workflow -->
+        <field name="requestId" type="id"/>
+
+        <!-- === LC Product Type === -->
+        <field name="lcProductTypeEnumId" type="id"/> <!-- Sight, Usance, Standby, etc. -->
+        <field name="amendmentNumber" type="number-integer" default="0"/> <!-- Incremented on each amendment -->
+
+        <!-- === SWIFT MT700 Fields === -->
+        <field name="lcNumber" type="text-short"/> <!-- 20: 16x -->
+        <field name="sequenceTotal_27" type="text-short"/> <!-- 27: 1!n/1!n -->
+        <field name="formOfCredit_40A" type="id"/> <!-- 40A: Enumeration LcFormOfCredit -->
+        <field name="applicableRules_40E" type="id"/> <!-- 40E: Enumeration LcApplicableRules -->
+        <field name="issueDate" type="date"/> <!-- 31C: 6n -->
+        <field name="expiryDate" type="date"/> <!-- 31D: 6n -->
+        <field name="expiryPlace_31D" type="text-medium"/> <!-- 31D: 29x -->
+
+        <field name="amount" type="currency-amount"/> <!-- 32B: 3!a 15d -->
+        <field name="amountCurrencyUomId" type="id"/>
+        <field name="amountTolerance_39A" type="text-short"/> <!-- 39A: 2n/2n -->
+        <field name="maxCreditAmount_39B" type="text-short"/> <!-- 39B: 13x -->
+        <field name="additionalAmountsCovered_39C" type="text-very-long"/> <!-- 39C: 4*35x -->
+
+        <!-- Party fields (Mantle Party Integration) -->
+        <field name="applicantPartyId" type="id"/>
+        <field name="beneficiaryPartyId" type="id"/>
+        <field name="issuingBankPartyId" type="id"/>
+        <field name="advisingBankPartyId" type="id"/>
+        <field name="advisingThroughBankPartyId" type="id"/>
+        <field name="reimbursingBankPartyId" type="id"/>
+        
+        <!-- MT700 Free-text fallbacks / literal names -->
+        <field name="applicantName" type="text-medium"/> <!-- 50: 4*35x -->
+        <field name="applicantAddress" type="text-medium"/>
+        <field name="beneficiaryName" type="text-medium"/> <!-- 59: 4*35x -->
+        <field name="beneficiaryAddress" type="text-medium"/>
+
+        <field name="issuingBankName" type="text-medium"/> <!-- 51a: 4*35x -->
+        <field name="issuingBankAddress" type="text-medium"/>
+        <field name="advisingBankName" type="text-medium"/> <!-- 57a: 4*35x -->
+        <field name="requestedConfirmationParty_58a" type="text-medium"/> <!-- 58a: 4*35x -->
+        <field name="advisingThroughBank_57a" type="text-medium"/> <!-- 57a: 4*35x -->
+        <field name="reimbursingBank_53a" type="text-medium"/> <!-- 53a: 4*35x -->
+
+        <!-- Shipment fields -->
+        <field name="partialShipment_43P" type="id"/> <!-- 43P: Enumeration LcPartialShipment -->
+        <field name="transhipment_43T" type="id"/> <!-- 43T: Enumeration LcTranshipment -->
+        <field name="latestShipDate_44C" type="date"/> <!-- 44C: 6n -->
+        <field name="placeOfReceipt_44A" type="text-medium"/> <!-- 44A: 65x -->
+        <field name="portOfLoading_44E" type="text-medium"/> <!-- 44E: 65x -->
+        <field name="portOfDischarge_44F" type="text-medium"/> <!-- 44F: 65x -->
+        <field name="placeOfFinalDestination_44B" type="text-medium"/> <!-- 44B: 65x -->
+        <field name="descriptionOfGoods_45A" type="text-very-long"/> <!-- 45A: 100*65x -->
+        <field name="shipmentPeriod_44D" type="text-long"/> <!-- 44D: 6*65x -->
+
+        <!-- Document and payment fields -->
+        <field name="docsRequired_46A" type="text-very-long"/> <!-- 46A: 100*65x -->
+        <field name="additionalConditions_47A" type="text-very-long"/> <!-- 47A: 100*65x -->
+        <field name="instructionsToBank_78" type="text-very-long"/> <!-- 78: 100*65x -->
+        <field name="periodForPresentation_48" type="text-short"/> <!-- 48: 3n[/35x] -->
+        <field name="charges_71B" type="text-long"/> <!-- 71B: 6*35x -->
+        <field name="senderToReceiverInfo_72Z" type="text-long"/> <!-- 72Z: 6*35x -->
+
+        <field name="availableWithBy_41A" type="id"/> <!-- 41A: Enumeration LcAvailability -->
+        <field name="availableWithBankName" type="text-medium"/> <!-- 41a bank name -->
+        <field name="draftsAt_42C" type="text-medium"/> <!-- 42C: 3*35x -->
+        <field name="confirmationInstructions_49" type="id"/> <!-- 49: Enumeration LcConfirmation -->
+
+        <field name="comments" type="text-very-long"/>
+
+        <!-- === Relationships === -->
+        <relationship type="one" title="LcLifecycle" related="moqui.basic.StatusItem" short-alias="lcStatus">
+            <key-map field-name="lcStatusId" related="statusId"/></relationship>
+        <relationship type="one" title="LcTransaction" related="moqui.basic.StatusItem" short-alias="transactionStatus">
+            <key-map field-name="transactionStatusId" related="statusId"/></relationship>
+        <relationship type="one" related="mantle.request.Request" short-alias="request"/>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom" short-alias="currency">
+            <key-map field-name="amountCurrencyUomId" related="uomId"/></relationship>
+            
+        <!-- Party Relationships -->
+        <relationship type="one" title="Applicant" related="mantle.party.Party" short-alias="applicantParty">
+            <key-map field-name="applicantPartyId" related="partyId"/></relationship>
+        <relationship type="one" title="Beneficiary" related="mantle.party.Party" short-alias="beneficiaryParty">
+            <key-map field-name="beneficiaryPartyId" related="partyId"/></relationship>
+        <relationship type="one" title="IssuingBank" related="mantle.party.Party" short-alias="issuingBankParty">
+            <key-map field-name="issuingBankPartyId" related="partyId"/></relationship>
+        <relationship type="one" title="AdvisingBank" related="mantle.party.Party" short-alias="advisingBankParty">
+            <key-map field-name="advisingBankPartyId" related="partyId"/></relationship>
+
+        <relationship type="one" title="LcFormOfCredit" related="moqui.basic.Enumeration">
+            <key-map field-name="formOfCredit_40A"/></relationship>
+        <relationship type="one" title="LcApplicableRules" related="moqui.basic.Enumeration">
+            <key-map field-name="applicableRules_40E"/></relationship>
+        <relationship type="one" title="LcAvailability" related="moqui.basic.Enumeration">
+            <key-map field-name="availableWithBy_41A"/></relationship>
+        <relationship type="one" title="LcPartialShipment" related="moqui.basic.Enumeration">
+            <key-map field-name="partialShipment_43P"/></relationship>
+        <relationship type="one" title="LcTranshipment" related="moqui.basic.Enumeration">
+            <key-map field-name="transhipment_43T"/></relationship>
+        <relationship type="one" title="LcConfirmation" related="moqui.basic.Enumeration">
+            <key-map field-name="confirmationInstructions_49"/></relationship>
+        <relationship type="one" title="LcProductType" related="moqui.basic.Enumeration">
+            <key-map field-name="lcProductTypeEnumId"/></relationship>
+
+        <!-- Detail entity relationships -->
+        <relationship type="many" related="moqui.trade.finance.LcHistory" short-alias="history">
+            <key-map field-name="lcId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcAmendment" short-alias="amendments">
+            <key-map field-name="lcId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcDrawing" short-alias="drawings">
+            <key-map field-name="lcId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcCharge" short-alias="charges">
+            <key-map field-name="lcId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcProvision" short-alias="provisions">
+            <key-map field-name="lcId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcDocument" short-alias="documents">
+            <key-map field-name="lcId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC History (Audit Trail)                   -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcHistory" package="moqui.trade.finance">
+        <field name="lcHistoryId" type="id" is-pk="true"/>
+        <field name="lcId" type="id"/>
+        <field name="changeType" type="text-short"/> <!-- StatusChange, Amendment, Drawing, etc. -->
+        <field name="fieldName" type="text-short"/> <!-- Which field changed -->
+        <field name="oldValue" type="text-medium"/>
+        <field name="newValue" type="text-medium"/>
+        <field name="amendmentSeqId" type="id"/>
+        <field name="changedByUserId" type="id"/>
+        <field name="changeDate" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="comments" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" related="moqui.trade.finance.LcAmendment">
+            <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/></relationship>
+        <relationship type="one" related="moqui.security.UserAccount">
+            <key-map field-name="changedByUserId" related="userId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Amendment                               -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcAmendment" package="moqui.trade.finance" primary-key-sequence="true">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="amendmentSeqId" type="id" is-pk="true"/>
+        <field name="amendmentNumber" type="number-integer"/> <!-- Sequential amendment number -->
+        <field name="requestId" type="id"/> <!-- Links to the amendment Request -->
+        <field name="amendmentDate" type="date"/>
+        <field name="amendmentStatusId" type="id" enable-audit-log="true"/> <!-- Internal Status: Draft, Submitted, Approved, Rejected -->
+        <field name="confirmationStatusId" type="id" enable-audit-log="true"/> <!-- External Status: LcAmndPending, LcAmndConfirmed, LcAmndRej -->
+        <field name="confirmationDate" type="date-time"/>
+        <field name="fieldName" type="text-short"/>
+        <field name="oldValue" type="text-long"/>
+        <field name="newValue" type="text-long"/>
+        
+        <!-- === Shadow fields of LetterOfCredit (Amendable) === -->
+        <field name="lcProductTypeEnumId" type="id"/>
+        <field name="formOfCredit_40A" type="id"/>
+        <field name="applicableRules_40E" type="id"/>
+        <field name="expiryDate" type="date"/>
+        <field name="expiryPlace_31D" type="text-medium"/>
+        <field name="amount" type="currency-amount"/>
+        <field name="amountCurrencyUomId" type="id"/>
+        <field name="amountTolerance_39A" type="text-short"/>
+        <field name="maxCreditAmount_39B" type="text-short"/>
+        <field name="additionalAmountsCovered_39C" type="text-very-long"/>
+
+        <field name="beneficiaryPartyId" type="id"/>
+        <field name="beneficiaryName" type="text-medium"/>
+        <field name="beneficiaryAddress" type="text-medium"/>
+        <field name="advisingBankPartyId" type="id"/>
+        <field name="advisingBankName" type="text-medium"/>
+
+        <field name="partialShipment_43P" type="id"/>
+        <field name="transhipment_43T" type="id"/>
+        <field name="latestShipDate_44C" type="date"/>
+        <field name="placeOfReceipt_44A" type="text-medium"/>
+        <field name="portOfLoading_44E" type="text-medium"/>
+        <field name="portOfDischarge_44F" type="text-medium"/>
+        <field name="placeOfFinalDestination_44B" type="text-medium"/>
+        <field name="descriptionOfGoods_45A" type="text-very-long"/>
+        <field name="shipmentPeriod_44D" type="text-long"/>
+
+        <field name="docsRequired_46A" type="text-very-long"/>
+        <field name="additionalConditions_47A" type="text-very-long"/>
+        <field name="instructionsToBank_78" type="text-very-long"/>
+        <field name="periodForPresentation_48" type="text-short"/>
+        <field name="charges_71B" type="text-long"/>
+        <field name="senderToReceiverInfo_72Z" type="text-long"/>
+
+        <field name="availableWithBy_41A" type="id"/>
+        <field name="availableWithBankName" type="text-medium"/>
+        <field name="draftsAt_42C" type="text-medium"/>
+        <field name="confirmationInstructions_49" type="id"/>
+
+        <field name="remarks" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" related="mantle.request.Request"/>
+        <relationship type="one" title="LcTransaction" related="moqui.basic.StatusItem">
+            <key-map field-name="amendmentStatusId" related="statusId"/></relationship>
+        <relationship type="one" title="LcAmendmentConfirmation" related="moqui.basic.StatusItem">
+            <key-map field-name="confirmationStatusId" related="statusId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Drawing (Document Presentation)         -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcDrawing" package="moqui.trade.finance" primary-key-sequence="true">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="drawingSeqId" type="id" is-pk="true"/>
+        <field name="requestId" type="id"/> <!-- Links to the drawing processing Request -->
+        <field name="drawingDate" type="date"/>
+        <field name="drawingAmount" type="currency-amount"/>
+        <field name="drawingCurrencyUomId" type="id"/>
+        <field name="drawingStatusId" type="id" enable-audit-log="true"/> <!-- Received, Compliant, Discrepant, Accepted, Paid, etc. -->
+        <field name="presentationDate" type="date"/>
+        <field name="maturityDate" type="date"/> <!-- For usance/deferred payment LCs -->
+        <field name="paymentDate" type="date"/>
+        <field name="paymentAmount" type="currency-amount"/>
+        <field name="paymentReference" type="text-short"/>
+        <field name="documentCount" type="number-integer"/>
+        <field name="remarks" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" related="mantle.request.Request"/>
+        <relationship type="one" title="DrawingStatus" related="moqui.basic.StatusItem">
+            <key-map field-name="drawingStatusId" related="statusId"/></relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom">
+            <key-map field-name="drawingCurrencyUomId" related="uomId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcDrawingDocument" short-alias="drawingDocuments">
+            <key-map field-name="lcId"/><key-map field-name="drawingSeqId"/></relationship>
+        <relationship type="many" related="moqui.trade.finance.LcDiscrepancy" short-alias="discrepancies">
+            <key-map field-name="lcId"/><key-map field-name="drawingSeqId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Drawing Document                        -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcDrawingDocument" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="drawingSeqId" type="id" is-pk="true"/>
+        <field name="documentSeqId" type="id" is-pk="true"/>
+        <field name="documentTypeEnumId" type="id"/> <!-- BillOfLading, CommercialInvoice, PackingList, etc. -->
+        <field name="documentReference" type="text-short"/>
+        <field name="documentDate" type="date"/>
+        <field name="originalCount" type="number-integer"/>
+        <field name="copyCount" type="number-integer"/>
+        <field name="remarks" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LcDrawing">
+            <key-map field-name="lcId"/><key-map field-name="drawingSeqId"/></relationship>
+        <relationship type="one" title="LcDocumentType" related="moqui.basic.Enumeration">
+            <key-map field-name="documentTypeEnumId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Discrepancy                             -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcDiscrepancy" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="drawingSeqId" type="id" is-pk="true"/>
+        <field name="discrepancySeqId" type="id" is-pk="true"/>
+        <field name="discrepancyTypeEnumId" type="id"/> <!-- LatePres, InconsistentDocs, MissingDocs, etc. -->
+        <field name="description" type="text-medium"/>
+        <field name="resolutionEnumId" type="id"/> <!-- Accepted, Rejected, Waived -->
+        <field name="resolutionDate" type="date"/>
+        <field name="resolvedByUserId" type="id"/>
+        <field name="remarks" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LcDrawing">
+            <key-map field-name="lcId"/><key-map field-name="drawingSeqId"/></relationship>
+        <relationship type="one" title="LcDiscrepancyType" related="moqui.basic.Enumeration">
+            <key-map field-name="discrepancyTypeEnumId"/></relationship>
+        <relationship type="one" title="LcDiscrepancyResolution" related="moqui.basic.Enumeration">
+            <key-map field-name="resolutionEnumId"/></relationship>
+        <relationship type="one" related="moqui.security.UserAccount">
+            <key-map field-name="resolvedByUserId" related="userId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Charge                                  -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcCharge" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="chargeSeqId" type="id" is-pk="true"/>
+        <field name="chargeTypeEnumId" type="id"/> <!-- IssuanceCommission, AdvisingFee, AmendmentFee, etc. -->
+        <field name="chargeAmount" type="currency-amount"/>
+        <field name="chargeCurrencyUomId" type="id"/>
+        <field name="chargeDate" type="date"/>
+        <field name="amendmentSeqId" type="id"/>
+        <field name="waived" type="text-indicator" default="'N'"/>
+        <field name="cbsReference" type="text-short"/> <!-- Transaction reference from CBS -->
+        <field name="remarks" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" related="moqui.trade.finance.LcAmendment">
+            <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/></relationship>
+        <relationship type="one" title="LcChargeType" related="moqui.basic.Enumeration">
+            <key-map field-name="chargeTypeEnumId"/></relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom">
+            <key-map field-name="chargeCurrencyUomId" related="uomId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Provision                               -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcProvision" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="provisionSeqId" type="id" is-pk="true"/>
+        <field name="provisionAmount" type="currency-amount"/>
+        <field name="provisionCurrencyUomId" type="id"/>
+        <field name="provisionRate" type="number-decimal"/> <!-- Percentage of LC amount -->
+        <field name="effectiveDate" type="date"/>
+        <field name="releaseDate" type="date"/>
+        <field name="amendmentSeqId" type="id"/>
+        <field name="provisionStatusId" type="id"/> <!-- Active, Released -->
+        <field name="cbsHoldReference" type="text-short"/> <!-- Hold reference from CBS -->
+        <field name="remarks" type="text-medium"/>
+
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" related="moqui.trade.finance.LcAmendment">
+            <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/></relationship>
+        <relationship type="one" title="ProvisionStatus" related="moqui.basic.StatusItem">
+            <key-map field-name="provisionStatusId" related="statusId"/></relationship>
+        <relationship type="one" title="Currency" related="moqui.basic.Uom">
+            <key-map field-name="provisionCurrencyUomId" related="uomId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- Detail Entity: LC Document (Attachments)                  -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcDocument" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="documentSeqId" type="id" is-pk="true"/>
+        <field name="documentTypeEnumId" type="id"/> <!-- SwiftMessage, ApplicationForm, TransportDoc, etc. -->
+        <field name="documentReference" type="text-short"/>
+        <field name="documentDate" type="date"/>
+        <field name="contentLocation" type="text-medium"/> <!-- Path to the stored file -->
+        <field name="description" type="text-medium"/>
+        <field name="uploadDate" type="date-time" default="ec.user.nowTimestamp"/>
+        <field name="uploadedByUserId" type="id"/>
+
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" title="LcDocumentType" related="moqui.basic.Enumeration">
+            <key-map field-name="documentTypeEnumId"/></relationship>
+        <relationship type="one" related="moqui.security.UserAccount">
+            <key-map field-name="uploadedByUserId" related="userId"/></relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- View Entities for Search Screens                          -->
+    <!-- ========================================================= -->
+
+    <view-entity entity-name="LcAmendmentDetailView" package="moqui.trade.finance">
+        <member-entity entity-alias="AMND" entity-name="moqui.trade.finance.LcAmendment"/>
+        <member-entity entity-alias="LC" entity-name="moqui.trade.finance.LetterOfCredit" join-from-alias="AMND">
+            <key-map field-name="lcId"/></member-entity>
+        <member-entity entity-alias="ST" entity-name="moqui.basic.StatusItem" join-from-alias="AMND">
+            <key-map field-name="amendmentStatusId" related="statusId"/></member-entity>
+        <alias-all entity-alias="AMND"/>
+        <alias entity-alias="LC" name="lcNumber"/>
+        <alias entity-alias="LC" name="applicantPartyId"/>
+        <alias entity-alias="ST" name="statusDescription" field="description"/>
+    </view-entity>
+
+    <view-entity entity-name="LcDrawingDetailView" package="moqui.trade.finance">
+        <member-entity entity-alias="DRWG" entity-name="moqui.trade.finance.LcDrawing"/>
+        <member-entity entity-alias="LC" entity-name="moqui.trade.finance.LetterOfCredit" join-from-alias="DRWG">
+            <key-map field-name="lcId"/></member-entity>
+        <alias-all entity-alias="DRWG"/>
+        <alias entity-alias="LC" name="lcNumber"/>
+        <alias entity-alias="LC" name="applicantPartyId"/>
+    </view-entity>
+
+</entities>

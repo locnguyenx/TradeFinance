@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TradeFinanceDemoData.xml
+     Demo/test data for the Trade Finance component.
+     Contains 10 Letter of Credit records at various lifecycle stages,
+     plus related data in LcHistory, LcAmendment, LcDrawing, LcDrawingDocument,
+     LcDiscrepancy, LcCharge, LcProvision, and LcDocument entities.
+
+     This file is loaded as demo data (group: demo) for development and testing.
+     Load with:  gradle load -Ptypes=demo
+     Or include in MoquiConf.xml: <default-property name="entity_ds_demo_conf" value="..."/>
+-->
+<entity-facade-xml type="demo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-facade-xml-3.xsd">
+
+    <!-- ========================================================= -->
+    <!-- Demo/Test User Accounts                                   -->
+    <!-- All passwords = "moqui" (SHA hash)                        -->
+    <!-- Group Memberships are defined in TradeFinanceSecurityData.xml -->
+    <!-- ========================================================= -->
+
+    <!-- TF Admin User: used in main test suite (TradeFinanceServicesSpec, TradeFinanceScreensSpec) -->
+    <!-- password=moqui -->
+    <mantle.party.Party partyId="TF_ADMIN_USER" partyTypeEnumId="PtyPerson" ownerPartyId="TF_ADMIN_USER"/>
+    <mantle.party.Person partyId="TF_ADMIN_USER" firstName="Trade" lastName="Administrator"/>
+    <moqui.security.UserAccount userId="TF_ADMIN_USER" username="tf-admin"
+        userFullName="Trade Finance Administrator" emailAddress="tf-admin@example.com"
+        partyId="TF_ADMIN_USER"
+        currentPassword="16ac58bbfa332c1c55bd98b53e60720bfa90d394" passwordHashType="SHA"
+        passwordHint="framework name, lowercase"
+        currencyUomId="USD" locale="en_US" timeZone="US/Central" disabled="N"/>
+
+    <!-- TF Maker User: creates and submits LCs -->
+    <!-- password=moqui -->
+    <mantle.party.Party partyId="TF_MAKER_USER" partyTypeEnumId="PtyPerson" ownerPartyId="TF_MAKER_USER"/>
+    <mantle.party.Person partyId="TF_MAKER_USER" firstName="Trade" lastName="Maker"/>
+    <moqui.security.UserAccount userId="TF_MAKER_USER" username="tf-maker"
+        userFullName="Trade Finance Maker" emailAddress="tf-maker@example.com"
+        partyId="TF_MAKER_USER"
+        currentPassword="16ac58bbfa332c1c55bd98b53e60720bfa90d394" passwordHashType="SHA"
+        passwordHint="framework name, lowercase"
+        currencyUomId="USD" locale="en_US" timeZone="US/Central" disabled="N"/>
+
+    <!-- TF Checker User: reviews and approves/rejects LCs -->
+    <!-- password=moqui -->
+    <mantle.party.Party partyId="TF_CHECKER_USER" partyTypeEnumId="PtyPerson" ownerPartyId="TF_CHECKER_USER"/>
+    <mantle.party.Person partyId="TF_CHECKER_USER" firstName="Trade" lastName="Checker"/>
+    <moqui.security.UserAccount userId="TF_CHECKER_USER" username="tf-checker"
+        userFullName="Trade Finance Checker" emailAddress="tf-checker@example.com"
+        partyId="TF_CHECKER_USER"
+        currentPassword="16ac58bbfa332c1c55bd98b53e60720bfa90d394" passwordHashType="SHA"
+        passwordHint="framework name, lowercase"
+        currencyUomId="USD" locale="en_US" timeZone="US/Central" disabled="N"/>
+
+    <!-- TF Viewer User: read-only access -->
+    <!-- password=moqui -->
+    <mantle.party.Party partyId="TF_VIEWER_USER" partyTypeEnumId="PtyPerson" ownerPartyId="TF_VIEWER_USER"/>
+    <mantle.party.Person partyId="TF_VIEWER_USER" firstName="Trade" lastName="Viewer"/>
+    <moqui.security.UserAccount userId="TF_VIEWER_USER" username="tf-viewer"
+        userFullName="Trade Finance Viewer" emailAddress="tf-viewer@example.com"
+        partyId="TF_VIEWER_USER"
+        currentPassword="16ac58bbfa332c1c55bd98b53e60720bfa90d394" passwordHashType="SHA"
+        passwordHint="framework name, lowercase"
+        currencyUomId="USD" locale="en_US" timeZone="US/Central" disabled="N"/>
+
+    <!-- Map Users to Groups (moved from SecurityData to avoid referential integrity errors during seed loading) -->
+    <moqui.security.UserGroupMember userGroupId="TF_ADMIN" userId="TF_ADMIN_USER" fromDate="1265184000000"/>
+    <moqui.security.UserGroupMember userGroupId="TF_MAKER" userId="TF_MAKER_USER" fromDate="1265184000000"/>
+    <moqui.security.UserGroupMember userGroupId="TF_CHECKER" userId="TF_CHECKER_USER" fromDate="1265184000000"/>
+    <moqui.security.UserGroupMember userGroupId="TF_VIEWER" userId="TF_VIEWER_USER" fromDate="1265184000000"/>
+
+    <!-- ========================================================= -->
+    <!-- Request Type Enumeration for LC workflows                 -->
+    <!-- ========================================================= -->
+    <moqui.basic.Enumeration enumId="RqtLcIssuance" enumTypeId="RequestType" description="LC Issuance Request"/>
+    <moqui.basic.Enumeration enumId="RqtLcAmendment" enumTypeId="RequestType" description="LC Amendment Request"/>
+    <moqui.basic.Enumeration enumId="RqtLcDrawing" enumTypeId="RequestType" description="LC Drawing Request"/>
+
+    <!-- ========================================================= -->
+    <!-- Request Content Type Enumeration for LC workflows         -->
+    <!-- ========================================================= -->
+    <moqui.basic.Enumeration enumId="RctLetterOfCredit" enumTypeId="RequestContentType" description="LC Document"/>
+
+    <!-- ========================================================= -->
+    <!-- Demo Party Data (Applicants, Beneficiaries, Banks)        -->
+    <!-- ========================================================= -->
+
+    <!-- Applicants -->
+    <mantle.party.Party partyId="DEMO_ORG_ABC" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_ABC" organizationName="ABC Trading Co"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_ABC" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_SUNRISE" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_SUNRISE" organizationName="Sunrise Manufacturing"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_SUNRISE" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_GLOBAL" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_GLOBAL" organizationName="Global Machinery Import"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_GLOBAL" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_PHARMA" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_PHARMA" organizationName="Pharma Supplies Vietnam"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_PHARMA" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_GREEN" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_GREEN" organizationName="Green Agriculture Co"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_GREEN" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_TEXTILE" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_TEXTILE" organizationName="Vietnam Textile Group"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_TEXTILE" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_ELECTRONICS" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_ELECTRONICS" organizationName="Vietnam Electronics Corp"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_ELECTRONICS" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_AUTO" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_AUTO" organizationName="Vietnam Auto Parts"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_AUTO" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_CHEM" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_CHEM" organizationName="Chemical Materials VN"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_CHEM" roleTypeId="Customer"/>
+    <mantle.party.Party partyId="DEMO_ORG_STEEL" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_STEEL" organizationName="Vietnam Steel Import"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_STEEL" roleTypeId="Customer"/>
+
+    <!-- Beneficiaries -->
+    <mantle.party.Party partyId="DEMO_ORG_XYZ" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_XYZ" organizationName="XYZ Exports Pte Ltd"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_XYZ" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_THAI_STEEL" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_THAI_STEEL" organizationName="Thai Steel Corp"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_THAI_STEEL" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_SH_HEAVY" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_SH_HEAVY" organizationName="Shanghai Heavy Industries"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_SH_HEAVY" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_IN_PHARMA" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_IN_PHARMA" organizationName="Indian Pharma Ltd"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_IN_PHARMA" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_BR_AGRO" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_BR_AGRO" organizationName="Brazil Agro Exports"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_BR_AGRO" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_TW_FABRIC" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_TW_FABRIC" organizationName="Taiwan Fabric Co"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_TW_FABRIC" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_JP_TECH" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_JP_TECH" organizationName="Japan Tech Components"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_JP_TECH" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_US_AUTO" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_US_AUTO" organizationName="US Auto Supply Inc"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_US_AUTO" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_KR_CHEM" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_KR_CHEM" organizationName="KoreaChem Corp"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_KR_CHEM" roleTypeId="Vendor"/>
+    <mantle.party.Party partyId="DEMO_ORG_AU_STEEL" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_AU_STEEL" organizationName="Australian Steel Export"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_AU_STEEL" roleTypeId="Vendor"/>
+
+    <!-- Banks -->
+    <mantle.party.Party partyId="DEMO_ORG_VIETCOMBANK" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_VIETCOMBANK" organizationName="Vietcombank"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_VIETCOMBANK" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_BIDV" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_BIDV" organizationName="BIDV"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_BIDV" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_ACB" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_ACB" organizationName="ACB"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_ACB" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_HSBC" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_HSBC" organizationName="HSBC"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_HSBC" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_VPBANK" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_VPBANK" organizationName="VPBank"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_VPBANK" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_DBS" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_DBS" organizationName="DBS Bank"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_DBS" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_BBL" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_BBL" organizationName="Bangkok Bank"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_BBL" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_BOC" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_BOC" organizationName="Bank of China"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_BOC" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_HDFC" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_HDFC" organizationName="HDFC Bank India"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_HDFC" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_FBT" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_FBT" organizationName="First Bank of Taiwan"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_FBT" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_MUFG" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_MUFG" organizationName="MUFG Bank Tokyo"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_MUFG" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_JPMC" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_JPMC" organizationName="JPMorgan Chase"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_JPMC" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_ANZ" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_ANZ" organizationName="ANZ Bank"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_ANZ" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_CITI" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_CITI" organizationName="Citibank New York"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_CITI" roleTypeId="Bank"/>
+    <mantle.party.Party partyId="DEMO_ORG_TCB" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="DEMO_ORG_TCB" organizationName="Techcombank"/>
+    <mantle.party.PartyRole partyId="DEMO_ORG_TCB" roleTypeId="Bank"/>
+
+    <!-- ========================================================= -->
+    <!-- Mantle Requests (linked from LC records)                  -->
+    <!-- ========================================================= -->
+    <mantle.request.Request requestId="DEMO_REQ_LC01" requestTypeEnumId="RqtLcIssuance" statusId="ReqCompleted"
+        requestName="LC Issuance: ILC-2026-0001" description="LC issuance request for ILC-2026-0001"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC02" requestTypeEnumId="RqtLcIssuance" statusId="ReqCompleted"
+        requestName="LC Issuance: ILC-2026-0002" description="LC issuance request for ILC-2026-0002"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC03" requestTypeEnumId="RqtLcIssuance" statusId="ReqCompleted"
+        requestName="LC Issuance: ILC-2026-0003" description="LC issuance for Global Machinery import"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC04" requestTypeEnumId="RqtLcIssuance" statusId="ReqInProgress"
+        requestName="LC Issuance: ILC-2026-0004" description="LC issuance for Pharma Supplies import"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC05" requestTypeEnumId="RqtLcIssuance" statusId="ReqDraft"
+        requestName="LC Issuance: ILC-2026-0005" description="Draft LC for agricultural import"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC06" requestTypeEnumId="RqtLcIssuance" statusId="ReqCompleted"
+        requestName="LC Issuance: ILC-2026-0006" description="LC issuance for textile import"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC07" requestTypeEnumId="RqtLcIssuance" statusId="ReqCompleted"
+        requestName="LC Issuance: ILC-2026-0007" description="LC issuance for electronics components"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC08" requestTypeEnumId="RqtLcIssuance" statusId="ReqInProgress"
+        requestName="LC Issuance: ILC-2026-0008" description="LC issuance for auto parts import"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC09" requestTypeEnumId="RqtLcIssuance" statusId="ReqDraft"
+        requestName="LC Issuance: ILC-2026-0009" description="Draft LC for chemical materials"/>
+    <mantle.request.Request requestId="DEMO_REQ_LC10" requestTypeEnumId="RqtLcIssuance" statusId="ReqCompleted"
+        requestName="LC Issuance: ILC-2026-0010" description="LC issuance for steel import"/>
+    <mantle.request.Request requestId="DEMO_REQ_AMD01" requestTypeEnumId="RqtLcAmendment" statusId="ReqCompleted"
+        requestName="LC Amendment: ILC-2026-0001/1" description="Amendment to increase amount"/>
+
+    <!-- ========================================================= -->
+    <!-- 10 Letter of Credit Records                               -->
+    <!-- Covering all lifecycle stages and product types            -->
+    <!-- ========================================================= -->
+
+    <!-- LC #1: Issued & Closed — Sight LC, fully settled -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_01" lcNumber="ILC-2026-0001"
+        lcStatusId="LcLfClosed" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC01"
+        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="1"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2026-01-15" expiryDate="2026-07-15" expiryPlace_31D="Ho Chi Minh City"
+        amount="500000" amountCurrencyUomId="USD" amountTolerance_39A="5/5"
+        applicantPartyId="DEMO_ORG_ABC" beneficiaryPartyId="DEMO_ORG_XYZ"
+        issuingBankPartyId="DEMO_ORG_VIETCOMBANK" advisingBankPartyId="DEMO_ORG_DBS"
+        applicantName="ABC Trading Co" applicantAddress="123 Le Loi St, HCM City, Vietnam"
+        beneficiaryName="XYZ Exports Pte Ltd" beneficiaryAddress="456 Marina Bay, Singapore"
+        issuingBankName="Vietcombank" issuingBankAddress="198 Tran Quang Khai, HCM City"
+        advisingBankName="DBS Bank" advisingThroughBank_57a="DBS Singapore Main Branch"
+        reimbursingBank_53a="Citibank New York"
+        partialShipment_43P="LC_PARTIAL_ALLOWED" transhipment_43T="LC_TRANS_ALLOWED"
+        latestShipDate_44C="2026-06-30" placeOfReceipt_44A="Singapore Port"
+        portOfLoading_44E="Singapore" portOfDischarge_44F="Cat Lai Port"
+        placeOfFinalDestination_44B="Ho Chi Minh City"
+        descriptionOfGoods_45A="1000 MT White Rice Grade A - Packing: 50kg PP bags"
+        docsRequired_46A="1. Full set 3/3 clean on board ocean BL\n2. Signed commercial invoice in triplicate\n3. Certificate of origin\n4. Packing list\n5. Phytosanitary certificate"
+        additionalConditions_47A="All documents to be presented within 21 days after shipment"
+        periodForPresentation_48="21" charges_71B="All banking charges outside Vietnam for beneficiary account"
+        availableWithBy_41A="LC_AVAIL_PAYMENT" availableWithBankName="DBS Bank Singapore"
+        confirmationInstructions_49="LC_CONF_WITHOUT"
+        comments="Fully settled, all drawings completed"/>
+
+    <!-- LC #2: Issued, Advised — Usance LC, active, 1 drawing pending -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_02" lcNumber="ILC-2026-0002"
+        lcStatusId="LcLfAdvised" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC02"
+        lcProductTypeEnumId="LC_PROD_USANCE" amendmentNumber="0"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2026-02-01" expiryDate="2026-08-01" expiryPlace_31D="Bangkok"
+        amount="1200000" amountCurrencyUomId="USD"
+        applicantPartyId="DEMO_ORG_SUNRISE" beneficiaryPartyId="DEMO_ORG_THAI_STEEL"
+        issuingBankPartyId="DEMO_ORG_BIDV" advisingBankPartyId="DEMO_ORG_BBL"
+        applicantName="Sunrise Manufacturing" applicantAddress="789 Nguyen Hue Blvd, HCM City"
+        beneficiaryName="Thai Steel Corp" beneficiaryAddress="321 Sukhumvit Rd, Bangkok"
+        issuingBankName="BIDV" issuingBankAddress="35 Hang Voi, Hanoi"
+        advisingBankName="Bangkok Bank" draftsAt_42C="90 DAYS AFTER SIGHT"
+        partialShipment_43P="LC_PARTIAL_NOT_ALLOW" transhipment_43T="LC_TRANS_NOT_ALLOW"
+        portOfLoading_44E="Laem Chabang" portOfDischarge_44F="Hai Phong Port"
+        descriptionOfGoods_45A="500 MT Hot-Rolled Steel Coils HRC Q235B"
+        availableWithBy_41A="LC_AVAIL_ACCEPTANCE" confirmationInstructions_49="LC_CONF_MAY_ADD"/>
+
+    <!-- LC #3: Issued — Negotiation LC, active with amendment -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_03" lcNumber="ILC-2026-0003"
+        lcStatusId="LcLfAmended" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC03"
+        lcProductTypeEnumId="LC_PROD_NEGOTIATION" amendmentNumber="1"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2026-01-20" expiryDate="2026-09-20" expiryPlace_31D="Shanghai"
+        amount="2500000" amountCurrencyUomId="USD" amountTolerance_39A="10/10"
+        applicantPartyId="DEMO_ORG_GLOBAL" beneficiaryPartyId="DEMO_ORG_SH_HEAVY"
+        issuingBankPartyId="DEMO_ORG_VIETCOMBANK" advisingBankPartyId="DEMO_ORG_BOC"
+        applicantName="Global Machinery Import" applicantAddress="456 Hai Ba Trung, Hanoi"
+        beneficiaryName="Shanghai Heavy Industries" beneficiaryAddress="100 Pudong New Area, Shanghai"
+        issuingBankName="Vietcombank" advisingBankName="Bank of China"
+        partialShipment_43P="LC_PARTIAL_ALLOWED" transhipment_43T="LC_TRANS_ALLOWED"
+        portOfLoading_44E="Shanghai" portOfDischarge_44F="Hai Phong Port"
+        descriptionOfGoods_45A="2 units CNC Machine Model XT-5000 with accessories and spare parts"
+        availableWithBy_41A="LC_AVAIL_NEGOTIATION" confirmationInstructions_49="LC_CONF_CONFIRM"/>
+
+    <!-- LC #4: Applied — Under review, pending approval -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_04" lcNumber="ILC-2026-0004"
+        lcStatusId="LcLfApplied" transactionStatusId="LcTxSubmitted" requestId="DEMO_REQ_LC04"
+        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2026-03-01" expiryDate="2026-09-01" expiryPlace_31D="Mumbai"
+        amount="750000" amountCurrencyUomId="USD"
+        applicantPartyId="DEMO_ORG_PHARMA" beneficiaryPartyId="DEMO_ORG_IN_PHARMA"
+        issuingBankPartyId="DEMO_ORG_TCB" advisingBankPartyId="DEMO_ORG_HDFC"
+        applicantName="Pharma Supplies Vietnam" applicantAddress="88 Tran Hung Dao, HCM City"
+        beneficiaryName="Indian Pharma Ltd" beneficiaryAddress="42 Nariman Point, Mumbai"
+        issuingBankName="Techcombank" advisingBankName="HDFC Bank India"
+        partialShipment_43P="LC_PARTIAL_NOT_ALLOW" transhipment_43T="LC_TRANS_NOT_ALLOW"
+        portOfLoading_44E="Nhava Sheva" portOfDischarge_44F="Cat Lai Port"
+        descriptionOfGoods_45A="Pharmaceutical raw materials - API Paracetamol 500 MT"
+        availableWithBy_41A="LC_AVAIL_PAYMENT" confirmationInstructions_49="LC_CONF_WITHOUT"/>
+
+    <!-- LC #5: Draft — Initial draft, not yet submitted -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_05" lcNumber="ILC-2026-0005"
+        lcStatusId="LcLfDraft" transactionStatusId="LcTxDraft" requestId="DEMO_REQ_LC05"
+        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        amount="320000" amountCurrencyUomId="USD"
+        applicantPartyId="DEMO_ORG_GREEN" beneficiaryPartyId="DEMO_ORG_BR_AGRO"
+        applicantName="Green Agriculture Co" applicantAddress="15 Vo Van Tan, HCM City"
+        beneficiaryName="Brazil Agro Exports" beneficiaryAddress="Rua Augusta 1000, Sao Paulo"
+        descriptionOfGoods_45A="200 MT Soybeans - Grade A - Packed in bulk"
+        comments="Draft application, awaiting customer confirmation"/>
+
+    <!-- LC #6: Issued, Expired — Expired LC with no drawings -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_06" lcNumber="ILC-2026-0006"
+        lcStatusId="LcLfExpired" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC06"
+        lcProductTypeEnumId="LC_PROD_USANCE" amendmentNumber="0"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2025-06-01" expiryDate="2025-12-01" expiryPlace_31D="Taipei"
+        amount="180000" amountCurrencyUomId="USD"
+        applicantPartyId="DEMO_ORG_TEXTILE" beneficiaryPartyId="DEMO_ORG_TW_FABRIC"
+        issuingBankPartyId="DEMO_ORG_ACB" advisingBankPartyId="DEMO_ORG_FBT"
+        applicantName="Vietnam Textile Group" applicantAddress="200 Nam Ky Khoi Nghia, HCM City"
+        beneficiaryName="Taiwan Fabric Co" beneficiaryAddress="99 Zhongshan N Rd, Taipei"
+        issuingBankName="ACB" advisingBankName="First Bank of Taiwan"
+        portOfLoading_44E="Keelung" portOfDischarge_44F="Cat Lai Port"
+        descriptionOfGoods_45A="50000 yards Polyester Fabric blend 65/35"
+        availableWithBy_41A="LC_AVAIL_ACCEPTANCE" draftsAt_42C="60 DAYS AFTER SIGHT"
+        confirmationInstructions_49="LC_CONF_WITHOUT"
+        comments="Expired without utilization due to buyer cancellation"/>
+
+    <!-- LC #7: Issued — Standby LC, active guarantee -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_07" lcNumber="ILC-2026-0007"
+        lcStatusId="LcLfIssued" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC07"
+        lcProductTypeEnumId="LC_PROD_STANDBY" amendmentNumber="0"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2026-02-15" expiryDate="2027-02-15" expiryPlace_31D="Tokyo"
+        amount="3000000" amountCurrencyUomId="USD"
+        applicantPartyId="DEMO_ORG_ELECTRONICS" beneficiaryPartyId="DEMO_ORG_JP_TECH"
+        issuingBankPartyId="DEMO_ORG_VIETCOMBANK" advisingBankPartyId="DEMO_ORG_MUFG"
+        applicantName="Vietnam Electronics Corp" applicantAddress="55 Dien Bien Phu, HCM City"
+        beneficiaryName="Japan Tech Components" beneficiaryAddress="1-1 Marunouchi, Tokyo"
+        issuingBankName="Vietcombank" advisingBankName="MUFG Bank Tokyo"
+        descriptionOfGoods_45A="Standby LC to guarantee payment for electronic components supply contract"
+        availableWithBy_41A="LC_AVAIL_PAYMENT" confirmationInstructions_49="LC_CONF_WITHOUT"
+        comments="Standby LC for performance guarantee"/>
+
+    <!-- LC #8: Applied — Pending first approval, transferable -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_08" lcNumber="ILC-2026-0008"
+        lcStatusId="LcLfApplied" transactionStatusId="LcTxSubmitted" requestId="DEMO_REQ_LC08"
+        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREV_TRANS" applicableRules_40E="LC_RULE_UCP600"
+        expiryDate="2026-12-31" expiryPlace_31D="Detroit"
+        amount="890000" amountCurrencyUomId="USD" amountTolerance_39A="5/5"
+        applicantPartyId="DEMO_ORG_AUTO" beneficiaryPartyId="DEMO_ORG_US_AUTO"
+        issuingBankPartyId="DEMO_ORG_BIDV" advisingBankPartyId="DEMO_ORG_JPMC"
+        applicantName="Vietnam Auto Parts" applicantAddress="77 Le Thanh Ton, HCM City"
+        beneficiaryName="US Auto Supply Inc" beneficiaryAddress="1200 Michigan Ave, Detroit MI"
+        issuingBankName="BIDV" advisingBankName="JPMorgan Chase"
+        partialShipment_43P="LC_PARTIAL_ALLOWED" transhipment_43T="LC_TRANS_ALLOWED"
+        portOfLoading_44E="Los Angeles" portOfDischarge_44F="Hai Phong Port"
+        descriptionOfGoods_45A="Auto engine components and transmission parts per contract AP-2026-08"
+        availableWithBy_41A="LC_AVAIL_PAYMENT" confirmationInstructions_49="LC_CONF_MAY_ADD"/>
+
+    <!-- LC #9: Draft — Rejected and reopened for correction -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_09" lcNumber="ILC-2026-0009"
+        lcStatusId="LcLfDraft" transactionStatusId="LcTxDraft" requestId="DEMO_REQ_LC09"
+        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        amount="445000" amountCurrencyUomId="USD"
+        applicantPartyId="DEMO_ORG_CHEM" beneficiaryPartyId="DEMO_ORG_KR_CHEM"
+        applicantName="Chemical Materials VN" applicantAddress="33 Pasteur, HCM City"
+        beneficiaryName="KoreaChem Corp" beneficiaryAddress="789 Gangnam-daero, Seoul"
+        descriptionOfGoods_45A="Chemical raw materials - Sodium Hydroxide and Hydrochloric Acid"
+        comments="Rejected by compliance, reopened for correction of beneficiary details"/>
+
+    <!-- LC #10: Negotiated — Fully negotiated, awaiting final payment -->
+    <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_10" lcNumber="ILC-2026-0010"
+        lcStatusId="LcLfNegotiated" transactionStatusId="LcTxApproved" requestId="DEMO_REQ_LC10"
+        lcProductTypeEnumId="LC_PROD_NEGOTIATION" amendmentNumber="0"
+        sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
+        issueDate="2026-02-20" expiryDate="2026-08-20" expiryPlace_31D="Sydney"
+        amount="1800000" amountCurrencyUomId="USD" amountTolerance_39A="3/3"
+        applicantPartyId="DEMO_ORG_STEEL" beneficiaryPartyId="DEMO_ORG_AU_STEEL"
+        issuingBankPartyId="DEMO_ORG_VPBANK" advisingBankPartyId="DEMO_ORG_ANZ"
+        applicantName="Vietnam Steel Import" applicantAddress="100 Nguyen Van Linh, Da Nang"
+        beneficiaryName="Australian Steel Export" beneficiaryAddress="200 George St, Sydney"
+        issuingBankName="VPBank" advisingBankName="ANZ Bank"
+        partialShipment_43P="LC_PARTIAL_ALLOWED" transhipment_43T="LC_TRANS_ALLOWED"
+        portOfLoading_44E="Port Kembla" portOfDischarge_44F="Da Nang Port"
+        descriptionOfGoods_45A="2000 MT Structural Steel Beams H-Profile 200x200"
+        availableWithBy_41A="LC_AVAIL_NEGOTIATION" confirmationInstructions_49="LC_CONF_CONFIRM"/>
+
+    <!-- ========================================================= -->
+    <!-- LC History Records (Audit Trail)                          -->
+    <!-- Sample audit trail for key LCs                            -->
+    <!-- ========================================================= -->
+
+    <!-- LC_01 history: full lifecycle -->
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_01_01" lcId="DEMO_LC_01" changeType="StatusChange"
+        fieldName="lcStatusId" newValue="LcLfDraft" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-01-10 09:00:00" comments="LC application created"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_01_02" lcId="DEMO_LC_01" changeType="StatusChange"
+        fieldName="transactionStatusId" oldValue="LcTxDraft" newValue="LcTxSubmitted" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-01-10 10:00:00" comments="Submitted for approval"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_01_03" lcId="DEMO_LC_01" changeType="StatusChange"
+        fieldName="transactionStatusId" oldValue="LcTxSubmitted" newValue="LcTxApproved" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-01-12 14:00:00" comments="Approved by Credit Committee"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_01_04" lcId="DEMO_LC_01" changeType="StatusChange"
+        fieldName="lcStatusId" oldValue="LcLfDraft" newValue="LcLfApplied" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-01-12 14:30:00" comments="Application accepted"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_01_05" lcId="DEMO_LC_01" changeType="StatusChange"
+        fieldName="lcStatusId" oldValue="LcLfApplied" newValue="LcLfIssued" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-01-15 08:00:00" comments="LC issued, MT700 sent to advising bank"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_01_06" lcId="DEMO_LC_01" changeType="StatusChange"
+        fieldName="lcStatusId" oldValue="LcLfIssued" newValue="LcLfClosed" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-06-20 16:00:00" comments="LC closed after final payment"/>
+
+    <!-- LC_02 history: issuance through advising -->
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_02_01" lcId="DEMO_LC_02" changeType="StatusChange"
+        fieldName="lcStatusId" newValue="LcLfDraft" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-01-25 09:00:00" comments="LC application created"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_02_02" lcId="DEMO_LC_02" changeType="StatusChange"
+        fieldName="lcStatusId" oldValue="LcLfApplied" newValue="LcLfIssued" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-02-01 08:00:00" comments="LC issued"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_02_03" lcId="DEMO_LC_02" changeType="StatusChange"
+        fieldName="lcStatusId" oldValue="LcLfIssued" newValue="LcLfAdvised" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-02-03 10:00:00" comments="LC advised by Bangkok Bank"/>
+
+    <!-- LC_09 history: rejection and reopen -->
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_09_01" lcId="DEMO_LC_09" changeType="StatusChange"
+        fieldName="lcStatusId" newValue="LcLfDraft" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-02-28 09:00:00" comments="LC application created"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_09_02" lcId="DEMO_LC_09" changeType="StatusChange"
+        fieldName="transactionStatusId" oldValue="LcTxDraft" newValue="LcTxSubmitted" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-02-28 10:00:00" comments="Submitted for review"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_09_03" lcId="DEMO_LC_09" changeType="StatusChange"
+        fieldName="transactionStatusId" oldValue="LcTxSubmitted" newValue="LcTxRejected" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-03-01 11:00:00" comments="Rejected: Beneficiary on sanctions list, needs verification"/>
+    <moqui.trade.finance.LcHistory lcHistoryId="DEMO_HIST_09_04" lcId="DEMO_LC_09" changeType="StatusChange"
+        fieldName="transactionStatusId" oldValue="LcTxRejected" newValue="LcTxDraft" changedByUserId="TF_ADMIN_USER"
+        changeDate="2026-03-02 09:00:00" comments="Reopened for correction of beneficiary details"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Amendments                                             -->
+    <!-- ========================================================= -->
+
+    <!-- LC_01: Amendment to increase amount -->
+    <moqui.trade.finance.LcAmendment lcId="DEMO_LC_01" amendmentSeqId="01" amendmentNumber="1"
+        requestId="DEMO_REQ_AMD01" amendmentDate="2026-03-15" amendmentStatusId="LcTxApproved"
+        fieldName="amount" oldValue="500000" newValue="550000" amount="550000"
+        remarks="Increase LC amount by 50,000 USD due to price adjustment"/>
+
+    <!-- LC_03: Amendment to extend expiry date -->
+    <moqui.trade.finance.LcAmendment lcId="DEMO_LC_03" amendmentSeqId="01" amendmentNumber="1"
+        amendmentDate="2026-04-10" amendmentStatusId="LcTxApproved" confirmationStatusId="LcAmndPending"
+        expiryDate="2026-09-20"
+        remarks="Extend expiry date by 2 months per applicant request"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Drawings (Document Presentations)                      -->
+    <!-- ========================================================= -->
+
+    <!-- LC_01: Drawing 1 — compliant, paid -->
+    <moqui.trade.finance.LcDrawing lcId="DEMO_LC_01" drawingSeqId="01"
+        drawingDate="2026-04-15" drawingAmount="250000" drawingCurrencyUomId="USD"
+        drawingStatusId="LcDrPaid" presentationDate="2026-04-15"
+        paymentDate="2026-04-18" paymentAmount="250000" paymentReference="SWIFT-REF-001"
+        documentCount="5" remarks="First drawing - partial shipment"/>
+
+    <!-- LC_01: Drawing 2 — compliant, paid -->
+    <moqui.trade.finance.LcDrawing lcId="DEMO_LC_01" drawingSeqId="02"
+        drawingDate="2026-05-20" drawingAmount="250000" drawingCurrencyUomId="USD"
+        drawingStatusId="LcDrPaid" presentationDate="2026-05-20"
+        paymentDate="2026-05-23" paymentAmount="250000" paymentReference="SWIFT-REF-002"
+        documentCount="5" remarks="Final drawing - balance shipment"/>
+
+    <!-- LC_02: Drawing 1 — received, under review -->
+    <moqui.trade.finance.LcDrawing lcId="DEMO_LC_02" drawingSeqId="01"
+        drawingDate="2026-04-01" drawingAmount="1200000" drawingCurrencyUomId="USD"
+        drawingStatusId="LcDrReceived" presentationDate="2026-04-01"
+        maturityDate="2026-07-01" documentCount="4"
+        remarks="Full drawing, usance 90 days sight, documents under review"/>
+
+    <!-- LC_10: Drawing 1 — discrepant, accepted with waiver -->
+    <moqui.trade.finance.LcDrawing lcId="DEMO_LC_10" drawingSeqId="01"
+        drawingDate="2026-04-10" drawingAmount="900000" drawingCurrencyUomId="USD"
+        drawingStatusId="LcDrAccepted" presentationDate="2026-04-10"
+        documentCount="5" remarks="Discrepancy found but waived by applicant"/>
+
+    <!-- LC_10: Drawing 2 — compliant, under negotiation -->
+    <moqui.trade.finance.LcDrawing lcId="DEMO_LC_10" drawingSeqId="02"
+        drawingDate="2026-05-15" drawingAmount="900000" drawingCurrencyUomId="USD"
+        drawingStatusId="LcDrCompliant" presentationDate="2026-05-15"
+        documentCount="5" remarks="Second shipment drawing, compliant documents"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Drawing Documents                                      -->
+    <!-- ========================================================= -->
+
+    <!-- LC_01 Drawing 01: Full document set -->
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_01" drawingSeqId="01" documentSeqId="01"
+        documentTypeEnumId="LC_DOC_BILL_LADING" documentReference="BL-SIN-2026-0415"
+        documentDate="2026-04-12" originalCount="3" copyCount="3" remarks="Full set 3/3 clean on board"/>
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_01" drawingSeqId="01" documentSeqId="02"
+        documentTypeEnumId="LC_DOC_COMM_INVOICE" documentReference="INV-XYZ-2026-0101"
+        documentDate="2026-04-10" originalCount="3" copyCount="0" remarks="Signed in triplicate"/>
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_01" drawingSeqId="01" documentSeqId="03"
+        documentTypeEnumId="LC_DOC_PACKING_LIST" documentReference="PL-XYZ-2026-0101"
+        documentDate="2026-04-10" originalCount="2" copyCount="1"/>
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_01" drawingSeqId="01" documentSeqId="04"
+        documentTypeEnumId="LC_DOC_CERT_ORIGIN" documentReference="CO-SIN-2026-0415"
+        documentDate="2026-04-11" originalCount="1" copyCount="2" remarks="GSP Form A"/>
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_01" drawingSeqId="01" documentSeqId="05"
+        documentTypeEnumId="LC_DOC_INSURANCE" documentReference="INS-2026-04150"
+        documentDate="2026-04-12" originalCount="1" copyCount="1" remarks="CIF 110% coverage"/>
+
+    <!-- LC_10 Drawing 01: Documents with one discrepancy -->
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_10" drawingSeqId="01" documentSeqId="01"
+        documentTypeEnumId="LC_DOC_BILL_LADING" documentReference="BL-SYD-2026-0410"
+        documentDate="2026-04-08" originalCount="3" copyCount="3"/>
+    <moqui.trade.finance.LcDrawingDocument lcId="DEMO_LC_10" drawingSeqId="01" documentSeqId="02"
+        documentTypeEnumId="LC_DOC_COMM_INVOICE" documentReference="INV-AUS-2026-038"
+        documentDate="2026-04-05" originalCount="3" copyCount="0" remarks="Invoice amount slightly different"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Discrepancies                                          -->
+    <!-- ========================================================= -->
+
+    <!-- LC_10 Drawing 01: Amount discrepancy, waived -->
+    <moqui.trade.finance.LcDiscrepancy lcId="DEMO_LC_10" drawingSeqId="01" discrepancySeqId="01"
+        discrepancyTypeEnumId="LC_DISC_AMOUNT" description="Invoice shows USD 898,500 vs drawing amount USD 900,000"
+        resolutionEnumId="LC_DISRES_WAIVED" resolutionDate="2026-04-12" resolvedByUserId="TF_ADMIN_USER"
+        remarks="Minor difference within tolerance, waived by applicant"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Charges                                                -->
+    <!-- ========================================================= -->
+
+    <!-- LC_01: Standard issuance charges -->
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_01" chargeSeqId="01"
+        chargeTypeEnumId="LC_CHG_ISSUANCE" chargeAmount="2500" chargeCurrencyUomId="USD"
+        chargeDate="2026-01-15" waived="N" remarks="0.5% of LC amount"/>
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_01" chargeSeqId="02"
+        chargeTypeEnumId="LC_CHG_SWIFT" chargeAmount="150" chargeCurrencyUomId="USD"
+        chargeDate="2026-01-15" waived="N" remarks="MT700 issuance SWIFT charges"/>
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_01" chargeSeqId="03"
+        chargeTypeEnumId="LC_CHG_AMENDMENT" chargeAmount="200" chargeCurrencyUomId="USD"
+        chargeDate="2026-03-15" waived="N" remarks="Amendment processing fee"/>
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_01" chargeSeqId="04"
+        chargeTypeEnumId="LC_CHG_COURIER" chargeAmount="75" chargeCurrencyUomId="USD"
+        chargeDate="2026-04-15" waived="N" remarks="Document courier charges"/>
+
+    <!-- LC_02: Usance LC charges -->
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_02" chargeSeqId="01"
+        chargeTypeEnumId="LC_CHG_ISSUANCE" chargeAmount="6000" chargeCurrencyUomId="USD"
+        chargeDate="2026-02-01" waived="N" remarks="0.5% of LC amount"/>
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_02" chargeSeqId="02"
+        chargeTypeEnumId="LC_CHG_ACCEPTANCE" chargeAmount="3000" chargeCurrencyUomId="USD"
+        chargeDate="2026-02-01" waived="N" remarks="Acceptance commission for 90 days"/>
+
+    <!-- LC_03: Negotiation LC charges -->
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_03" chargeSeqId="01"
+        chargeTypeEnumId="LC_CHG_ISSUANCE" chargeAmount="12500" chargeCurrencyUomId="USD"
+        chargeDate="2026-01-20" waived="N" remarks="0.5% of LC amount"/>
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_03" chargeSeqId="02"
+        chargeTypeEnumId="LC_CHG_AMENDMENT" chargeAmount="300" chargeCurrencyUomId="USD"
+        chargeDate="2026-04-10" waived="N"/>
+
+    <!-- LC_10: Discrepancy fee (waived) -->
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_10" chargeSeqId="01"
+        chargeTypeEnumId="LC_CHG_ISSUANCE" chargeAmount="9000" chargeCurrencyUomId="USD"
+        chargeDate="2026-02-20" waived="N"/>
+    <moqui.trade.finance.LcCharge lcId="DEMO_LC_10" chargeSeqId="02"
+        chargeTypeEnumId="LC_CHG_DISCREPANCY" chargeAmount="100" chargeCurrencyUomId="USD"
+        chargeDate="2026-04-12" waived="Y" remarks="Discrepancy fee waived for valued customer"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Provisions                                             -->
+    <!-- ========================================================= -->
+
+    <!-- LC_02: Active provision (usance LC) -->
+    <moqui.trade.finance.LcProvision lcId="DEMO_LC_02" provisionSeqId="01"
+        provisionAmount="120000" provisionCurrencyUomId="USD" provisionRate="10"
+        effectiveDate="2026-02-01" provisionStatusId="LcPrvActive"
+        remarks="10% provision hold for usance LC"/>
+
+    <!-- LC_03: Active provision (high-value machinery) -->
+    <moqui.trade.finance.LcProvision lcId="DEMO_LC_03" provisionSeqId="01"
+        provisionAmount="375000" provisionCurrencyUomId="USD" provisionRate="15"
+        effectiveDate="2026-01-20" provisionStatusId="LcPrvActive"
+        remarks="15% provision for high-value machinery import"/>
+
+    <!-- LC_01: Released provision -->
+    <moqui.trade.finance.LcProvision lcId="DEMO_LC_01" provisionSeqId="01"
+        provisionAmount="50000" provisionCurrencyUomId="USD" provisionRate="10"
+        effectiveDate="2026-01-15" releaseDate="2026-06-20" provisionStatusId="LcPrvReleased"
+        remarks="Provision released upon LC closure"/>
+
+    <!-- LC_07: Active provision (standby LC) -->
+    <moqui.trade.finance.LcProvision lcId="DEMO_LC_07" provisionSeqId="01"
+        provisionAmount="300000" provisionCurrencyUomId="USD" provisionRate="10"
+        effectiveDate="2026-02-15" provisionStatusId="LcPrvActive"
+        remarks="10% provision for standby guarantee"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Documents (Attachments)                                -->
+    <!-- ========================================================= -->
+
+    <!-- LC_01: SWIFT MT700 message and application form -->
+    <moqui.trade.finance.LcDocument lcId="DEMO_LC_01" documentSeqId="01"
+        documentTypeEnumId="LC_DOC_SWIFT_MSG" documentReference="MT700-ILC-2026-0001"
+        documentDate="2026-01-15" description="MT700 Issuance SWIFT message"
+        contentLocation="dbresource://trade-finance/lc/DEMO_LC_01/MT700-ILC-2026-0001.txt"
+        uploadedByUserId="TF_ADMIN_USER"/>
+    <moqui.trade.finance.LcDocument lcId="DEMO_LC_01" documentSeqId="02"
+        documentTypeEnumId="LC_DOC_APP_FORM" documentReference="APP-ILC-2026-0001"
+        documentDate="2026-01-10" description="Signed LC application form"
+        contentLocation="dbresource://trade-finance/lc/DEMO_LC_01/APP-ILC-2026-0001.pdf"
+        uploadedByUserId="TF_ADMIN_USER"/>
+
+    <!-- LC_02: SWIFT message -->
+    <moqui.trade.finance.LcDocument lcId="DEMO_LC_02" documentSeqId="01"
+        documentTypeEnumId="LC_DOC_SWIFT_MSG" documentReference="MT700-ILC-2026-0002"
+        documentDate="2026-02-01" description="MT700 Issuance SWIFT message"
+        contentLocation="dbresource://trade-finance/lc/DEMO_LC_02/MT700-ILC-2026-0002.txt"
+        uploadedByUserId="TF_ADMIN_USER"/>
+
+    <!-- LC_03: Amendment SWIFT message -->
+    <moqui.trade.finance.LcDocument lcId="DEMO_LC_03" documentSeqId="01"
+        documentTypeEnumId="LC_DOC_SWIFT_MSG" documentReference="MT707-ILC-2026-0003"
+        documentDate="2026-04-10" description="MT707 Amendment SWIFT message"
+        contentLocation="dbresource://trade-finance/lc/DEMO_LC_03/MT707-ILC-2026-0003.txt"
+        uploadedByUserId="TF_ADMIN_USER"/>
+
+</entity-facade-xml>

@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TradeFinanceServices.xml
+     Core services for the Trade Finance component.
+     Includes LC CRUD, validation, status transitions, and Mantle Request integration. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Validation Service                                        -->
+    <!-- ========================================================= -->
+    <service verb="validate" noun="LetterOfCredit">
+        <description>Validates LC fields against SWIFT Character Set X and UCP 600 rules.</description>
+        <in-parameters>
+            <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
+        </in-parameters>
+        <actions>
+            <script><![CDATA[
+                // SWIFT Character Set X: A-Z, a-z, 0-9, / - ? : ( ) . , ' + space, CR, LF
+                def swiftXChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/-?:().,'+ \r\n"
+                def fieldsToCheck = ['lcNumber', 'applicantName', 'applicantAddress', 'beneficiaryName', 'beneficiaryAddress', 
+                                   'issuingBankName', 'issuingBankAddress', 'advisingBankName', 'advisingThroughBank_57a',
+                                   'negotiatingBankName', 'confirmingBankName', 'requestedConfirmationParty_58a',
+                                   'portOfLoading_44E', 'portOfDischarge_44F', 'placeOfFinalDest_44G',
+                                   'descriptionOfGoods_45A', 'documentsRequired_46A', 
+                                   'additionalConditions_47A', 'instructionsToBank_78',
+                                   'specialPaymentCond_47B', 'charges_71B']
+
+                fieldsToCheck.each { fieldName ->
+                    def value = context.get(fieldName)
+                    if (value instanceof String && value.trim()) {
+                        // Check each character
+                        for (int i = 0; i < value.length(); i++) {
+                            if (swiftXChars.indexOf((int) value.charAt(i)) == -1) {
+                                ec.message.addError("Field ${fieldName} contains characters not allowed in SWIFT Character Set X (A-Z, a-z, 0-9, / - ? : ( ) . , ' + space)")
+                                break
+                            }
+                        }
+                    }
+                }
+            ]]></script>
+
+            <!-- UCP 600: Expiry Date must be after Issue Date -->
+            <if condition="expiryDate &amp;&amp; issueDate &amp;&amp; expiryDate &lt; issueDate">
+                <message error="true">Expiry Date must be after Issue Date per UCP 600 guidelines.</message>
+            </if>
+
+            <!-- SWIFT field length validations -->
+            <if condition="lcNumber &amp;&amp; lcNumber.length() &gt; 16">
+                <message error="true">LC Number (20) exceeds 16 character limit.</message></if>
+            <if condition="applicantName &amp;&amp; applicantName.length() &gt; 140">
+                <message error="true">Applicant Name (50) exceeds 140 character limit (4 lines of 35).</message></if>
+            <if condition="beneficiaryName &amp;&amp; beneficiaryName.length() &gt; 140">
+                <message error="true">Beneficiary Name (59) exceeds 140 character limit (4 lines of 35).</message></if>
+            <if condition="descriptionOfGoods_45A &amp;&amp; descriptionOfGoods_45A.length() &gt; 6500">
+                <message error="true">Goods Description (45A) exceeds 6500 character limit (100 lines of 65).</message></if>
+            <if condition="amountTolerance_39A &amp;&amp; !(amountTolerance_39A ==~ /^[0-9]{1,2}\/[0-9]{1,2}$/)">
+                <message error="true">Amount Tolerance (39A) must be in format n/n (e.g. 10/10).</message>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Create LC Service                                         -->
+    <!-- Creates a LetterOfCredit with initial statuses and a      -->
+    <!-- linked Mantle Request for workflow processing.             -->
+    <!-- ========================================================= -->
+    <service verb="create" noun="LetterOfCredit">
+        <description>Creates a new Letter of Credit with Draft status and a linked Mantle Request.</description>
+        <in-parameters>
+            <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
+            <parameter name="lcNumber" required="true"/>
+            <!-- Default: begin in Draft state for both lifecycle and transaction -->
+            <parameter name="lcStatusId" default-value="LcLfDraft"/>
+            <parameter name="transactionStatusId" default-value="LcTxDraft"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="lcId"/>
+            <parameter name="requestId"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="Creating Letter of Credit for applicant: ${applicantPartyId ?: applicantName}"/>
+            <!-- Validate fields -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.validate#LetterOfCredit" in-map="context"/>
+            <check-errors/>
+
+            <!-- Create the Mantle Request for inter-department workflow tracking -->
+            <service-call name="create#mantle.request.Request" out-map="reqOut"
+                in-map="[requestTypeEnumId:'RqtLcIssuance', statusId:'ReqDraft',
+                         requestName:('LC Issuance: ' + lcNumber),
+                         description:('Letter of Credit issuance request for ' + lcNumber)]"/>
+            <set field="requestId" from="reqOut.requestId"/>
+
+            <!-- Create the LetterOfCredit record -->
+            <service-call name="create#moqui.trade.finance.LetterOfCredit" in-map="context" out-map="newLcOut"/>
+            <set field="lcId" from="newLcOut.lcId"/>
+
+            <!-- Record initial history entry -->
+            <service-call name="create#moqui.trade.finance.LcHistory"
+                in-map="[lcId:lcId, changeType:'StatusChange', fieldName:'lcStatusId',
+                         newValue:lcStatusId, changedByUserId:ec.user.userId,
+                         comments:comments ?: 'LC application created']"/>
+
+            <!-- Send Notification -->
+            <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
+                in-map="[lcId:lcId, eventDescription:'LC Application Drafted']"/>
+
+            <log level="info" message="Successfully created LC with ID: ${lcId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Update LC Service                                         -->
+    <!-- Updates LC fields and records changes in history.          -->
+    <!-- ========================================================= -->
+    <service verb="update" noun="LetterOfCredit">
+        <description>Updates an existing Letter of Credit and records changes in history.</description>
+        <in-parameters>
+            <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="pk"/>
+            <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <actions>
+            <!-- Validate fields -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.validate#LetterOfCredit" in-map="context"/>
+            <check-errors/>
+            <log level="info" message="Updating Letter of Credit ID: ${lcId}"/>
+
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc" for-update="true"/>
+            <if condition="lc">
+                <log level="info" message="Found LC for update: ${lc.lcId}"/>
+                <!-- Transition status if provided -->
+                <entity-set value-field="lc" include="nonpk"/>
+                <entity-update value-field="lc"/>
+                <service-call name="create#moqui.trade.finance.LcHistory"
+                    in-map="[lcId:lcId, changeType:'Update', changedByUserId:ec.user.userId,
+                             comments:comments ?: 'Record updated']"/>
+            <else>
+                <log level="error" message="Letter of Credit not found for update with ID: ${lcId}"/>
+                <!-- Use addError() directly so ec.message.hasError() returns true -->
+                <script>ec.message.addError("Letter of Credit not found with ID: " + lcId)</script>
+                <return/>
+            </else></if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Delete LC Service                                         -->
+    <!-- Only allowed for LCs in Draft transaction status.          -->
+    <!-- ========================================================= -->
+    <service verb="delete" noun="LetterOfCredit">
+        <description>Deletes a Letter of Credit and all related records. Only allowed in Draft transaction status.</description>
+        <in-parameters><parameter name="lcId" required="true"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc">
+                <script>ec.message.addError("Letter of Credit not found with ID: " + lcId)</script>
+                <return/>
+            </if>
+            <if condition="lc.transactionStatusId != 'LcTxDraft'">
+                <script>ec.message.addError("Cannot delete an LC that is not in Draft status.")</script>
+                <return/>
+            </if>
+
+            <!-- Cascade delete related records to avoid FK constraint violations -->
+            <!-- Delete drawing sub-entities first (discrepancies, drawing documents) -->
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcDiscrepancy">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcDrawingDocument">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <!-- Delete main related entities -->
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcDrawing">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcAmendment">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcCharge">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcProvision">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcDocument">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+            <entity-delete-by-condition entity-name="moqui.trade.finance.LcHistory">
+                <econdition field-name="lcId"/></entity-delete-by-condition>
+
+            <!-- Delete the main LC record -->
+            <service-call name="delete#moqui.trade.finance.LetterOfCredit" in-map="[lcId:lcId]"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Transition LC Status Service                              -->
+    <!-- Validates the transition using StatusFlowTransition and   -->
+    <!-- updates the status field accordingly.                     -->
+    <!-- ========================================================= -->
+    <service verb="transition" noun="LcStatus">
+        <description>Transitions the LC lifecycle status using StatusFlow validation.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="toStatusId" required="true"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc" for-update="true"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- Validate the transition is allowed by the StatusFlow -->
+            <entity-find entity-name="moqui.basic.StatusFlowTransition" list="validTransitions">
+                <econdition field-name="statusFlowId" value="LcLifecycle"/>
+                <econdition field-name="statusId" from="lc.lcStatusId"/>
+                <econdition field-name="toStatusId" from="toStatusId"/>
+            </entity-find>
+            <if condition="!validTransitions">
+                <return error="true" message="Invalid LC status transition from ${lc.lcStatusId} to ${toStatusId}."/>
+            </if>
+
+            <!-- Record old value for history -->
+            <set field="oldStatusId" from="lc.lcStatusId"/>
+            <script>lc.lcStatusId = toStatusId</script>
+            <entity-update value-field="lc"/>
+
+            <!-- Record the transition in history -->
+            <service-call name="create#moqui.trade.finance.LcHistory"
+                in-map="[lcId:lcId, changeType:'StatusChange', fieldName:'lcStatusId',
+                         oldValue:oldStatusId, newValue:toStatusId,
+                         changedByUserId:ec.user.userId,
+                         comments:comments ?: ('LC status: ' + oldStatusId + ' -> ' + toStatusId)]"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Transition Transaction Status Service                     -->
+    <!-- Validates and transitions the processing status.          -->
+    <!-- ========================================================= -->
+    <service verb="transition" noun="TransactionStatus">
+        <description>Transitions the LC transaction processing status using StatusFlow validation.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="toStatusId" required="true"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc" for-update="true"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- Validate the transition is allowed by the StatusFlow -->
+            <entity-find entity-name="moqui.basic.StatusFlowTransition" list="validTransitions">
+                <econdition field-name="statusFlowId" value="LcTransaction"/>
+                <econdition field-name="statusId" from="lc.transactionStatusId"/>
+                <econdition field-name="toStatusId" from="toStatusId"/>
+            </entity-find>
+            <if condition="!validTransitions">
+                <return error="true" message="Invalid transaction status transition from ${lc.transactionStatusId} to ${toStatusId}."/>
+            </if>
+
+            <!-- Record old value for history -->
+            <set field="oldStatusId" from="lc.transactionStatusId"/>
+            <set field="lc.transactionStatusId" from="toStatusId"/>
+            <entity-update value-field="lc"/>
+
+            <!-- Record the transition in history -->
+            <service-call name="create#moqui.trade.finance.LcHistory"
+                in-map="[lcId:lcId, changeType:'StatusChange', fieldName:'transactionStatusId',
+                         oldValue:oldStatusId, newValue:toStatusId,
+                         changedByUserId:ec.user.userId,
+                         comments:comments ?: ('Transaction status: ' + oldStatusId + ' -> ' + toStatusId)]"/>
+
+            <!-- Send Notification for major transitions -->
+            <if condition="toStatusId == 'LcTxSubmitted'">
+                <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
+                              in-map="[lcId:lcId, eventDescription:'LC Application Submitted for Review']"/>
+            </if>
+            <if condition="toStatusId == 'LcTxApproved'">
+                <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
+                              in-map="[lcId:lcId, eventDescription:'LC Application Approved']"/>
+            </if>
+        </actions>
+    </service>
+
+</services>

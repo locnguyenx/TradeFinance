@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="lcId" required="true"/>
+    <parameter name="amendmentSeqId" required="true"/>
+    
+    <transition name="UpdateAmendment"><service-call name="update#moqui.trade.finance.LcAmendment"/><default-response url="."/></transition>
+    <transition name="SubmitAmendment"><service-call name="moqui.trade.finance.AmendmentServices.submit#LcAmendment"/><default-response url="."/></transition>
+    <transition name="ApproveAmendment"><service-call name="moqui.trade.finance.AmendmentServices.approve#LcAmendment"/><default-response url="."/></transition>
+    <transition name="ConfirmAmendment"><service-call name="moqui.trade.finance.AmendmentServices.confirm#LcAmendment"/><default-response url="."/></transition>
+    
+    <actions>
+        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment">
+            <field-map field-name="lcId" from="lcId"/>
+            <field-map field-name="amendmentSeqId" from="amendmentSeqId"/>
+        </entity-find-one>
+        <if condition="amendment">
+            <set field="statusColorMap" from="['LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8', 'LcTxCancelled':'red-7', 'LcTxClosed':'blue-grey-8', 'LcAmndPending':'orange-8', 'LcAmndConfirmed':'green-8', 'LcAmndRejected':'red-8']"/>
+            
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="txStatus">
+                <field-map field-name="statusId" from="amendment.amendmentStatusId"/></entity-find-one>
+            <set field="txStatusDesc" from="txStatus?.description ?: amendment.amendmentStatusId"/>
+            <set field="txStatusColor" from="statusColorMap[amendment.amendmentStatusId] ?: 'grey-7'"/>
+
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="confStatus">
+                <field-map field-name="statusId" from="amendment.confirmationStatusId"/></entity-find-one>
+            <set field="confStatusDesc" from="confStatus?.description ?: (amendment.confirmationStatusId ?: 'Initial/Not Set')"/>
+            <set field="confStatusColor" from="statusColorMap[amendment.confirmationStatusId] ?: 'grey-7'"/>
+        </if>
+    </actions>
+    
+    <widgets>
+        <section name="AmendmentFoundSection" condition="amendment">
+            <widgets>
+                <container style="q-pa-md">
+                    <!-- 2. Main Amendment Form -->
+                    <form-single name="AmendmentDetailForm" map="amendment" transition="UpdateAmendment">
+                        <auto-parameters entity-name="moqui.trade.finance.LcAmendment" include="pk"/>
+                        <field name="amendmentSeqId"><default-field><hidden/></default-field></field>
+                        <field name="lcId"><default-field><hidden/></default-field></field>
+                        
+                        <!-- Reference Fields -->
+                        <field name="lcNumber" entry-name="lc.lcNumber">
+                            <default-field title="LC Number (20)">
+                                <link url="../../Lc/MainLC" text="${lc?.lcNumber}" url-type="screen" link-type="anchor" parameter-map="[lcId:lcId, readOnly:'true', lastScreenUrl:'../Amendment/AmendmentDetail', amendmentSeqId:amendmentSeqId]"/>
+                            </default-field>
+                        </field>
+                        <field name="lcStatusId" entry-name="lc.lcStatusId"><default-field title="Original LC Status"><display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/></default-field></field>
+                        <field name="transactionStatusId" entry-name="amendment.amendmentStatusId"><default-field title="Amendment Status"><display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/></default-field></field>
+
+                        <!-- Basic Info -->
+                        <field name="sequenceTotal_27" entry-name="lc.sequenceTotal_27"><default-field title="Original Seq of Total (27)"><display/></default-field></field>
+                        <field name="lcProductTypeEnumId" entry-name="lc.lcProductTypeEnumId"><default-field title="Product Type">
+                            <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
+                        </default-field></field>
+                        <field name="formOfCredit_40A"><default-field title="Form of Credit (40A)">
+                            <drop-down allow-empty="false"><entity-options key="${enumId}" text="${description}">
+                                <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcFormOfCredit"/><order-by field-name="description"/></entity-find>
+                            </entity-options></drop-down>
+                        </default-field></field>
+                        <field name="applicableRules_40E"><default-field title="Applicable Rules (40E)">
+                            <drop-down allow-empty="false"><entity-options key="${enumId}" text="${description}">
+                                <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcApplicableRules"/><order-by field-name="description"/></entity-find>
+                            </entity-options></drop-down>
+                        </default-field></field>
+                        <field name="issueDate" entry-name="lc.issueDate"><default-field title="Original Issue Date (31C)"><display/></default-field></field>
+                        <field name="expiryDate"><default-field title="Amended Expiry Date (31D)"><date-time type="date"/></default-field></field>
+                        <field name="expiryPlace_31D"><default-field title="Amended Expiry Place (31D)"><text-line size="30"/></default-field></field>
+
+                        <!-- Amount & Tolerance -->
+                        <field name="amount"><default-field title="Amended LC Amount (32B)"><text-line size="15"/></default-field></field>
+                        <field name="amountCurrencyUomId"><default-field title="Currency">
+                            <display-entity entity-name="moqui.basic.Uom" key-field-name="uomId" text="${description}"/>
+                        </default-field></field>
+                        <field name="amountTolerance_39A"><default-field title="Amended Tolerance % (39A)"><text-line size="10"/></default-field></field>
+                        <field name="maxCreditAmount_39B"><default-field title="Amended Max Credit Amt (39B)"><text-line size="20"/></default-field></field>
+                        <field name="additionalAmountsCovered_39C"><default-field title="Amended Addl Amounts (39C)"><text-area rows="2"/></default-field></field>
+
+                        <!-- Parties -->
+                        <field name="applicantPartyId" entry-name="lc.applicantPartyId"><default-field title="Applicant (50)">
+                            <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                        </default-field></field>
+                        <field name="beneficiaryPartyId" entry-name="lc.beneficiaryPartyId"><default-field title="Beneficiary (59)">
+                            <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                        </default-field></field>
+                        <field name="issuingBankPartyId" entry-name="lc.issuingBankPartyId"><default-field title="Issuing Bank (51A)">
+                            <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                        </default-field></field>
+                        <field name="advisingBankPartyId" entry-name="lc.advisingBankPartyId"><default-field title="Advising Bank (57A)">
+                            <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                        </default-field></field>
+                        <field name="reimbursingBankPartyId" entry-name="lc.reimbursingBankPartyId"><default-field title="Reimbursing Bank (53A)">
+                            <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                        </default-field></field>
+
+                        <!-- Shipment -->
+                        <field name="partialShipment_43P"><default-field title="Partial Ship (43P)">
+                            <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcPartialShipment"/><order-by field-name="description"/></entity-find>
+                            </entity-options></drop-down>
+                        </default-field></field>
+                        <field name="transhipment_43T"><default-field title="Transhipment (43T)">
+                            <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcTranshipment"/><order-by field-name="description"/></entity-find>
+                            </entity-options></drop-down>
+                        </default-field></field>
+                        <field name="latestShipDate_44C"><default-field title="Amended Ship Date (44C)"><date-time type="date"/></default-field></field>
+                        <field name="portOfLoading_44E"><default-field title="Amended Port/Loading (44E)"><text-line size="30"/></default-field></field>
+                        <field name="portOfDischarge_44F"><default-field title="Amended Port/Discharge (44F)"><text-line size="30"/></default-field></field>
+                        <field name="placeOfFinalDestination_44B"><default-field title="Amended Final Dest (44B)"><text-line size="30"/></default-field></field>
+                        <field name="shipmentPeriod_44D"><default-field title="Amended Ship Period (44D)"><text-area rows="2"/></default-field></field>
+
+                        <!-- Goods & Docs -->
+                        <field name="descriptionOfGoods_45A"><default-field title="Amended Goods (45A)"><text-area rows="5"/></default-field></field>
+                        <field name="docsRequired_46A"><default-field title="Amended Docs (46A)"><text-area rows="5"/></default-field></field>
+                        <field name="additionalConditions_47A"><default-field title="Amended Conditions (47A)"><text-area rows="5"/></default-field></field>
+
+                        <!-- Payment & Instructions -->
+                        <field name="availableWithBy_41A"><default-field title="Amended Available With/By (41A)">
+                            <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcAvailability"/><order-by field-name="description"/></entity-find>
+                            </entity-options></drop-down>
+                        </default-field></field>
+                        <field name="draftsAt_42C"><default-field title="Amended Drafts At (42C)"><text-line size="30"/></default-field></field>
+                        <field name="periodForPresentation_48"><default-field title="Amended Pres. Period (48)"><text-line size="20"/></default-field></field>
+                        <field name="confirmationInstructions_49"><default-field title="Amended Confirmation (49)">
+                            <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcConfirmation"/><order-by field-name="description"/></entity-find>
+                            </entity-options></drop-down>
+                        </default-field></field>
+                        <field name="instructionsToBank_78"><default-field title="Bank Instructions (78)"><text-area rows="3"/></default-field></field>
+                        <field name="charges_71B" entry-name="lc.charges_71B"><default-field title="Original Charges Info (71B)"><display/></default-field></field>
+                        <field name="senderToReceiverInfo_72Z" entry-name="lc.senderToReceiverInfo_72Z"><default-field title="Original Sender Info (72Z)"><display/></default-field></field>
+                        <field name="remarks"><default-field title="Amendment Remarks/Justification"><text-area rows="2"/></default-field></field>
+
+                        <field name="submitButton"><default-field title="Save"><submit/></default-field></field>
+
+                        <field-layout>
+                            <field-ref name="lcId"/>
+                            <field-ref name="amendmentSeqId"/>
+                            
+                            <field-group title="1. AMENDMENT: REFERENCE &amp; BASIC INFO" box="true">
+                                <field-col-row>
+                                    <field-col md="4"><field-ref name="lcNumber"/></field-col>
+                                    <field-col md="4"><field-ref name="lcStatusId"/></field-col>
+                                    <field-col md="4"><field-ref name="transactionStatusId"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="4"><field-ref name="sequenceTotal_27"/></field-col>
+                                    <field-col md="4"><field-ref name="issueDate"/></field-col>
+                                    <field-col md="4"><field-ref name="expiryDate"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="expiryPlace_31D"/></field-col>
+                                    <field-col md="6"><field-ref name="formOfCredit_40A"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="lcProductTypeEnumId"/></field-col>
+                                    <field-col md="6"><field-ref name="applicableRules_40E"/></field-col>
+                                </field-col-row>
+                            </field-group>
+
+                            <field-group title="2. AMENDMENT: AMOUNT &amp; TOLERANCE" box="true">
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="amount"/></field-col>
+                                    <field-col md="6"><field-ref name="amountCurrencyUomId"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="amountTolerance_39A"/></field-col>
+                                    <field-col md="6"><field-ref name="maxCreditAmount_39B"/></field-col>
+                                </field-col-row>
+                                <field-ref name="additionalAmountsCovered_39C"/>
+                            </field-group>
+
+                            <field-group title="3. PARTIES (DISPLAY ONLY)" box="true">
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="applicantPartyId"/></field-col>
+                                    <field-col md="6"><field-ref name="beneficiaryPartyId"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="4"><field-ref name="issuingBankPartyId"/></field-col>
+                                    <field-col md="4"><field-ref name="advisingBankPartyId"/></field-col>
+                                    <field-col md="4"><field-ref name="reimbursingBankPartyId"/></field-col>
+                                </field-col-row>
+                            </field-group>
+
+                            <field-group title="4. AMENDMENT: SHIPMENT DETAILS" box="true">
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="partialShipment_43P"/></field-col>
+                                    <field-col md="6"><field-ref name="transhipment_43T"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="4"><field-ref name="latestShipDate_44C"/></field-col>
+                                    <field-col md="4"><field-ref name="portOfLoading_44E"/></field-col>
+                                    <field-col md="4"><field-ref name="portOfDischarge_44F"/></field-col>
+                                </field-col-row>
+                                <field-ref name="placeOfFinalDestination_44B"/>
+                                <field-ref name="shipmentPeriod_44D"/>
+                            </field-group>
+
+                            <field-group title="5. AMENDMENT: GOODS &amp; DOCUMENTS" box="true">
+                                <field-ref name="descriptionOfGoods_45A"/>
+                                <field-ref name="docsRequired_46A"/>
+                                <field-ref name="additionalConditions_47A"/>
+                            </field-group>
+
+                            <field-group title="6. AMENDMENT: PAYMENT &amp; INSTRUCTIONS" box="true">
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="availableWithBy_41A"/></field-col>
+                                    <field-col md="6"><field-ref name="confirmationInstructions_49"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="draftsAt_42C"/></field-col>
+                                    <field-col md="6"><field-ref name="periodForPresentation_48"/></field-col>
+                                </field-col-row>
+                                <field-ref name="instructionsToBank_78"/>
+                                <field-ref name="charges_71B"/>
+                                <field-ref name="senderToReceiverInfo_72Z"/>
+                                <field-ref name="remarks"/>
+                            </field-group>
+        
+                            <field-col-row style="justify-end q-mt-md">
+                                <field-col><field-ref name="submitButton"/></field-col>
+                            </field-col-row>
+                        </field-layout>
+                    </form-single>
+                </container>
+            </widgets>
+            <fail-widgets>
+                <container style="q-pa-md">
+                    <label text="Amendment Request not found." type="h5" style="text-negative"/>
+                </container>
+            </fail-widgets>
+        </section>
+    </widgets>
+</screen>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- LifecycleServices.xml
+     Services for managing the primary lifecycle milestones of an LC (Issuance, Expiry, Revocation). -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Issue LC Service                                          -->
+    <!-- Finalizes the LC application, triggers MT700 generation,   -->
+    <!-- and updates the LC status to Issued.                      -->
+    <!-- ========================================================= -->
+    <service verb="issue" noun="LetterOfCredit">
+        <description>Issues the Letter of Credit, advancing its statuses and generating the MT700.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found: ${lcId}"/></if>
+
+            <!-- Validate current status: Can only issue an LC that has been Approved -->
+            <if condition="lc.transactionStatusId != 'LcTxApproved'">
+                <return error="true" message="Cannot issue LC ${lcId}: Transaction status must be 'Approved' but is '${lc.transactionStatusId}'."/>
+            </if>
+            <if condition="lc.lcStatusId != 'LcLfApplied' &amp;&amp; lc.lcStatusId != 'LcLfDraft'">
+                <return error="true" message="Cannot issue LC ${lcId}: LC is already fully issued or processed."/>
+            </if>
+
+            <log level="info" message="Issuing Letter of Credit: ${lcId}"/>
+
+            <!-- 1. Generate MT700 SWIFT Message -->
+            <service-call name="moqui.trade.finance.SwiftServices.generate#SwiftMt700" 
+                          in-map="[lcId:lcId]" out-map="swiftOut"/>
+
+            <!-- 2. Transition Transaction Status -> Closed -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"
+                          in-map="[lcId:lcId, toStatusId:'LcTxClosed', comments:'LC Issuance finalized.']"/>
+
+            <!-- 3. Transition LC Lifecycle Status -> Issued -->
+            <!-- Note: If it's still in Draft, the StatusFlow validation requires we transition to Applied first -->
+            <if condition="lc.lcStatusId == 'LcLfDraft'">
+                <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
+                              in-map="[lcId:lcId, toStatusId:'LcLfApplied', comments:'Auto-advanced to Applied during Issuance.']"/>
+            </if>
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
+                          in-map="[lcId:lcId, toStatusId:'LcLfIssued', comments:(comments ?: 'LC Issued.')]"/>
+
+            <!-- 4. Send System Notification -->
+            <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
+                          in-map="[lcId:lcId, eventDescription:'Letter of Credit Issued']"/>
+
+            <log level="info" message="Successfully issued Letter of Credit: ${lcId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Revoke LC Service                                         -->
+    <!-- Transitions LC to Revoked and releases provisions.        -->
+    <!-- ========================================================= -->
+    <service verb="revoke" noun="LetterOfCredit">
+        <description>Revokes a revocable LC, transitions status, and releases provisions.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found: ${lcId}"/></if>
+
+            <!-- Validate if revocable -->
+            <if condition="lc.formOfCredit_40A != 'LC_FORM_REVOCABLE'">
+                <return error="true" message="Cannot revoke LC ${lcId}: It is not a Revocable LC (Form: ${lc.formOfCredit_40A})."/>
+            </if>
+
+            <!-- Transition LC Lifecycle Status -> Revoked -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
+                          in-map="[lcId:lcId, toStatusId:'LcLfRevoked', comments:(comments ?: 'LC Revoked.')]"/>
+
+            <!-- 1. Release active provisions -->
+            <entity-find entity-name="moqui.trade.finance.LcProvision" list="provisions">
+                <econdition field-name="lcId" from="lcId"/>
+                <econdition field-name="provisionStatusId" value="LcPrvActive"/>
+            </entity-find>
+            <iterate list="provisions" entry="provision">
+                <service-call name="moqui.trade.finance.FinancialServices.release#LcProvision"
+                              in-map="[lcId:lcId, provisionSeqId:provision.provisionSeqId]"/>
+            </iterate>
+
+            <!-- 2. Generate MT799 (Revocation Advice) -->
+            <service-call name="moqui.trade.finance.SwiftServices.generate#SwiftMt799"
+                          in-map="[lcId:lcId, subject:'ADVICE OF REVOCATION', 
+                                   message:('LC ' + lc.lcNumber + ' has been revoked. All provisions released.')]"/>
+
+            <!-- 3. Send Notification -->
+            <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
+                          in-map="[lcId:lcId, eventDescription:'Letter of Credit Revoked']"/>
+
+            <log level="info" message="Successfully revoked LC: ${lcId}"/>
+        </actions>
+    </service>
+</services>

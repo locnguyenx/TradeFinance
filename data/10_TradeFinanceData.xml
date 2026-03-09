@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="seed" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-facade-xml-3.xsd">
+
+    <!-- ========================================================= -->
+    <!-- Status Types                                              -->
+    <!-- ========================================================= -->
+
+    <!-- LC Lifecycle Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcLifecycle" description="LC Lifecycle Status"/>
+    <!-- LC Transaction Processing Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcTransaction" description="LC Transaction Processing Status"/>
+    <!-- LC Drawing Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcDrawingStatus" description="LC Drawing Status"/>
+    <!-- LC Provision Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcProvisionStatus" description="LC Provision Status"/>
+    <!-- LC Amendment Confirmation Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcAmendmentConfirmation" description="LC Amendment Confirmation Status"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Lifecycle Status Items & Flow                          -->
+    <!-- Tracks the actual instrument state of the LC              -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusFlow statusFlowId="LcLifecycle" description="LC Lifecycle Flow"/>
+
+    <moqui.basic.StatusItem statusId="LcLfDraft" statusTypeId="LcLifecycle" description="Draft" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcLfApplied" statusTypeId="LcLifecycle" description="Applied" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcLfIssued" statusTypeId="LcLifecycle" description="Issued" sequenceNum="3"/>
+    <moqui.basic.StatusItem statusId="LcLfAdvised" statusTypeId="LcLifecycle" description="Advised" sequenceNum="4"/>
+    <moqui.basic.StatusItem statusId="LcLfAmended" statusTypeId="LcLifecycle" description="Amended" sequenceNum="5"/>
+    <moqui.basic.StatusItem statusId="LcLfNegotiated" statusTypeId="LcLifecycle" description="Negotiated" sequenceNum="6"/>
+    <moqui.basic.StatusItem statusId="LcLfRevoked" statusTypeId="LcLifecycle" description="Revoked" sequenceNum="7"/>
+    <moqui.basic.StatusItem statusId="LcLfExpired" statusTypeId="LcLifecycle" description="Expired" sequenceNum="8"/>
+    <moqui.basic.StatusItem statusId="LcLfClosed" statusTypeId="LcLifecycle" description="Closed" sequenceNum="9"/>
+
+    <!-- LC Lifecycle StatusFlow Transitions -->
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfDraft"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfApplied"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfIssued"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfAdvised"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfAmended"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfNegotiated"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfRevoked"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfExpired"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcLifecycle" statusId="LcLfClosed"/>
+
+    <!-- Valid Transitions: Draft -> Applied -> Issued -> Advised/Amended/Negotiated/Expired/Closed -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfDraft" toStatusId="LcLfApplied" transitionName="Apply"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfApplied" toStatusId="LcLfIssued" transitionName="Issue"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfIssued" toStatusId="LcLfAdvised" transitionName="Advise"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfIssued" toStatusId="LcLfAmended" transitionName="Amend"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfIssued" toStatusId="LcLfNegotiated" transitionName="Negotiate"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfIssued" toStatusId="LcLfRevoked" transitionName="Revoke"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfIssued" toStatusId="LcLfExpired" transitionName="Expire"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfIssued" toStatusId="LcLfClosed" transitionName="Close"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAdvised" toStatusId="LcLfAmended" transitionName="Amend"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAdvised" toStatusId="LcLfNegotiated" transitionName="Negotiate"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAdvised" toStatusId="LcLfExpired" transitionName="Expire"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAdvised" toStatusId="LcLfClosed" transitionName="Close"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAmended" toStatusId="LcLfAmended" transitionName="Amend Again"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAmended" toStatusId="LcLfRevoked" transitionName="Revoke"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAmended" toStatusId="LcLfNegotiated" transitionName="Negotiate"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAmended" toStatusId="LcLfExpired" transitionName="Expire"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcLifecycle" statusId="LcLfAmended" toStatusId="LcLfClosed" transitionName="Close"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Transaction Processing Status Items & Flow             -->
+    <!-- Tracks the internal processing state of each request      -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusFlow statusFlowId="LcTransaction" description="LC Transaction Processing Flow"/>
+
+    <moqui.basic.StatusItem statusId="LcTxDraft" statusTypeId="LcTransaction" description="Draft" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcTxSubmitted" statusTypeId="LcTransaction" description="Submitted" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcTxApproved" statusTypeId="LcTransaction" description="Approved" sequenceNum="3"/>
+    <moqui.basic.StatusItem statusId="LcTxRejected" statusTypeId="LcTransaction" description="Rejected" sequenceNum="4"/>
+    <moqui.basic.StatusItem statusId="LcTxCancelled" statusTypeId="LcTransaction" description="Cancelled" sequenceNum="5"/>
+    <moqui.basic.StatusItem statusId="LcTxClosed" statusTypeId="LcTransaction" description="Closed" sequenceNum="6"/>
+
+    <!-- LC Transaction StatusFlow Transitions -->
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxDraft"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxSubmitted"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxApproved"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxRejected"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxCancelled"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxClosed"/>
+
+    <!-- Valid Transitions: Draft -> Submitted -> Approved/Rejected, Approved -> Closed -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxSubmitted" transitionName="Submit"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxCancelled" transitionName="Cancel"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxApproved" transitionName="Approve"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxRejected" transitionName="Reject"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxCancelled" transitionName="Cancel"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxApproved" toStatusId="LcTxClosed" transitionName="Close"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxRejected" toStatusId="LcTxDraft" transitionName="Reopen"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Drawing Status Items & Flow                            -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusFlow statusFlowId="LcDrawingStatus" description="LC Drawing Status Flow"/>
+
+    <moqui.basic.StatusItem statusId="LcDrReceived" statusTypeId="LcDrawingStatus" description="Received" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcDrCompliant" statusTypeId="LcDrawingStatus" description="Compliant" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcDrDiscrepant" statusTypeId="LcDrawingStatus" description="Discrepant" sequenceNum="3"/>
+    <moqui.basic.StatusItem statusId="LcDrAccepted" statusTypeId="LcDrawingStatus" description="Accepted" sequenceNum="4"/>
+    <moqui.basic.StatusItem statusId="LcDrUnderTrust" statusTypeId="LcDrawingStatus" description="Under Trust" sequenceNum="5"/>
+    <moqui.basic.StatusItem statusId="LcDrPaid" statusTypeId="LcDrawingStatus" description="Paid" sequenceNum="6"/>
+    <moqui.basic.StatusItem statusId="LcDrRejected" statusTypeId="LcDrawingStatus" description="Rejected" sequenceNum="7"/>
+
+    <!-- Drawing StatusFlow Transitions -->
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrReceived"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrCompliant"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrDiscrepant"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrAccepted"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrUnderTrust"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrPaid"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcDrawingStatus" statusId="LcDrRejected"/>
+
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrReceived" toStatusId="LcDrCompliant" transitionName="Mark Compliant"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrReceived" toStatusId="LcDrDiscrepant" transitionName="Mark Discrepant"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrCompliant" toStatusId="LcDrAccepted" transitionName="Accept"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrCompliant" toStatusId="LcDrPaid" transitionName="Pay"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrDiscrepant" toStatusId="LcDrAccepted" transitionName="Accept Discrepancy"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrDiscrepant" toStatusId="LcDrRejected" transitionName="Reject"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrDiscrepant" toStatusId="LcDrUnderTrust" transitionName="Release Under Trust"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrAccepted" toStatusId="LcDrPaid" transitionName="Pay"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcDrawingStatus" statusId="LcDrUnderTrust" toStatusId="LcDrPaid" transitionName="Pay"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Provision Status Items                                 -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusItem statusId="LcPrvActive" statusTypeId="LcProvisionStatus" description="Active" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcPrvReleased" statusTypeId="LcProvisionStatus" description="Released" sequenceNum="2"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Amendment Confirmation Status Items & Flow             -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusFlow statusFlowId="LcAmendmentConfirmation" description="LC Amendment Confirmation Flow"/>
+
+    <moqui.basic.StatusItem statusId="LcAmndPending" statusTypeId="LcAmendmentConfirmation" description="Pending Confirmation" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcAmndConfirmed" statusTypeId="LcAmendmentConfirmation" description="Confirmed" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcAmndRejected" statusTypeId="LcAmendmentConfirmation" description="Rejected" sequenceNum="3"/>
+
+    <moqui.basic.StatusFlowItem statusFlowId="LcAmendmentConfirmation" statusId="LcAmndPending"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcAmendmentConfirmation" statusId="LcAmndConfirmed"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcAmendmentConfirmation" statusId="LcAmndRejected"/>
+
+    <moqui.basic.StatusFlowTransition statusFlowId="LcAmendmentConfirmation" statusId="LcAmndPending" toStatusId="LcAmndConfirmed" transitionName="Confirm Amendment"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcAmendmentConfirmation" statusId="LcAmndPending" toStatusId="LcAmndRejected" transitionName="Reject Amendment"/>
+
+    <!-- ========================================================= -->
+    <!-- Role Types                                                -->
+    <!-- ========================================================= -->
+    <mantle.party.RoleType roleTypeId="Bank" description="Bank"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - SWIFT MT700 Field Codes                    -->
+    <!-- ========================================================= -->
+
+    <!-- 40A: Form of Documentary Credit -->
+    <moqui.basic.EnumerationType enumTypeId="LcFormOfCredit" description="LC Form of Credit"/>
+    <moqui.basic.Enumeration enumId="LC_FORM_IRREVOCABLE" enumTypeId="LcFormOfCredit" description="Irrevocable"/>
+    <moqui.basic.Enumeration enumId="LC_FORM_REVOCABLE" enumTypeId="LcFormOfCredit" description="Revocable"/>
+    <moqui.basic.Enumeration enumId="LC_FORM_IRREV_TRANS" enumTypeId="LcFormOfCredit" description="Irrevocable Transferable"/>
+
+    <!-- 40E: Applicable Rules -->
+    <moqui.basic.EnumerationType enumTypeId="LcApplicableRules" description="LC Applicable Rules"/>
+    <moqui.basic.Enumeration enumId="LC_RULE_UCP_LATEST" enumTypeId="LcApplicableRules" description="UCP Latest Version"/>
+    <moqui.basic.Enumeration enumId="LC_RULE_UCP600" enumTypeId="LcApplicableRules" description="UCP600"/>
+    <moqui.basic.Enumeration enumId="LC_RULE_EUCP_LATEST" enumTypeId="LcApplicableRules" description="eUCP Latest Version"/>
+
+    <!-- 41A: Available With... By... -->
+    <moqui.basic.EnumerationType enumTypeId="LcAvailability" description="LC Availability Method"/>
+    <moqui.basic.Enumeration enumId="LC_AVAIL_PAYMENT" enumTypeId="LcAvailability" description="By Payment"/>
+    <moqui.basic.Enumeration enumId="LC_AVAIL_ACCEPTANCE" enumTypeId="LcAvailability" description="By Acceptance"/>
+    <moqui.basic.Enumeration enumId="LC_AVAIL_NEGOTIATION" enumTypeId="LcAvailability" description="By Negotiation"/>
+    <moqui.basic.Enumeration enumId="LC_AVAIL_DEFERRED" enumTypeId="LcAvailability" description="By Deferred Payment"/>
+
+    <!-- 43P: Partial Shipments -->
+    <moqui.basic.EnumerationType enumTypeId="LcPartialShipment" description="LC Partial Shipment"/>
+    <moqui.basic.Enumeration enumId="LC_PARTIAL_ALLOWED" enumTypeId="LcPartialShipment" description="ALLOWED"/>
+    <moqui.basic.Enumeration enumId="LC_PARTIAL_NOT_ALLOW" enumTypeId="LcPartialShipment" description="NOT ALLOWED"/>
+    <moqui.basic.Enumeration enumId="LC_PARTIAL_COND" enumTypeId="LcPartialShipment" description="CONDITIONAL"/>
+
+    <!-- 43T: Transhipment -->
+    <moqui.basic.EnumerationType enumTypeId="LcTranshipment" description="LC Transhipment"/>
+    <moqui.basic.Enumeration enumId="LC_TRANS_ALLOWED" enumTypeId="LcTranshipment" description="ALLOWED"/>
+    <moqui.basic.Enumeration enumId="LC_TRANS_NOT_ALLOW" enumTypeId="LcTranshipment" description="NOT ALLOWED"/>
+    <moqui.basic.Enumeration enumId="LC_TRANS_COND" enumTypeId="LcTranshipment" description="CONDITIONAL"/>
+
+    <!-- 49: Confirmation Instructions -->
+    <moqui.basic.EnumerationType enumTypeId="LcConfirmation" description="LC Confirmation Instructions"/>
+    <moqui.basic.Enumeration enumId="LC_CONF_CONFIRM" enumTypeId="LcConfirmation" description="CONFIRM"/>
+    <moqui.basic.Enumeration enumId="LC_CONF_MAY_ADD" enumTypeId="LcConfirmation" description="MAY ADD"/>
+    <moqui.basic.Enumeration enumId="LC_CONF_WITHOUT" enumTypeId="LcConfirmation" description="WITHOUT"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - LC Product Types                           -->
+    <!-- ========================================================= -->
+    <moqui.basic.EnumerationType enumTypeId="LcProductType" description="LC Product Type"/>
+    <moqui.basic.Enumeration enumId="LC_PROD_PRE_ADVICE" enumTypeId="LcProductType" description="LC Pre Advice"/>
+    <moqui.basic.Enumeration enumId="LC_PROD_SIGHT" enumTypeId="LcProductType" description="LC Sight"/>
+    <moqui.basic.Enumeration enumId="LC_PROD_USANCE" enumTypeId="LcProductType" description="LC Usance"/>
+    <moqui.basic.Enumeration enumId="LC_PROD_NEGOTIATION" enumTypeId="LcProductType" description="LC Negotiation"/>
+    <moqui.basic.Enumeration enumId="LC_PROD_STANDBY" enumTypeId="LcProductType" description="LC Standby"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - LC Charge Types                            -->
+    <!-- ========================================================= -->
+    <moqui.basic.EnumerationType enumTypeId="LcChargeType" description="LC Charge Type"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_ISSUANCE" enumTypeId="LcChargeType" description="Issuance Commission"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_ADVISING" enumTypeId="LcChargeType" description="Advising Fee"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_AMENDMENT" enumTypeId="LcChargeType" description="Amendment Fee"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_NEGOTIATION" enumTypeId="LcChargeType" description="Negotiation Commission"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_ACCEPTANCE" enumTypeId="LcChargeType" description="Acceptance Commission"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_DISCREPANCY" enumTypeId="LcChargeType" description="Discrepancy Fee"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_COURIER" enumTypeId="LcChargeType" description="Courier Charges"/>
+    <moqui.basic.Enumeration enumId="LC_CHG_SWIFT" enumTypeId="LcChargeType" description="SWIFT Charges"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - Request Content Types                      -->
+    <!-- ========================================================= -->
+    <moqui.basic.Enumeration enumId="RctLetterOfCredit" enumTypeId="RequestContentType" description="LC Document"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - LC Document Types                          -->
+    <!-- ========================================================= -->
+    <moqui.basic.EnumerationType enumTypeId="LcDocumentType" description="LC Document Type"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_BILL_LADING" enumTypeId="LcDocumentType" description="Bill of Lading"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_COMM_INVOICE" enumTypeId="LcDocumentType" description="Commercial Invoice"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_PACKING_LIST" enumTypeId="LcDocumentType" description="Packing List"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_INSURANCE" enumTypeId="LcDocumentType" description="Insurance Certificate"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_CERT_ORIGIN" enumTypeId="LcDocumentType" description="Certificate of Origin"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_INSPECTION" enumTypeId="LcDocumentType" description="Inspection Certificate"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_SWIFT_MSG" enumTypeId="LcDocumentType" description="SWIFT Message"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_APP_FORM" enumTypeId="LcDocumentType" description="Application Form"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_TRANSPORT" enumTypeId="LcDocumentType" description="Transport Document"/>
+    <moqui.basic.Enumeration enumId="LC_DOC_OTHER" enumTypeId="LcDocumentType" description="Other"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - LC Discrepancy Types                       -->
+    <!-- ========================================================= -->
+    <moqui.basic.EnumerationType enumTypeId="LcDiscrepancyType" description="LC Discrepancy Type"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_LATE_PRES" enumTypeId="LcDiscrepancyType" description="Late Presentation"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_INCONSIST" enumTypeId="LcDiscrepancyType" description="Inconsistent Documents"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_MISSING" enumTypeId="LcDiscrepancyType" description="Missing Documents"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_AMOUNT" enumTypeId="LcDiscrepancyType" description="Incorrect Amount"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_STALE_DOCS" enumTypeId="LcDiscrepancyType" description="Stale Transport Documents"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_DESC_MISMATCH" enumTypeId="LcDiscrepancyType" description="Goods Description Mismatch"/>
+    <moqui.basic.Enumeration enumId="LC_DISC_OTHER" enumTypeId="LcDiscrepancyType" description="Other"/>
+
+    <!-- ========================================================= -->
+    <!-- Enumerations - LC Discrepancy Resolution                  -->
+    <!-- ========================================================= -->
+    <moqui.basic.EnumerationType enumTypeId="LcDiscrepancyResolution" description="LC Discrepancy Resolution"/>
+    <moqui.basic.Enumeration enumId="LC_DISRES_ACCEPTED" enumTypeId="LcDiscrepancyResolution" description="Accepted"/>
+    <moqui.basic.Enumeration enumId="LC_DISRES_REJECTED" enumTypeId="LcDiscrepancyResolution" description="Rejected"/>
+    <moqui.basic.Enumeration enumId="LC_DISRES_WAIVED" enumTypeId="LcDiscrepancyResolution" description="Waived"/>
+
+    <!-- ========================================================= -->
+    <!-- Scheduled Jobs                                            -->
+    <!-- ========================================================= -->
+    <!-- Run daily at 1:00 AM server time -->
+    <moqui.service.job.ServiceJob jobName="TradeFinance_checkLcExpiry" 
+                                  description="Auto-expires overdue Letters of Credit"
+                                  serviceName="moqui.trade.finance.ScheduledServices.check#LcExpiry" 
+                                  cronExpression="0 0 1 * * ?"/>
+
+</entity-facade-xml>

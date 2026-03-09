@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Export Collection">
+    <widgets>
+        <label text="Export Collection Module" type="h4" style="q-pa-md text-primary"/>
+        <label text="This module is currently under development." style="q-pa-md"/>
+    </widgets>
+</screen>

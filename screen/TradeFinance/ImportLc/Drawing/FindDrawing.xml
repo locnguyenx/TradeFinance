@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Find Drawing">
+    
+    <transition name="DrawingDetail"><default-response url="../DrawingDetail"/></transition>
+    <transition name="LcDetail"><default-response url="../../Lc/MainLC"/></transition>
+    <transition name="CreateDrawing">
+        <service-call name="moqui.trade.finance.DrawingServices.create#LcDrawing"/>
+        <default-response url="."/>
+    </transition>
+
+    <actions>
+        <entity-find entity-name="moqui.trade.finance.LcDrawingDetailView" list="drawingList">
+            <search-form-inputs/>
+            <order-by field-name="-presentationDate"/>
+        </entity-find>
+    </actions>
+
+    <widgets>
+        <container style="q-pa-md">
+            <container style="row justify-between items-center q-mb-md">
+                <label text="Import LC Drawings &amp; Presentations" type="h5" style="text-weight-bold text-primary"/>
+                <container-dialog id="CreateDrawingDialog" button-text="Initiate New Request">
+                    <form-single name="CreateDrawingForm" transition="CreateDrawing">
+                        <field name="lcId"><default-field title="Select LC">
+                            <drop-down allow-empty="false">
+                                <entity-options key="${lcId}" text="${lcNumber}">
+                                    <entity-find entity-name="moqui.trade.finance.LetterOfCredit">
+                                        <econdition field-name="lcStatusId" operator="in" value="LcLfIssued,LcLfAmended"/>
+                                    </entity-find>
+                                </entity-options>
+                            </drop-down>
+                        </default-field></field>
+                        <field name="drawingAmount"><default-field title="Drawing Amount"><text-line size="15"/></default-field></field>
+                        <field name="presentationDate"><default-field title="Presentation Date"><date-time/></default-field></field>
+                        <field name="remarks"><default-field title="Remarks"><text-area rows="3"/></default-field></field>
+                        <field name="submitButton"><default-field title="Register Drawing"><submit/></default-field></field>
+                    </form-single>
+                </container-dialog>
+            </container>
+
+            <form-list name="DrawingList" list="drawingList" skip-form="true" header-dialog="true">
+                <field name="lcNumber">
+                    <header-field title="LC Number" show-order-by="true">
+                        <text-find hide-options="true"/>
+                    </header-field>
+                    <default-field>
+                    <link url="../../Lc/MainLC" text="${lcNumber}" url-type="screen" link-type="anchor" parameter-map="[lcId:lcId, readOnly:'true', lastScreenUrl:'../Drawing/FindDrawing']"/>
+                    </default-field>
+                </field>
+                <field name="drawingSeqId"><header-field show-order-by="true" title="Drawing ID"/><default-field>
+                    <link url="../DrawingDetail" text="${drawingSeqId}" style="text-weight-bold text-primary" 
+                          parameter-map="[lcId:lcId, drawingId:drawingSeqId]"/>
+                </default-field></field>
+                <field name="presentationDate"><header-field show-order-by="true"/><default-field><display/></default-field></field>
+                <field name="drawingAmount"><header-field show-order-by="true" title="Amount"/><default-field>
+                    <display currency-uom-id="${drawingCurrencyUomId}"/>
+                </default-field></field>
+                <field name="drawingStatusId"><header-field title="Status"/><default-field>
+                    <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                </default-field></field>
+                <field name="maturityDate"><header-field show-order-by="true"/><default-field><display/></default-field></field>
+            </form-list>
+        </container>
+    </widgets>
+</screen>

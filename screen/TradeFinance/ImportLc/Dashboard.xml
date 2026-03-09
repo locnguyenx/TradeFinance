@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Import LC Dashboard" default-menu-index="1">
+    <actions>
+        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="importLcList"/>
+        <set field="totalCount" from="importLcList.size()"/>
+        <set field="activeCount" from="importLcList.findAll({ it.lcStatusId == 'LcLfIssued' }).size()"/>
+        
+        <!-- Workflow KPIs based on Mantle Request -->
+        <entity-find entity-name="mantle.request.Request" list="workflowReqList">
+            <econdition field-name="requestTypeEnumId" value="RqtLcIssuance"/>
+        </entity-find>
+        <set field="pendingCount" from="workflowReqList.findAll({ ['ReqSubmitted', 'ReqInProgress'].contains(it.statusId) }).size()"/>
+        
+        <set field="nowDate" from="new java.sql.Date(System.currentTimeMillis())"/>
+        <set field="thirtyDaysFuture" from="new java.sql.Date(System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000))"/>
+        <set field="expiringSoonCount" from="importLcList.findAll({ it.expiryDate != null &amp;&amp; it.expiryDate &gt;= nowDate &amp;&amp; it.expiryDate &lt;= thirtyDaysFuture }).size()"/>
+
+        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="recentLcList" limit="5">
+            <order-by field-name="-lcId"/>
+        </entity-find>
+    </actions>
+    <widgets>
+        <container style="q-pa-md">
+            <label text="Import LC Overview" type="h4" style="text-primary text-weight-bold q-mb-lg"/>
+            
+            <!-- Module specific KPIs -->
+            <container style="row q-col-gutter-md q-mb-xl">
+                <container style="col-12 col-md-3">
+                    <container style="bg-blue-1 text-blue-10 q-pa-md rounded-borders shadow-2 border">
+                        <label text="Total Portfolio" style="text-caption text-uppercase op-60"/>
+                        <label text="${totalCount}" style="text-h4 text-weight-bolder"/>
+                        <label text="Import LCs managed" style="text-caption q-mt-xs"/>
+                    </container>
+                </container>
+                <container style="col-12 col-md-3">
+                    <container style="bg-green-1 text-green-10 q-pa-md rounded-borders shadow-2 border">
+                        <label text="Active LCs" style="text-caption text-uppercase op-60"/>
+                        <label text="${activeCount}" style="text-h4 text-weight-bolder"/>
+                        <label text="Currently operational" style="text-caption q-mt-xs"/>
+                    </container>
+                </container>
+                <container style="col-12 col-md-3">
+                    <container style="bg-orange-1 text-orange-10 q-pa-md rounded-borders shadow-2 border">
+                        <label text="Pending Workflow" style="text-caption text-uppercase op-60"/>
+                        <label text="${pendingCount}" style="text-h4 text-weight-bolder"/>
+                        <label text="Awaiting bank review" style="text-caption q-mt-xs"/>
+                    </container>
+                </container>
+                <container style="col-12 col-md-3">
+                    <container style="bg-red-1 text-red-10 q-pa-md rounded-borders shadow-2 border">
+                        <label text="Expiring Soon" style="text-caption text-uppercase op-60"/>
+                        <label text="${expiringSoonCount}" style="text-h4 text-weight-bolder"/>
+                        <label text="Within next 30 days" style="text-caption q-mt-xs"/>
+                    </container>
+                </container>
+            </container>
+            
+            <container style="row q-col-gutter-lg">
+                <!-- Actions -->
+                <container style="col-12 col-lg-4">
+                    <container style="q-pa-md bg-grey-1 rounded-borders border">
+                        <label text="Import LC Actions" type="h6" style="q-mb-md text-grey-8"/>
+                        <container style="column q-gutter-sm">
+                            <link url="ImportLcList" text="New LC Application" btn-type="primary" icon="fa fa-file-circle-plus" style="full-width"/>
+                            <link url="ImportLcList" text="Browse All Records" btn-type="outline" icon="fa fa-table-list" style="full-width"/>
+                        </container>
+                        
+                        <label text="Quick Help" type="h6" style="q-mt-xl q-mb-sm text-grey-8"/>
+                        <label text="Follow UCP 600 guidelines for all new applications. Ensure expiry dates do not exceed 1 year from issuance." style="text-caption text-grey-7 italic"/>
+                    </container>
+                </container>
+
+                <!-- Recent Activity -->
+                <container style="col-12 col-lg-8">
+                    <container style="q-pa-md bg-white rounded-borders shadow-1 border">
+                        <label text="Recently Added Import LCs" type="h6" style="text-primary q-mb-md"/>
+                        <form-list name="RecentImportLcList" list="recentLcList" skip-form="true">
+                            <field name="lcNumber"><default-field title="LC #"><display style="text-weight-bold"/></default-field></field>
+                            <field name="applicantName"><default-field title="Applicant"><display/></default-field></field>
+                            <field name="expiryDate"><default-field title="Expiry"><display/></default-field></field>
+                            <field name="lcStatusId"><default-field title="Lifecycle Status">
+                                <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                            </default-field></field>
+                            <field name="detail"><default-field title="">
+                                <link url="LcDetail" text="View" link-type="anchor" style="text-primary text-weight-bold" parameter-map="[lcId:lcId]"/>
+                            </default-field></field>
+                        </form-list>
+                    </container>
+                </container>
+            </container>
+        </container>
+    </widgets>
+</screen>

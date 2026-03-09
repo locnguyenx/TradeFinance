@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="lcId" required="true"/>
+    <parameter name="readOnly"/>
+    <transition name="CreateAmendment"><service-call name="moqui.trade.finance.AmendmentServices.create#LcAmendment"/><default-response url="."/></transition>
+    
+    <actions>
+        <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
+        <entity-find entity-name="moqui.trade.finance.LcAmendment" list="amendmentList">
+            <econdition field-name="lcId"/>
+            <order-by field-name="-amendmentNumber"/>
+        </entity-find>
+    </actions>
+    
+    <widgets>
+        <container style="q-pa-md">
+            <container style="row justify-between items-center q-mb-md">
+                <label text="LC Amendments" type="h5" style="text-primary text-weight-bold"/>
+                <container-dialog id="RequestAmendmentDialog" button-text="Request Amendment" condition="!isReadOnly">
+                    <form-single name="CreateAmendmentForm" transition="CreateAmendment">
+                        <field name="lcId"><default-field><hidden/></default-field></field>
+                        <field name="fieldName"><default-field title="Field to Change"><text-line/></default-field></field>
+                        <field name="newValue"><default-field title="New Value"><text-line/></default-field></field>
+                        <field name="remarks"><default-field title="Remarks"><text-area rows="3"/></default-field></field>
+                        <field name="submit"><default-field title="Submit Request"><submit/></default-field></field>
+                    </form-single>
+                </container-dialog>
+            </container>
+
+            <form-list name="AmendmentList" list="amendmentList" skip-form="true" header-dialog="true">
+                <field name="amendmentNumber"><header-field show-order-by="true" title="No."/><default-field><display/></default-field></field>
+                <field name="fieldName"><header-field show-order-by="true" title="Field"/><default-field><display/></default-field></field>
+                <field name="oldValue"><header-field title="Old Value"/><default-field><display/></default-field></field>
+                <field name="newValue"><header-field title="New Value"/><default-field><display/></default-field></field>
+                <field name="amendmentStatusId"><header-field title="Status">
+                    <drop-down allow-empty="true"><entity-options key="${statusId}" text="${description}">
+                        <entity-find entity-name="moqui.basic.StatusItem"><econdition field-name="statusTypeId" value="LcAmendment"/><order-by field-name="description"/></entity-find>
+                    </entity-options></drop-down>
+                </header-field><default-field>
+                    <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                </default-field></field>
+                <field name="viewDetail"><default-field title="">
+                    <link url="../../AmendmentDetail" text="View Detail" link-type="anchor" parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
+                </default-field></field>
+            </form-list>
+        </container>
+    </widgets>
+</screen>

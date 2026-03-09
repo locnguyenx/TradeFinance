@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Find Import LC" default-menu-index="2">
+    
+    <transition name="LcDetail"><default-response url="../MainLC"/></transition>
+    <transition name="CreateLc"><service-call name="moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit"/><default-response url="."/></transition>
+    <transition name="DeleteLc"><service-call name="moqui.trade.finance.TradeFinanceServices.delete#LetterOfCredit"/><default-response url="."/></transition>
+
+    <actions>
+        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="lcList">
+            <search-form-inputs/>
+            <order-by field-name="-lcId"/>
+        </entity-find>
+    </actions>
+
+    <widgets>
+        <container style="q-pa-md">
+            <container style="row justify-between items-center q-mb-md">
+                <label text="Import Letters of Credit" type="h5" style="text-weight-bold text-primary"/>
+                <container-dialog id="CreateLcDialog" button-text="Create New LC">
+                    <form-single name="CreateLcForm" transition="CreateLc">
+                        <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
+                        <field name="lcNumber"><default-field title="LC Number (20)"><text-line size="20"/></default-field></field>
+                        <field name="amount"><default-field title="Amount"><text-line size="15"/></default-field></field>
+                        <field name="amountCurrencyUomId"><default-field title="Currency">
+                            <drop-down allow-empty="false">
+                                <entity-options key="${uomId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Uom"><econdition field-name="uomTypeEnumId" value="UT_CURRENCY_MEASURE"/></entity-find>
+                                </entity-options>
+                            </drop-down>
+                        </default-field></field>
+                        <field name="submitButton"><default-field title="Submit Application"><submit/></default-field></field>
+                    </form-single>
+                </container-dialog>
+            </container>
+
+            <form-list name="LcList" list="lcList" skip-form="true" header-dialog="true">
+                <field name="lcNumber"><header-field show-order-by="true" title="Reference #"/><default-field>
+                    <link url="../MainLC" text="${lcNumber}" style="text-weight-bold text-primary" parameter-map="[lcId:lcId]"/>
+                </default-field></field>
+                <field name="applicantPartyId"><header-field show-order-by="true" title="Applicant"/><default-field>
+                    <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                </default-field></field>
+                <field name="amount"><header-field show-order-by="true"/><default-field>
+                    <display currency-uom-id="${amountCurrencyUomId}"/>
+                </default-field></field>
+                <field name="lcStatusId"><header-field title="LC Status"/><default-field>
+                    <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                </default-field></field>
+                <field name="transactionStatusId"><header-field title="Processing"/><default-field>
+                    <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                </default-field></field>
+                <field name="actions"><default-field title="">
+                    <link url="DeleteLc" text="Delete" style="text-negative" parameter-map="[lcId:lcId]" confirmation="Confirm deletion?"/>
+                </default-field></field>
+            </form-list>
+        </container>
+    </widgets>
+</screen>

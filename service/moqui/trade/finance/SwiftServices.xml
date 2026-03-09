@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SwiftServices.xml
+     Services for generating and parsing SWIFT messages for Trade Finance -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Generate SWIFT MT700 Service                              -->
+    <!-- Translates a LetterOfCredit record into an MT700 string   -->
+    <!-- ========================================================= -->
+    <service verb="generate" noun="SwiftMt700">
+        <description>Generates a SWIFT MT700 message from a LetterOfCredit and saves it as an LcDocument.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="documentContentId"/>
+            <parameter name="swiftMessageText" type="String"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found: ${lcId}"/></if>
+
+            <script><![CDATA[
+                import java.text.SimpleDateFormat
+                
+                // Helper for SWIFT Date Format (YYMMDD)
+                def formatSwiftDate = { ts ->
+                    if (!ts) return ""
+                    return new SimpleDateFormat("yyMMdd").format(new Date(ts.getTime()))
+                }
+
+                // Helper to format Amount (32B): Currency + Amount (e.g. USD150000,00)
+                def formatAmount = { currency, amount ->
+                    if (!currency || amount == null) return ""
+                    // SWIFT uses comma as decimal separator
+                    def amtStr = String.format("%.2f", amount).replace('.', ',')
+                    return currency + amtStr
+                }
+
+                // Helper for Party details - max 4 lines of 35 chars
+                // Currently simulating by just taking the first 140 chars of the name if no Party found
+                def formatParty = { partyId, fallbackName ->
+                    if (partyId) {
+                        def partyData = ec.entity.find("mantle.party.PartyDetailAndRole")
+                            .condition("partyId", partyId).list().getFirst()
+                        if (partyData && partyData.organizationName) {
+                            return partyData.organizationName.take(140)
+                        } else if (partyData && partyData.firstName) {
+                            return (partyData.firstName + " " + (partyData.lastName ?: "")).take(140)
+                        }
+                    }
+                    return fallbackName ? fallbackName.take(140) : ""
+                }
+
+                // Helper for Enumerations
+                def getEnumDesc = { enumId ->
+                    if (!enumId) return ""
+                    def enm = ec.entity.find("moqui.basic.Enumeration").condition("enumId", enumId).useCache(true).one()
+                    return enm ? enm.description : enumId
+                }
+
+                def getCurrencyCode = { uomId ->
+                    if (!uomId) return ""
+                    def uom = ec.entity.find("moqui.basic.Uom").condition("uomId", uomId).useCache(true).one()
+                    return uom ? uom.abbreviation : uomId
+                }
+
+                // Initialize the message buffer
+                StringBuilder swiftMsg = new StringBuilder()
+                
+                swiftMsg.append("{1:F01BANKXXXXAXXX0000000000}\n")
+                swiftMsg.append("{2:O7001200000000BANKXXXXAXXX00000000000000000000N}\n")
+                swiftMsg.append("{4:\n")
+
+                // 27: Sequence of Total
+                swiftMsg.append(":27:${lc.sequenceTotal_27 ?: '1/1'}\n")
+                
+                // 40A: Form of Documentary Credit
+                swiftMsg.append(":40A:${getEnumDesc(lc.formOfCredit_40A)}\n")
+                
+                // 20: Documentary Credit Number
+                swiftMsg.append(":20:${lc.lcNumber}\n")
+                
+                // 31C: Date of Issue
+                if (lc.issueDate) swiftMsg.append(":31C:${formatSwiftDate(lc.issueDate)}\n")
+                
+                // 40E: Applicable Rules
+                if (lc.applicableRules_40E) swiftMsg.append(":40E:${getEnumDesc(lc.applicableRules_40E)}\n")
+                
+                // 31D: Date and Place of Expiry
+                if (lc.expiryDate || lc.expiryPlace_31D) {
+                    swiftMsg.append(":31D:${formatSwiftDate(lc.expiryDate)} ${lc.expiryPlace_31D ?: ''}\n")
+                }
+                
+                // 50: Applicant
+                def applicantDetail = formatParty(lc.applicantPartyId, lc.applicantName)
+                if (applicantDetail) swiftMsg.append(":50:${applicantDetail}\n")
+                
+                // 59: Beneficiary
+                def beneDetail = formatParty(lc.beneficiaryPartyId, lc.beneficiaryName)
+                if (beneDetail) swiftMsg.append(":59:${beneDetail}\n")
+                
+                // 32B: Currency Code, Amount
+                if (lc.amountCurrencyUomId && lc.amount != null) {
+                    swiftMsg.append(":32B:${formatAmount(getCurrencyCode(lc.amountCurrencyUomId), lc.amount)}\n")
+                }
+                
+                // 39A: Percentage Credit Amount Tolerance
+                if (lc.amountTolerance_39A) swiftMsg.append(":39A:${lc.amountTolerance_39A}\n")
+                
+                // 41A: Available With ... By ...
+                if (lc.availableWithBy_41A) swiftMsg.append(":41A:${getEnumDesc(lc.availableWithBy_41A)}\n")
+                
+                // 42C: Drafts at
+                if (lc.draftsAt_42C) swiftMsg.append(":42C:${lc.draftsAt_42C}\n")
+                
+                // 43P: Partial Shipments
+                if (lc.partialShipment_43P) swiftMsg.append(":43P:${getEnumDesc(lc.partialShipment_43P)}\n")
+                
+                // 43T: Transhipment
+                if (lc.transhipment_43T) swiftMsg.append(":43T:${getEnumDesc(lc.transhipment_43T)}\n")
+                
+                // 44A: Place of Taking in Charge/Dispatch from
+                if (lc.placeOfReceipt_44A) swiftMsg.append(":44A:${lc.placeOfReceipt_44A}\n")
+                
+                // 44E: Port of Loading/Airport of Departure
+                if (lc.portOfLoading_44E) swiftMsg.append(":44E:${lc.portOfLoading_44E}\n")
+                
+                // 44F: Port of Discharge/Airport of Destination
+                if (lc.portOfDischarge_44F) swiftMsg.append(":44F:${lc.portOfDischarge_44F}\n")
+                
+                // 44B: Place of Final Destination
+                if (lc.placeOfFinalDestination_44B) swiftMsg.append(":44B:${lc.placeOfFinalDestination_44B}\n")
+                
+                // 44C: Latest Date of Shipment
+                if (lc.latestShipDate_44C) swiftMsg.append(":44C:${formatSwiftDate(lc.latestShipDate_44C)}\n")
+                
+                // 45A: Description of Goods and/or Services
+                if (lc.descriptionOfGoods_45A) swiftMsg.append(":45A:${lc.descriptionOfGoods_45A.take(6500)}\n")
+                
+                // 46A: Documents Required
+                if (lc.docsRequired_46A) swiftMsg.append(":46A:${lc.docsRequired_46A.take(6500)}\n")
+                
+                // 47A: Additional Conditions
+                if (lc.additionalConditions_47A) swiftMsg.append(":47A:${lc.additionalConditions_47A.take(6500)}\n")
+                
+                // 71B: Charges
+                if (lc.charges_71B) swiftMsg.append(":71B:${lc.charges_71B.take(210)}\n")
+                
+                // 48: Period for Presentation
+                if (lc.periodForPresentation_48) swiftMsg.append(":48:${lc.periodForPresentation_48}\n")
+                
+                // 49: Confirmation Instructions
+                if (lc.confirmationInstructions_49) swiftMsg.append(":49:${getEnumDesc(lc.confirmationInstructions_49)}\n")
+                
+                // 78: Instructions to the Paying/Accepting/Negotiating Bank
+                if (lc.instructionsToBank_78) swiftMsg.append(":78:${lc.instructionsToBank_78.take(6500)}\n")
+                
+                // 72Z: Sender to Receiver Information
+                if (lc.senderToReceiverInfo_72Z) swiftMsg.append(":72Z:${lc.senderToReceiverInfo_72Z.take(210)}\n")
+
+                swiftMsg.append("-}")
+                
+                // Return string
+                context.swiftMessageText = swiftMsg.toString()
+            ]]></script>
+
+            <!-- Save the document using the DocumentServices -->
+            <log level="info" message="Generated MT700 for LC ${lcId}: \n${swiftMessageText}"/>
+
+            <!-- We simulate a file upload since the service expects a FileItem or equivalent stream, 
+                 but for raw text we can just use the contentResource feature of Mantle, 
+                 or we just bypass the service and write directly to LcDocument for simplicity here. -->
+            
+            <service-call name="create#moqui.trade.finance.LcDocument" out-map="docOut"
+                in-map="[lcId:lcId, documentTypeEnumId:'LC_DOC_SWIFT_MSG', 
+                         documentReference:('MT700_' + lcId), documentDate:ec.user.nowTimestamp,
+                         description:'System Generated MT700', contentLocation:'dbresource://trade-finance/lc/swift/' + lcId + '_MT700.txt',
+                         uploadedByUserId:ec.user.userId]"/>
+
+            <!-- Save actual content logic: Moqui Resource Reference -->
+            <script><![CDATA[
+                def rr = ec.resource.getLocationReference('dbresource://trade-finance/lc/swift/' + lcId + '_MT700.txt')
+                rr.putText(swiftMessageText)
+            ]]></script>
+
+        </actions>
+    </service>
+    <!-- ========================================================= -->
+    <!-- Generate SWIFT MT707 Service (Amendment)                  -->
+    <!-- ========================================================= -->
+    <service verb="generate" noun="SwiftMt707">
+        <description>Generates a SWIFT MT707 message for an LC Amendment.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="documentContentId"/>
+            <parameter name="swiftMessageText" type="String"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+            
+            <script><![CDATA[
+                import java.text.SimpleDateFormat
+                def formatSwiftDate = { ts -> ts ? new SimpleDateFormat("yyMMdd").format(new Date(ts.getTime())) : "" }
+                
+                StringBuilder swiftMsg = new StringBuilder()
+                swiftMsg.append("{1:F01BANKXXXXAXXX0000000000}\n")
+                swiftMsg.append("{2:O7071200000000BANKXXXXAXXX00000000000000000000N}\n")
+                swiftMsg.append("{4:\n")
+                swiftMsg.append(":20:${lc.lcNumber}\n")
+                swiftMsg.append(":21:${amendment.amendmentSeqId}\n")
+                swiftMsg.append(":26E:${amendment.amendmentNumber}\n")
+                swiftMsg.append(":31C:${formatSwiftDate(amendment.amendmentDate)}\n")
+                
+                // Show the specific change
+                swiftMsg.append(":79:AMENDMENT TO FIELD ${amendment.fieldName}:\n")
+                swiftMsg.append("OLD VALUE: ${amendment.oldValue ?: 'N/A'}\n")
+                swiftMsg.append("NEW VALUE: ${amendment.newValue ?: 'N/A'}\n")
+                
+                swiftMsg.append("-}")
+                context.swiftMessageText = swiftMsg.toString()
+            ]]></script>
+
+            <service-call name="create#moqui.trade.finance.LcDocument" 
+                in-map="[lcId:lcId, documentTypeEnumId:'LC_DOC_SWIFT_MSG', 
+                         documentReference:('MT707_' + amendmentSeqId), documentDate:ec.user.nowTimestamp,
+                         description:'System Generated MT707 Amendment Advice', 
+                         contentLocation:'dbresource://trade-finance/lc/swift/' + lcId + '_MT707_' + amendmentSeqId + '.txt',
+                         uploadedByUserId:ec.user.userId]"/>
+            <script>ec.resource.getLocationReference('dbresource://trade-finance/lc/swift/' + lcId + '_MT707_' + amendmentSeqId + '.txt').putText(swiftMessageText)</script>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Generate SWIFT MT799 Service (Free Format)                -->
+    <!-- ========================================================= -->
+    <service verb="generate" noun="SwiftMt799">
+        <description>Generates a SWIFT MT799 free-format message.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="subject" default-value="GENERAL INFORMATION"/>
+            <parameter name="message" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="documentContentId"/>
+            <parameter name="swiftMessageText" type="String"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <script><![CDATA[
+                StringBuilder swiftMsg = new StringBuilder()
+                swiftMsg.append("{1:F01BANKXXXXAXXX0000000000}\n")
+                swiftMsg.append("{2:O7991200000000BANKXXXXAXXX00000000000000000000N}\n")
+                swiftMsg.append("{4:\n")
+                swiftMsg.append(":20:${lc.lcNumber}\n")
+                swiftMsg.append(":21:NONREF\n")
+                swiftMsg.append(":79:${subject}\n")
+                swiftMsg.append("${message.take(1750)}\n")
+                swiftMsg.append("-}")
+                context.swiftMessageText = swiftMsg.toString()
+            ]]></script>
+            <service-call name="create#moqui.trade.finance.LcDocument" 
+                in-map="[lcId:lcId, documentTypeEnumId:'LC_DOC_SWIFT_MSG', 
+                         documentReference:('MT799_' + System.currentTimeMillis()), documentDate:ec.user.nowTimestamp,
+                         description:'System Generated MT799: ' + subject, 
+                         contentLocation:'dbresource://trade-finance/lc/swift/' + lcId + '_MT799_' + System.currentTimeMillis() + '.txt',
+                         uploadedByUserId:ec.user.userId]"/>
+            <script>ec.resource.getLocationReference('dbresource://trade-finance/lc/swift/' + lcId + '_MT799_latest.txt').putText(swiftMessageText)</script>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Generate SWIFT MT734 Service (Advice of Refusal)          -->
+    <!-- ========================================================= -->
+    <service verb="generate" noun="SwiftMt734">
+        <description>Generates a SWIFT MT734 message for Drawing Refusal.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="drawingSeqId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="documentContentId"/>
+            <parameter name="swiftMessageText" type="String"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <entity-find-one entity-name="moqui.trade.finance.LcDrawing" value-field="drawing"/>
+            <entity-find entity-name="moqui.trade.finance.LcDiscrepancy" list="discrepancies">
+                <econdition field-name="lcId" from="lcId"/>
+                <econdition field-name="drawingSeqId" from="drawingSeqId"/>
+            </entity-find>
+
+            <script><![CDATA[
+                StringBuilder swiftMsg = new StringBuilder()
+                swiftMsg.append("{1:F01BANKXXXXAXXX0000000000}\n")
+                swiftMsg.append("{2:O7341200000000BANKXXXXAXXX00000000000000000000N}\n")
+                swiftMsg.append("{4:\n")
+                swiftMsg.append(":20:${drawing.drawingSeqId}\n")
+                swiftMsg.append(":21:${lc.lcNumber}\n")
+                swiftMsg.append(":73:DISCREPANCIES FOUND:\n")
+                discrepancies.each { disc -> swiftMsg.append("- ${disc.description ?: disc.discrepancyTypeEnumId}\n") }
+                swiftMsg.append(":77B:DOCUMENTS HELD AT YOUR DISPOSAL PENDING COMPLIANCE OR FURTHER INSTRUCTIONS.\n")
+                swiftMsg.append("-}")
+                context.swiftMessageText = swiftMsg.toString()
+            ]]></script>
+            <service-call name="create#moqui.trade.finance.LcDocument" 
+                in-map="[lcId:lcId, documentTypeEnumId:'LC_DOC_SWIFT_MSG', 
+                         documentReference:('MT734_' + drawingSeqId), documentDate:ec.user.nowTimestamp,
+                         description:'System Generated MT734 Drawing Refusal', 
+                         contentLocation:'dbresource://trade-finance/lc/swift/' + lcId + '_MT734_' + drawingSeqId + '.txt',
+                         uploadedByUserId:ec.user.userId]"/>
+            <script>ec.resource.getLocationReference('dbresource://trade-finance/lc/swift/' + lcId + '_MT734_' + drawingSeqId + '.txt').putText(swiftMessageText)</script>
+        </actions>
+    </service>
+</services>

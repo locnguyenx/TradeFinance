@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="lcId" required="true"/>
+    
+    <actions>
+        <entity-find entity-name="moqui.trade.finance.LcCharge" list="chargeList">
+            <econdition field-name="lcId"/>
+            <order-by field-name="-chargeDate"/>
+        </entity-find>
+        <entity-find entity-name="moqui.trade.finance.LcProvision" list="provisionList">
+            <econdition field-name="lcId"/>
+            <order-by field-name="-effectiveDate"/>
+        </entity-find>
+    </actions>
+    
+    <widgets>
+        <container style="q-pa-md">
+            <label text="Financials: Charges &amp; Provisions" type="h5" style="text-primary text-weight-bold q-mb-md"/>
+            
+            <container style="row q-col-gutter-md">
+                <container style="col-12 col-md-6">
+                    <container style="q-card shadow-1 border">
+                        <container style="q-pa-sm bg-indigo-1 text-indigo-10 text-weight-bold">PROVISIONS</container>
+                        <container style="q-pa-md">
+                            <form-list name="ProvisionList" list="provisionList" skip-form="true">
+                                <field name="provisionAmount"><default-field title="Amount"><display/></default-field></field>
+                                <field name="effectiveDate"><default-field title="Effective"><display/></default-field></field>
+                                <field name="provisionStatusId"><default-field title="Status">
+                                    <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                                </default-field></field>
+                            </form-list>
+                        </container>
+                    </container>
+                </container>
+                <container style="col-12 col-md-6">
+                    <container style="q-card shadow-1 border">
+                        <container style="q-pa-sm bg-orange-1 text-orange-10 text-weight-bold">CHARGES</container>
+                        <container style="q-pa-md">
+                            <form-list name="ChargeList" list="chargeList" skip-form="true">
+                                <field name="chargeTypeEnumId"><default-field title="Type">
+                                    <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
+                                </default-field></field>
+                                <field name="chargeAmount"><default-field title="Amount"><display/></default-field></field>
+                                <field name="chargeDate"><default-field title="Date"><display/></default-field></field>
+                            </form-list>
+                        </container>
+                    </container>
+                </container>
+            </container>
+
+            <!-- Accounting Section (UC8.7.2) -->
+            <container style="q-card q-mt-lg shadow-1 border">
+                <container style="q-pa-sm bg-grey-8 text-white text-weight-bold">CBS ACCOUNTING ENTRIES</container>
+                <container style="q-pa-md">
+                    <label text="Visibility into ledger entries (Liability, Provisions, Payments) posted to CBS." style="italic text-grey-7"/>
+                    <!-- Placeholder for dynamic accounting data in Phase 4.C -->
+                </container>
+            </container>
+        </container>
+    </widgets>
+</screen>

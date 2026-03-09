@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- CbsIntegrationServices.xml
+     Architectural seam (interfaces) for Core Banking System (CBS) integration.
+     In a real deployment, these would connect to the bank's external APIs. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Funds Hold / Release Interfaces                           -->
+    <!-- ========================================================= -->
+    <service verb="hold" noun="Funds">
+        <description>Places a hold on a customer's account for LC provisions/margins.</description>
+        <in-parameters>
+            <parameter name="partyId" required="true"/>
+            <parameter name="amount" type="BigDecimal" required="true"/>
+            <parameter name="currencyUomId" required="true"/>
+            <parameter name="referenceId" required="true"/> <!-- e.g., LC Number -->
+        </in-parameters>
+        <out-parameters>
+            <parameter name="holdReference"/>
+            <parameter name="success" type="Boolean"/>
+            <parameter name="message"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="[CBS MOCK] Holding ${amount} ${currencyUomId} for party ${partyId} (Ref: ${referenceId})"/>
+            <!-- Mock implementation: Assume success -->
+            <set field="holdReference" value="HLD-${ec.user.nowTimestamp.time}"/>
+            <set field="success" value="true"/>
+            <set field="message" value="Funds held successfully."/>
+        </actions>
+    </service>
+
+    <service verb="release" noun="Funds">
+        <description>Releases a previously placed fund hold on a customer's account.</description>
+        <in-parameters>
+            <parameter name="holdReference" required="true"/>
+            <parameter name="partyId" required="true"/>
+            <parameter name="amount" type="BigDecimal" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="success" type="Boolean"/>
+            <parameter name="message"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="[CBS MOCK] Releasing hold ${holdReference} for party ${partyId} to the amount of ${amount}"/>
+            <!-- Mock implementation: Assume success -->
+            <set field="success" value="true"/>
+            <set field="message" value="Funds released successfully."/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- General Accounting / Posting                              -->
+    <!-- ========================================================= -->
+    <service verb="post" noun="AccountingEntries">
+        <description>Posts accounting entries to the CBS General Ledger.</description>
+        <in-parameters>
+            <parameter name="debitAccountId" required="true"/>
+            <parameter name="creditAccountId" required="true"/>
+            <parameter name="amount" type="BigDecimal" required="true"/>
+            <parameter name="currencyUomId" required="true"/>
+            <parameter name="transactionType" required="true"/>
+            <parameter name="referenceId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="transactionReference"/>
+            <parameter name="success" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="[CBS MOCK] Posting ${amount} ${currencyUomId} (Type: ${transactionType}) - Dr: ${debitAccountId}, Cr: ${creditAccountId} (Ref: ${referenceId})"/>
+            <set field="transactionReference" value="TXN-${ec.user.nowTimestamp.time}"/>
+            <set field="success" value="true"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Credit Limit Management                                   -->
+    <!-- ========================================================= -->
+    <service verb="check" noun="CreditLimit">
+        <description>Checks the available trade limit for a customer.</description>
+        <in-parameters>
+            <parameter name="partyId" required="true"/>
+            <parameter name="limitType" default-value="TRADE_LC"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="availableLimit" type="BigDecimal"/>
+            <parameter name="currencyUomId"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="[CBS MOCK] Checking ${limitType} limit for party ${partyId}"/>
+            <!-- Mock implementation: Return a very large limit to avoid blocking tests -->
+            <set field="availableLimit" value="10000000.00"/>
+            <set field="currencyUomId" value="USD"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Forex Rates                                               -->
+    <!-- ========================================================= -->
+    <service verb="get" noun="ExchangeRate">
+        <description>Retrieves the current exchange rate between two currencies.</description>
+        <in-parameters>
+            <parameter name="fromCurrencyUomId" required="true"/>
+            <parameter name="toCurrencyUomId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="exchangeRate" type="BigDecimal"/>
+        </out-parameters>
+        <actions>
+            <log level="info" message="[CBS MOCK] Fetching FX Rate: ${fromCurrencyUomId} -> ${toCurrencyUomId}"/>
+            <!-- Mock implementation -->
+            <if condition="fromCurrencyUomId == toCurrencyUomId">
+                <set field="exchangeRate" value="1.0"/>
+                <return/>
+            </if>
+            <if condition="fromCurrencyUomId == 'USD' &amp;&amp; toCurrencyUomId == 'EUR'">
+                <set field="exchangeRate" value="0.92"/>
+            <else-if condition="fromCurrencyUomId == 'EUR' &amp;&amp; toCurrencyUomId == 'USD'">
+                <set field="exchangeRate" value="1.09"/>
+            </else-if>
+            <else>
+                <set field="exchangeRate" value="1.0"/> <!-- default mockup -->
+            </else>
+            </if>
+        </actions>
+    </service>
+
+</services>

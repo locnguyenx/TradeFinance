@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Drawing" default-menu-index="4">
+
+    <parameter name="lcId" required="false"/>
+    <parameter name="drawingId"/>
+
+    <transition name="transitionDrawingStatus">
+        <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"/>
+        <default-response url="."/></transition>
+    <transition name="ExamineDocs"><service-call name="moqui.trade.finance.DrawingServices.examine#LcDrawing"/><default-response url="."/></transition>
+
+    <actions>
+        <if condition="lcId">
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        </if>
+        <if condition="drawingId">
+            <entity-find-one entity-name="moqui.trade.finance.LcDrawing" value-field="drawing">
+                <field-map field-name="lcId" from="lcId"/>
+                <field-map field-name="drawingSeqId" from="drawingId"/>
+            </entity-find-one>
+            <if condition="drawing">
+                <entity-find-one entity-name="moqui.basic.StatusItem" value-field="drStatus" is-pk="true">
+                    <field-map field-name="statusId" from="drawing.drawingStatusId"/></entity-find-one>
+                <!-- Fetch valid Drawing Transitions -->
+                <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
+                    <econdition field-name="statusFlowId" value="LcDrawingStatus"/>
+                    <econdition field-name="statusId" from="drawing.drawingStatusId"/>
+                </entity-find>
+            </if>
+        </if>
+    </actions>
+
+    <subscreens default-item="FindDrawing">
+        <subscreens-item name="FindDrawing" location="component://TradeFinance/screen/TradeFinance/ImportLc/Drawing/FindDrawing.xml" menu-include="false"/>
+        <subscreens-item name="DrawingDetail" menu-title="Examination" location="component://TradeFinance/screen/TradeFinance/ImportLc/Drawing/DrawingDetail.xml" menu-index="1"/>
+    </subscreens>
+
+    <widgets>
+        <section name="DrawingDetailWrapper" condition="drawingId &amp;&amp; drawing &amp;&amp; !['FindDrawing', 'Drawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+            <widgets>
+                <container style="q-pa-md">
+                    <container style="row justify-between items-center q-mb-md">
+                        <container>
+                            <label text="Drawing Detail" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
+                            <label text="LC: ${lc?.lcNumber} | Drawing: ${drawingId} | Status: ${drStatus?.description ?: 'N/A'}" style="text-subtitle2 text-grey-7"/>
+                        </container>
+                        <container style="q-gutter-sm row items-center">
+                            <link url="ExamineDocs" text="Automated Exam" parameter-map="[lcId:lcId, drawingSeqId:drawingId]"
+                                  style="q-btn bg-teal text-white" condition="drawing.drawingStatusId == 'LcDrReceived'"/>
+                            <section-iterate name="DrawingTransitions" list="stList" entry="st">
+                                <widgets>
+                                    <link url="transitionDrawingStatus" text="${st.transitionName}" 
+                                          parameter-map="[lcId:lcId, drawingSeqId:drawingId, toStatusId:st.toStatusId]"
+                                          style="${st.toStatusId == 'LcDrRejected' ? 'q-btn-outline text-red' : 'q-btn bg-primary text-white'}"/>
+                                </widgets>
+                            </section-iterate>
+                            <link url="." text="Back to List" parameter-map="[drawingId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
+                        </container>
+                    </container>
+                    <subscreens-panel id="DrawingDetailTabs" type="tab"/>
+                </container>
+            </widgets>
+            <fail-widgets>
+                <subscreens-panel id="DrawingMainPanel" type="popup"/>
+            </fail-widgets>
+        </section>
+    </widgets>
+</screen>

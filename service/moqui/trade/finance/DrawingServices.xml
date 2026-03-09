@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DrawingServices.xml
+     Services for managing LC document presentations (Drawings). -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Create LC Drawing Service                                 -->
+    <!-- ========================================================= -->
+    <service verb="create" noun="LcDrawing">
+        <description>Registers a new document presentation for an issued LC.</description>
+        <in-parameters>
+            <auto-parameters entity-name="moqui.trade.finance.LcDrawing" include="nonpk"/>
+            <parameter name="lcId" required="true"/>
+            <parameter name="drawingStatusId" default-value="LcDrReceived"/>
+            <parameter name="remarks"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="drawingSeqId"/>
+            <parameter name="requestId"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+            <if condition="lc.lcStatusId != 'LcLfIssued' &amp;&amp; lc.lcStatusId != 'LcLfAmended'">
+                <return error="true" message="Drawings can only be created for Issued or Amended LCs."/>
+            </if>
+
+            <!-- Create a Mantle Request for drawing processing -->
+            <service-call name="create#mantle.request.Request" out-map="reqOut"
+                in-map="[requestTypeEnumId:'RqtLcDrawing', statusId:'ReqDraft',
+                         requestName:('LC Drawing: ' + lc.lcNumber),
+                         description:('Document presentation request for LC ' + lc.lcNumber)]"/>
+            <set field="requestId" from="reqOut.requestId"/>
+
+            <!-- Create the LcDrawing record manually to be safe with composite PK -->
+            <service-call name="create#moqui.trade.finance.LcDrawing" in-map="[lcId:lcId, drawingAmount:drawingAmount, presentationDate:presentationDate, requestId:requestId, drawingStatusId:drawingStatusId]" out-map="newDrOut"/>
+            <set field="drawingSeqId" from="newDrOut.drawingSeqId"/>
+
+
+
+            <log level="info" message="Registered LC Drawing for LC: ${lcId}, Seq: ${drawingSeqId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Examine Drawing Service                                   -->
+    <!-- ========================================================= -->
+    <service verb="examine" noun="LcDrawing">
+        <description>Performs document examination logic (mock for now).</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="drawingSeqId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcDrawing" value-field="drawing"/>
+            <if condition="!drawing"><return error="true" message="Drawing not found."/></if>
+
+            <!-- Logic: Check if drawing amount exceeds LC amount -->
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="drawing.drawingAmount &gt; lc.amount">
+                <service-call name="moqui.trade.finance.DrawingServices.record#LcDiscrepancy"
+                    in-map="[lcId:lcId, drawingSeqId:drawingSeqId, discrepancyTypeEnumId:'LC_DISC_AMOUNT', description:'Drawing amount exceeds LC amount.']"/>
+                
+                <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"
+                    in-map="[lcId:lcId, drawingSeqId:drawingSeqId, toStatusId:'LcDrDiscrepant']"/>
+            <else>
+                 <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"
+                    in-map="[lcId:lcId, drawingSeqId:drawingSeqId, toStatusId:'LcDrCompliant']"/>
+            </else></if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Record Discrepancy Service                                -->
+    <!-- ========================================================= -->
+    <service verb="record" noun="LcDiscrepancy">
+        <in-parameters>
+            <auto-parameters entity-name="moqui.trade.finance.LcDiscrepancy" include="nonpk"/>
+            <parameter name="lcId" required="true"/>
+            <parameter name="drawingSeqId" required="true"/>
+            <parameter name="discrepancyTypeEnumId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="discrepancySeqId"/>
+        </out-parameters>
+        <actions>
+            <entity-make-value entity-name="moqui.trade.finance.LcDiscrepancy" value-field="newDisc"/>
+            <set field="newDisc.lcId" from="lcId"/>
+            <set field="newDisc.drawingSeqId" from="drawingSeqId"/>
+            <script>newDisc.setSequencedIdSecondary()</script>
+            <entity-set value-field="newDisc" include="nonpk" map="context"/>
+            <entity-create value-field="newDisc"/>
+            
+            <set field="discrepancySeqId" from="newDisc.discrepancySeqId"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Resolve Discrepancy Service                               -->
+    <!-- ========================================================= -->
+    <service verb="resolve" noun="LcDiscrepancy">
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="drawingSeqId" required="true"/>
+            <parameter name="discrepancySeqId" required="true"/>
+            <parameter name="resolutionEnumId" required="true"/> <!-- LC_DISRES_ACCEPTED, LC_DISRES_REJECTED, etc. -->
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcDiscrepancy" value-field="disc" for-update="true"/>
+            <set field="disc.resolutionEnumId" from="resolutionEnumId"/>
+            <set field="disc.resolutionDate" from="ec.user.nowTimestamp"/>
+            <set field="disc.resolvedByUserId" from="ec.user.userId"/>
+            <entity-update value-field="disc"/>
+
+            <!-- If accepted, check if all discrepancies are resolved -->
+            <if condition="resolutionEnumId == 'LC_DISRES_ACCEPTED' || resolutionEnumId == 'LC_DISRES_WAIVED'">
+                <entity-find entity-name="moqui.trade.finance.LcDiscrepancy" list="pendingDiscs">
+                    <econdition field-name="lcId"/>
+                    <econdition field-name="drawingSeqId"/>
+                    <econditions combine="or">
+                        <econdition field-name="resolutionEnumId" operator="not-in" value="LC_DISRES_ACCEPTED,LC_DISRES_WAIVED"/>
+                        <econdition field-name="resolutionEnumId" operator="is-null"/>
+                    </econditions>
+                </entity-find>
+                <if condition="!pendingDiscs">
+                    <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"
+                        in-map="[lcId:lcId, drawingSeqId:drawingSeqId, toStatusId:'LcDrAccepted']"/>
+                </if>
+            <else-if condition="resolutionEnumId == 'LC_DISRES_REJECTED'">
+                <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"
+                    in-map="[lcId:lcId, drawingSeqId:drawingSeqId, toStatusId:'LcDrRejected']"/>
+            </else-if></if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Transition Drawing Status Service                         -->
+    <!-- ========================================================= -->
+    <service verb="transition" noun="DrawingStatus">
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="drawingSeqId" required="true"/>
+            <parameter name="toStatusId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcDrawing" value-field="drawing" for-update="true"/>
+            <if condition="!drawing"><return error="true" message="Drawing not found."/></if>
+
+            <!-- Validate transition using LcDrawingStatus Flow -->
+            <entity-find entity-name="moqui.basic.StatusFlowTransition" list="validTransitions">
+                <econdition field-name="statusFlowId" value="LcDrawingStatus"/>
+                <econdition field-name="statusId" from="drawing.drawingStatusId"/>
+                <econdition field-name="toStatusId" from="toStatusId"/>
+            </entity-find>
+            <if condition="!validTransitions">
+                <return error="true" message="Invalid drawing status transition from ${drawing.drawingStatusId} to ${toStatusId}."/>
+            </if>
+
+            <set field="drawing.drawingStatusId" from="toStatusId"/>
+            <entity-update value-field="drawing"/>
+
+            <!-- Update linked Mantle Request status (Simplified mapping) -->
+            <if condition="drawing.requestId">
+                <set field="reqStatusId" value=""/>
+                <if condition="toStatusId == 'LcDrCompliant' || toStatusId == 'LcDrAccepted' || toStatusId == 'LcDrDiscrepant'"><set field="reqStatusId" value="ReqSubmitted"/></if>
+                <if condition="toStatusId == 'LcDrPaid'"><set field="reqStatusId" value="ReqCompleted"/></if>
+                <if condition="toStatusId == 'LcDrRejected'"><set field="reqStatusId" value="ReqCancelled"/></if>
+                
+                <if condition="reqStatusId">
+                    <service-call name="update#mantle.request.Request" in-map="[requestId:drawing.requestId, statusId:reqStatusId]" ignore-error="true"/>
+                </if>
+            </if>
+        </actions>
+    </service>
+
+</services>

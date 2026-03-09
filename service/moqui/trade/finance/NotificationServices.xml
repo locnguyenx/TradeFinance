@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.0.xsd">
+
+    <service verb="send" noun="LcNotification">
+        <description>
+            Sends a system-level notification message to relevant parties (e.g., Applicant, CSR) 
+            when a Letter of Credit event occurs.
+        </description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="eventDescription" required="true">
+                <description>A human-readable description of the event (e.g., "LC Drafted", "LC Issued").</description>
+            </parameter>
+            <parameter name="targetPartyId">
+                <description>Optionally specify a single party. If not specified, defaults to the Applicant.</description>
+            </parameter>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            
+            <set field="finalPartyId" from="targetPartyId ?: lc.applicantPartyId"/>
+            <set field="message" value="LC Event: [${lc.lcNumber ?: lc.lcId}] - ${eventDescription}"/>
+
+            <!-- 1. Log for immediate terminal visibility -->
+            <log level="info" message="NOTIFYING PARTY [${finalPartyId}]: ${message}"/>
+
+            <!-- 2. Create History Record for Permanent Audit Trail -->
+            <service-call name="create#moqui.trade.finance.LcHistory"
+                    in-map="[lcId:lcId, changeDate:ec.user.nowTimestamp, 
+                                 changeType:'Notification', fieldName:'Notification', 
+                                 oldValue:null, newValue:message]"/>
+
+            <!-- 3. Send via Moqui Notification system (the "Receive" part) -->
+            <script>
+                // Find all UserAccounts associated with this party
+                def userAccounts = ec.entity.find("moqui.security.UserAccount").condition("partyId", finalPartyId).list()
+                def userIds = userAccounts.collect { it.userId }
+                
+                if (userIds) {
+                    // Use standard Moqui Notification Facade
+                    ec.makeNotificationMessage()
+                        .message([title: message, lcId: lcId])
+                        .type("info")
+                        .topic("TradeFinanceNotification")
+                        .userIds(userIds as Set)
+                        .send(true) // persist=true so we can verify "received" in tests
+                } else {
+                    ec.logger.info("No UserAccounts found for party [${finalPartyId}], skipping real-time notification.")
+                }
+            </script>
+        </actions>
+    </service>
+</services>

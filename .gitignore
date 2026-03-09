@@ -1,3 +1,7 @@
+# Ignore Moqui-generated artifacts within the component
+/classes/
+/lib/
+
 # Compiled class file
 *.class
 

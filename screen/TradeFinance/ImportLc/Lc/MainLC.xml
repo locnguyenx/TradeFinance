@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <parameter name="lcId" required="true"/>
+    <parameter name="readOnly"/>
+    <transition name="UpdateLc" condition="!isReadOnly"><service-call name="moqui.trade.finance.TradeFinanceServices.update#LetterOfCredit"/><default-response url="."/></transition>
+    <transition name="IssueLc" condition="!isReadOnly"><service-call name="moqui.trade.finance.LifecycleServices.issue#LetterOfCredit"/><default-response url="."/></transition>
+    
+    <actions>
+        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <if condition="lc">
+            <set field="statusColorMap" from="[LcLfDraft:'grey-7', LcLfApplied:'orange-8', LcLfIssued:'green-8', LcLfAdvised:'blue-8', LcLfAmended:'indigo-8', LcLfNegotiated:'teal-8', LcLfRevoked:'red-8', LcLfExpired:'brown-7', LcLfClosed:'blue-grey-8', LcTxDraft:'grey-7', LcTxSubmitted:'blue-8', LcTxApproved:'green-8', LcTxRejected:'red-8', LcTxCancelled:'red-7', LcTxClosed:'blue-grey-8']"/>
+            
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatus">
+                <field-map field-name="statusId" from="lc.lcStatusId"/></entity-find-one>
+            <set field="lcStatusDesc" from="lcStatus?.description ?: lc.lcStatusId"/>
+            <set field="lcStatusColor" from="statusColorMap[lc.lcStatusId] ?: 'grey-7'"/>
+
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="txStatus">
+                <field-map field-name="statusId" from="lc.transactionStatusId"/></entity-find-one>
+            <set field="txStatusDesc" from="txStatus?.description ?: lc.transactionStatusId"/>
+            <set field="txStatusColor" from="statusColorMap[lc.transactionStatusId] ?: 'grey-7'"/>
+        </if>
+        <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
+        <log message="isReadOnly = ${isReadOnly}"/>
+    </actions>
+    
+    <widgets>
+        <section name="LcFoundSection" condition="lc">
+            <widgets>
+                <container style="q-pa-md">
+                    <form-single name="LcGeneralForm" map="lc" transition="UpdateLc">
+                        <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="pk"/>
+                        <field name="lcId"><default-field><hidden/></default-field></field>
+                        <field name="lcStatusId"><default-field title="LC Status"><display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/></default-field></field>
+                        <field name="transactionStatusId"><default-field title="Transaction Status"><display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/></default-field></field>
+                        
+                        <!-- 1. Reference & Basic Info -->
+                        <field name="lcNumber">
+                            <conditional-field condition="isReadOnly" title="LC Number (20)"><display/></conditional-field>
+                            <default-field title="LC Number (20)"><text-line size="20"/></default-field>
+                        </field>
+                        <field name="sequenceTotal_27">
+                            <conditional-field condition="isReadOnly" title="Seq of Total (27)"><display/></conditional-field>
+                            <default-field title="Seq of Total (27)"><text-line size="10" default-value="1/1"/></default-field>
+                        </field>
+                        <field name="formOfCredit_40A">
+                            <conditional-field condition="isReadOnly" title="Form of Credit (40A)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
+                            <default-field title="Form of Credit (40A)">
+                                <drop-down allow-empty="false"><entity-options key="${enumId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcFormOfCredit"/><order-by field-name="description"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="applicableRules_40E">
+                            <conditional-field condition="isReadOnly" title="Applicable Rules (40E)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
+                            <default-field title="Applicable Rules (40E)">
+                                <drop-down allow-empty="false"><entity-options key="${enumId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcApplicableRules"/><order-by field-name="description"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="issueDate">
+                            <conditional-field condition="isReadOnly" title="Date of Issue (31C)"><display/></conditional-field>
+                            <default-field title="Date of Issue (31C)"><date-time type="date"/></default-field>
+                        </field>
+                        <field name="expiryDate">
+                            <conditional-field condition="isReadOnly" title="Date of Expiry (31D)"><display/></conditional-field>
+                            <default-field title="Date of Expiry (31D)"><date-time type="date"/></default-field>
+                        </field>
+                        <field name="expiryPlace_31D">
+                            <conditional-field condition="isReadOnly" title="Place of Expiry (31D)"><display/></conditional-field>
+                            <default-field title="Place of Expiry (31D)"><text-line size="30"/></default-field>
+                        </field>
+
+                        <!-- 2. Amount & Tolerance -->
+                        <field name="amount">
+                            <conditional-field condition="isReadOnly" title="LC Amount (32B)"><display/></conditional-field>
+                            <default-field title="LC Amount (32B)"><text-line size="15"/></default-field>
+                        </field>
+                        <field name="amountCurrencyUomId">
+                            <conditional-field condition="isReadOnly" title="Currency"><display-entity entity-name="moqui.basic.Uom" key-field-name="uomId" text="${description} (${abbreviation})"/></conditional-field>
+                            <default-field title="Currency">
+                                <drop-down allow-empty="false">
+                                    <entity-options key="${uomId}" text="${description} (${abbreviation})">
+                                        <entity-find entity-name="moqui.basic.Uom">
+                                            <econdition field-name="uomTypeEnumId" value="UT_CURRENCY_MEASURE"/>
+                                            <order-by field-name="description"/>
+                                        </entity-find>
+                                    </entity-options>
+                                </drop-down>
+                            </default-field>
+                        </field>
+                        <field name="amountTolerance_39A">
+                            <conditional-field condition="isReadOnly" title="Tolerance % (39A)"><display/></conditional-field>
+                            <default-field title="Tolerance % (39A)"><text-line size="10" placeholder="10/10"/></default-field>
+                        </field>
+                        <field name="maxCreditAmount_39B">
+                            <conditional-field condition="isReadOnly" title="Max Credit Amt (39B)"><display/></conditional-field>
+                            <default-field title="Max Credit Amt (39B)"><text-line size="20"/></default-field>
+                        </field>
+                        <field name="additionalAmountsCovered_39C">
+                            <conditional-field condition="isReadOnly" title="Addl Amounts (39C)"><display/></conditional-field>
+                            <default-field title="Addl Amounts (39C)"><text-area rows="2"/></default-field>
+                        </field>
+
+                        <!-- 3. Parties -->
+                        <field name="applicantPartyId">
+                            <conditional-field condition="isReadOnly" title="Applicant (50)"><display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/></conditional-field>
+                            <default-field title="Applicant (50)">
+                                <drop-down allow-empty="true"><entity-options key="${partyId}" text="${organizationName}">
+                                    <entity-find entity-name="mantle.party.PartyDetailAndRole"><econdition field-name="roleTypeId" value="Customer"/><order-by field-name="organizationName"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="beneficiaryPartyId">
+                            <conditional-field condition="isReadOnly" title="Beneficiary (59)"><display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/></conditional-field>
+                            <default-field title="Beneficiary (59)">
+                                <drop-down allow-empty="true"><entity-options key="${partyId}" text="${organizationName}">
+                                    <entity-find entity-name="mantle.party.PartyDetailAndRole"><econdition field-name="roleTypeId" value="Vendor"/><order-by field-name="organizationName"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="issuingBankPartyId">
+                            <conditional-field condition="isReadOnly" title="Issuing Bank (51A)"><display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/></conditional-field>
+                            <default-field title="Issuing Bank (51A)">
+                                <drop-down allow-empty="true"><entity-options key="${partyId}" text="${organizationName}">
+                                    <entity-find entity-name="mantle.party.PartyDetailAndRole"><econdition field-name="roleTypeId" value="Bank"/><order-by field-name="organizationName"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="advisingBankPartyId">
+                            <conditional-field condition="isReadOnly" title="Advising Bank (57A)"><display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/></conditional-field>
+                            <default-field title="Advising Bank (57A)">
+                                <drop-down allow-empty="true"><entity-options key="${partyId}" text="${organizationName}">
+                                    <entity-find entity-name="mantle.party.PartyDetailAndRole"><econdition field-name="roleTypeId" value="Bank"/><order-by field-name="organizationName"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="reimbursingBankPartyId">
+                            <conditional-field condition="isReadOnly" title="Reimbursing Bank (53A)"><display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/></conditional-field>
+                            <default-field title="Reimbursing Bank (53A)">
+                                <drop-down allow-empty="true"><entity-options key="${partyId}" text="${organizationName}">
+                                    <entity-find entity-name="mantle.party.PartyDetailAndRole"><econdition field-name="roleTypeId" value="Bank"/><order-by field-name="organizationName"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+
+                        <!-- 4. Shipment Details -->
+                        <field name="partialShipment_43P">
+                            <conditional-field condition="isReadOnly" title="Partial Ship (43P)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
+                            <default-field title="Partial Ship (43P)">
+                                <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcPartialShipment"/><order-by field-name="description"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="transhipment_43T">
+                            <conditional-field condition="isReadOnly" title="Transhipment (43T)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
+                            <default-field title="Transhipment (43T)">
+                                <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcTranshipment"/><order-by field-name="description"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="latestShipDate_44C">
+                            <conditional-field condition="isReadOnly" title="Latest Ship Date (44C)"><display/></conditional-field>
+                            <default-field title="Latest Ship Date (44C)"><date-time type="date"/></default-field>
+                        </field>
+                        <field name="portOfLoading_44E">
+                            <conditional-field condition="isReadOnly" title="Port of Loading (44E)"><display/></conditional-field>
+                            <default-field title="Port of Loading (44E)"><text-line size="30"/></default-field>
+                        </field>
+                        <field name="portOfDischarge_44F">
+                            <conditional-field condition="isReadOnly" title="Port of Discharge (44F)"><display/></conditional-field>
+                            <default-field title="Port of Discharge (44F)"><text-line size="30"/></default-field>
+                        </field>
+                        <field name="placeOfFinalDestination_44B">
+                            <conditional-field condition="isReadOnly" title="Final Destination (44B)"><display/></conditional-field>
+                            <default-field title="Final Destination (44B)"><text-line size="30"/></default-field>
+                        </field>
+                        <field name="shipmentPeriod_44D">
+                            <conditional-field condition="isReadOnly" title="Shipment Period (44D)"><display/></conditional-field>
+                            <default-field title="Shipment Period (44D)"><text-area rows="2"/></default-field>
+                        </field>
+
+                        <!-- 5. Goods & Documents -->
+                        <field name="descriptionOfGoods_45A">
+                            <conditional-field condition="isReadOnly" title="Goods (45A)"><display/></conditional-field>
+                            <default-field title="Goods (45A)"><text-area rows="5"/></default-field>
+                        </field>
+                        <field name="docsRequired_46A">
+                            <conditional-field condition="isReadOnly" title="Docs Required (46A)"><display/></conditional-field>
+                            <default-field title="Docs Required (46A)"><text-area rows="5"/></default-field>
+                        </field>
+                        <field name="additionalConditions_47A">
+                            <conditional-field condition="isReadOnly" title="Addl Conditions (47A)"><display/></conditional-field>
+                            <default-field title="Addl Conditions (47A)"><text-area rows="5"/></default-field>
+                        </field>
+
+                        <!-- 6. Payment & Instructions -->
+                        <field name="availableWithBy_41A">
+                            <conditional-field condition="isReadOnly" title="Available With/By (41A)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
+                            <default-field title="Available With/By (41A)">
+                                <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcAvailability"/><order-by field-name="description"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="draftsAt_42C">
+                            <conditional-field condition="isReadOnly" title="Drafts At (42C)"><display/></conditional-field>
+                            <default-field title="Drafts At (42C)"><text-line size="30"/></default-field>
+                        </field>
+                        <field name="periodForPresentation_48">
+                            <conditional-field condition="isReadOnly" title="Presentation Period (48)"><display/></conditional-field>
+                            <default-field title="Presentation Period (48)"><text-line size="20"/></default-field>
+                        </field>
+                        <field name="confirmationInstructions_49">
+                            <conditional-field condition="isReadOnly" title="Confirmation (49)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
+                            <default-field title="Confirmation (49)">
+                                <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
+                                    <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcConfirmation"/><order-by field-name="description"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="instructionsToBank_78">
+                            <conditional-field condition="isReadOnly" title="Bank Instructions (78)"><display/></conditional-field>
+                            <default-field title="Bank Instructions (78)"><text-area rows="3"/></default-field>
+                        </field>
+                        <field name="charges_71B">
+                            <conditional-field condition="isReadOnly" title="Charges Info (71B)"><display/></conditional-field>
+                            <default-field title="Charges Info (71B)"><text-area rows="2"/></default-field>
+                        </field>
+                        <field name="senderToReceiverInfo_72Z">
+                            <conditional-field condition="isReadOnly" title="Sender Info (72Z)"><display/></conditional-field>
+                            <default-field title="Sender Info (72Z)"><text-area rows="2"/></default-field>
+                        </field>
+
+                        <field name="submitButton">
+                            <conditional-field condition="isReadOnly"><ignored/></conditional-field>
+                            <default-field title="Save"><submit/></default-field>
+                        </field>
+                        
+                        <field-layout>
+                            <container style="row justify-between items-center q-mb-md">
+                                <container style="row items-center q-gutter-md">
+                                    <label text="MT700 - Full Issuance Details" type="h5" style="text-primary text-weight-bold"/>
+                                    <container style="row items-center q-gutter-xs">
+                                        <label text="Lifecycle: ${lcStatusDesc}" style="q-chip bg-${lcStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                        <label text="Transaction: ${txStatusDesc}" style="q-chip bg-${txStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                    </container>
+                                </container>
+                                <container style="row items-center q-gutter-sm">
+                                    <field-ref name="submitButton"/>
+                                    <link url="IssueLc" text="Issue LC" parameter-map="[lcId:lc.lcId]"
+                                        style="q-btn bg-teal text-white q-px-md shadow-2"
+                                        condition="!isReadOnly &amp;&amp; lc.transactionStatusId == 'LcTxApproved' &amp;&amp; (lc.lcStatusId == 'LcLfDraft' || lc.lcStatusId == 'LcLfApplied')"
+                                        confirmation="Are you sure you want to finalize and issue this LC? This will generate an MT700 message."/>
+                                </container>
+                            </container>
+
+                            <field-ref name="lcId"/>
+                            
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">1. REFERENCE &amp; BASIC INFO</container>
+                                <container style="q-pa-md">
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-4"><field-ref name="lcNumber"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="lcStatusId"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="transactionStatusId"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-4"><field-ref name="sequenceTotal_27"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="issueDate"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="expiryDate"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="expiryPlace_31D"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="formOfCredit_40A"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-12"><field-ref name="applicableRules_40E"/></container>
+                                    </container>
+                                </container>
+                            </container>
+
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-indigo-1 text-weight-bold">2. AMOUNT &amp; TOLERANCE</container>
+                                <container style="q-pa-md">
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="amount"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="amountCurrencyUomId"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="amountTolerance_39A"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="maxCreditAmount_39B"/></container>
+                                    </container>
+                                    <field-ref name="additionalAmountsCovered_39C"/>
+                                </container>
+                            </container>
+
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-teal-1 text-weight-bold">3. PARTIES</container>
+                                <container style="q-pa-md">
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="applicantPartyId"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="beneficiaryPartyId"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-4"><field-ref name="issuingBankPartyId"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="advisingBankPartyId"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="reimbursingBankPartyId"/></container>
+                                    </container>
+                                </container>
+                            </container>
+
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-orange-1 text-weight-bold">4. SHIPMENT DETAILS</container>
+                                <container style="q-pa-md">
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="partialShipment_43P"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="transhipment_43T"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-4"><field-ref name="latestShipDate_44C"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="portOfLoading_44E"/></container>
+                                        <container style="col-12 col-md-4"><field-ref name="portOfDischarge_44F"/></container>
+                                    </container>
+                                    <field-ref name="placeOfFinalDestination_44B"/>
+                                    <field-ref name="shipmentPeriod_44D"/>
+                                </container>
+                            </container>
+
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-deep-orange-1 text-weight-bold">5. GOODS &amp; DOCUMENTS</container>
+                                <container style="q-pa-md">
+                                    <field-ref name="descriptionOfGoods_45A"/>
+                                    <field-ref name="docsRequired_46A"/>
+                                    <field-ref name="additionalConditions_47A"/>
+                                </container>
+                            </container>
+
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-blue-1 text-weight-bold">6. PAYMENT &amp; INSTRUCTIONS</container>
+                                <container style="q-pa-md">
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="availableWithBy_41A"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="confirmationInstructions_49"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="draftsAt_42C"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="periodForPresentation_48"/></container>
+                                    </container>
+                                    <field-ref name="instructionsToBank_78"/>
+                                    <field-ref name="charges_71B"/>
+                                    <field-ref name="senderToReceiverInfo_72Z"/>
+                                </container>
+                            </container>
+                            
+                            <container style="row justify-end q-mt-md">
+                                <field-ref name="submitButton"/>
+                            </container>
+                        </field-layout>
+                    </form-single>
+
+                    <!-- Credit & Collateral Section (UC8.3.3) -->
+                    <container style="q-card q-mt-lg shadow-1 border">
+                        <container style="q-pa-sm bg-blue-grey-1 text-blue-grey-10 text-weight-bold">CREDIT &amp; COLLATERAL (CBS)</container>
+                        <container style="q-pa-md">
+                            <label text="Credit Limit and Collateral information retrieved from CBS will be displayed here." style="italic text-grey-7"/>
+                        </container>
+                    </container>
+                </container>
+            </widgets>
+            <fail-widgets>
+                <container style="q-pa-md">
+                    <label text="Letter of Credit not found." type="h5" style="text-negative"/>
+                </container>
+            </fail-widgets>
+        </section>
+    </widgets>
+</screen>

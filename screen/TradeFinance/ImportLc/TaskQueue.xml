@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Task Queue" default-menu-index="1">
+    
+    <transition name="LcDetail"><default-response url="../LcDetail"/></transition>
+    <transition name="AmendmentDetail"><default-response url="../AmendmentDetail"/></transition>
+    <transition name="DrawingDetail"><default-response url="../DrawingDetail"/></transition>
+
+    <actions>
+        <!-- Find pending LC Applications -->
+        <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="pendingApplications">
+            <econdition field-name="transactionStatusId" value="LcTxSubmitted"/>
+            <order-by field-name="entryDate"/>
+        </entity-find>
+        
+        <!-- Find pending Amendments -->
+        <entity-find entity-name="moqui.trade.finance.LcAmendment" list="pendingAmendments">
+            <econdition field-name="amendmentStatusId" value="LcTxSubmitted"/>
+            <order-by field-name="amendmentDate"/>
+        </entity-find>
+
+        <!-- Find pending Drawings (Received but not examined) -->
+        <entity-find entity-name="moqui.trade.finance.LcDrawing" list="pendingDrawings">
+            <econdition field-name="drawingStatusId" value="LcDrReceived"/>
+            <order-by field-name="presentationDate"/>
+        </entity-find>
+    </actions>
+
+    <widgets>
+        <container style="q-pa-md">
+            <label text="Import LC Task Queue" type="h5" style="text-weight-bold text-primary q-mb-md"/>
+            
+            <container style="q-card q-mb-md shadow-2">
+                <container style="q-pa-sm bg-orange-2 text-orange-10 text-weight-bold">PENDING LC APPLICATIONS</container>
+                <container style="q-pa-md">
+                    <form-list name="PendingAppList" list="pendingApplications" skip-form="true">
+                        <field name="lcNumber"><default-field title="Reference"><display/></default-field></field>
+                        <field name="amount"><default-field><display currency-uom-id="${amountCurrencyUomId}"/></default-field></field>
+                        <field name="entryDate"><default-field title="Submitted On"><display/></default-field></field>
+                        <field name="view"><default-field title="">
+                            <link url="LcDetail" text="Review Application" link-type="anchor" parameter-map="[lcId:lcId]"/>
+                        </default-field></field>
+                    </form-list>
+                </container>
+            </container>
+
+            <container style="q-card q-mb-md shadow-2">
+                <container style="q-pa-sm bg-teal-2 text-teal-10 text-weight-bold">PENDING AMENDMENTS</container>
+                <container style="q-pa-md">
+                    <form-list name="PendingAmdList" list="pendingAmendments" skip-form="true">
+                        <field name="lcId"><default-field title="LC ID"><display/></default-field></field>
+                        <field name="amendmentNumber"><default-field title="No."><display/></default-field></field>
+                        <field name="amendmentDate"><default-field title="Requested On"><display/></default-field></field>
+                        <field name="view"><default-field title="">
+                            <link url="AmendmentDetail" text="Review Amendment" link-type="anchor" parameter-map="[lcId:lcId, amendmentId:amendmentSeqId]"/>
+                        </default-field></field>
+                    </form-list>
+                </container>
+            </container>
+
+            <container style="q-card shadow-2">
+                <container style="q-pa-sm bg-indigo-2 text-indigo-10 text-weight-bold">PENDING DRAWINGS</container>
+                <container style="q-pa-md">
+                    <form-list name="PendingDrList" list="pendingDrawings" skip-form="true">
+                        <field name="lcId"><default-field title="LC ID"><display/></default-field></field>
+                        <field name="drawingAmount"><default-field title="Amount"><display/></default-field></field>
+                        <field name="presentationDate"><default-field title="Presented On"><display/></default-field></field>
+                        <field name="view"><default-field title="">
+                            <link url="DrawingDetail" text="Examine Docs" link-type="anchor" parameter-map="[lcId:lcId, drawingId:drawingSeqId]"/>
+                        </default-field></field>
+                    </form-list>
+                </container>
+            </container>
+        </container>
+    </widgets>
+</screen>

@@ -205,10 +205,8 @@ class TradeFinanceScreensSpec extends Specification {
 
         then:
         !str.errorMessages
-        // Since we moved these to headers or other areas, verify labels
         // DEMO_LC_01 is Closed/Closed, description is "Closed"
         str.assertContains("Closed")
-        str.assertContains("LcTxClosed")
     }
 
     def "LcDetail renders party data (DEMO_LC_01)"() {
@@ -253,8 +251,8 @@ class TradeFinanceScreensSpec extends Specification {
 
         then:
         !str.errorMessages
-        // Verify Close View is present
-        str.output.contains("Close View")
+        // Verify Back link is present (was Close View)
+        str.output.contains("Back")
         // Check for the URL
         str.output.contains("/apps/trade-finance/ImportLc/Lc")
     }

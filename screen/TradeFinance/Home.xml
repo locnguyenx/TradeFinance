@@ -78,8 +78,8 @@
                             </container>
                         </container>
                         <container style="display: flex; gap: 8px; margin-top: 10px;">
-                            <link url="../ImportLc/ImportLcList" text="Apply New" style="q-btn-primary"/>
-                            <link url="../ImportLc" text="Manage Pipeline" style="q-btn-outline"/>
+                            <link url="../ImportLc/Lc" text="Apply New" style="q-btn bg-primary text-white" url-type="screen"/>
+                            <link url="../ImportLc" text="Manage Pipeline" style="q-btn q-btn-outline" url-type="screen"/>
                         </container>
                     </container>
                 </container>
@@ -184,7 +184,7 @@
                         <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
                     </default-field></field>
                     <field name="detail"><default-field title="">
-                        <link url="../ImportLc/LcDetail" text="View" link-type="anchor" style="text-primary text-weight-bold" parameter-map="[lcId:lcId]"/>
+                        <link url="../ImportLc/Lc/MainLC" text="View" link-type="anchor" style="text-primary text-weight-bold" parameter-map="[lcId:lcId]" url-type="screen"/>
                     </default-field></field>
                 </form-list>
             </container>

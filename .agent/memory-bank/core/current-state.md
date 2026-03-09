@@ -1,23 +1,21 @@
 # Current State
 
 ## Active Phase
-**Phase 5:** Testing Completion, 100% Coverage, and Stability Verification. (Current)
-**Phase 6:** Full Document Expansion (Drawings) and Export LC Module. (Upcoming)
+**Phase 5:** Testing Completion, 100% Coverage, and Stability Verification. (Completed)
+**Phase 6:** Agent Optimization & Global Standards. (Current)
+**Phase 7:** Full Document Expansion (Drawings) and Export LC Module. (Upcoming)
 
 - [x] Achieved 100% test coverage for Trade Finance module (108 tests passing).
-- [x] Implemented `TradeFinanceDrawingFlowSpec` for full drawing lifecycle.
-- [x] Implemented `TradeFinanceCbsSpec` for CBS integration verification.
-- [x] Resolved non-deterministic history entry issues in `ServicesSpec`.
-- [x] Fixed race condition and field application in `confirm#LcAmendment`.
-- [x] Enabled primary key sequencing for `LcAmendment` and `LcDrawing`.
-- [x] Verified link resolution in read-only screens via `TradeFinanceScreensSpec`.
+- [x] Optimized `.agent/` directory (Rules, Skills, Knowledge).
+- [x] Consolidated `git_workflow.md` into `session_protocol.md`.
+- [x] Refactored `moqui-errors.json` and `moqui-patterns.md`.
 
 ## Key Considerations (Blockers/Issues)
-- Database lock errors (`btm2.tlog`) may occur if the Moqui server is running during Gradle tasks.
-- Always use `targetScreen?.getScreenName()` with safe navigation (`?.`) in layouts.
+- **Zero-Touch:** Strict enforcement of component boundary in `global.md`.
+- **Error Handling:** `ec.message.addError()` required for transaction rollback.
 
 ## Confidence & Next Steps
-- **Confidence Score:** 100% (108/108 tests passing, system stable).
-- **Next Steps:** Adapt MT707 generator for shadow record model and continue Drawing field expansion.
+- **Confidence Score:** 100% (Structure optimized, tests stable).
+- **Next Steps:** Adapt MT707 generator for shadow record model and resume Drawing field expansion.
 
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-09

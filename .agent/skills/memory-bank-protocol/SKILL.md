@@ -103,19 +103,18 @@ When the user says "finish session" or similar:
 
 ## 🚀 Self-Improvement Directive (The "Gardener")
 
-You are responsible for maintaining and evolving your own Skills.
-When you discover a new pattern, solution, finding, lesson learned or rule:
-1.  
-**Identify the relevant Skill:**
- (e.g., `moqui-framework`, `trade-finance` for a Drizzle pattern).
-2.  
-**Update the `SKILL.md`:**
- Add the knowledge directly to the file.
-3.  
-**Refactor:**
- If a Skill becomes too large, propose splitting it.
-4.  
-**Create:**
- Only create a NEW Skill folder if the knowledge is truly domain-distinct (e.g., Mobile Development, Moqui Development, framework, Java, XML, Groovy, XML Action, Testing, Banking, Trade Finance).
+ You are responsible for maintaining and evolving your own Knowledge Base and Skills. When you discover a new pattern, solution, or fixed error:
 
-**DO NOT create loose files for rules. Curate your `.agent/skills` folder.**
+### 1. Identify the Destination
+- **Recurring Errors/Bugs:** Update `.agent/knowledge/moqui-errors.json`.
+- **Architectural Patterns/Lessons:** Update `.agent/knowledge/moqui-patterns.md`.
+- **Tool/Task Specific SOPs:** Update the relevant `SKILL.md` in `.agent/skills/`.
+- **Syntax/XSD Discoveries:** Update `.agent/knowledge/moqui_syntax_ref.md`.
+
+### 2. Action Rules
+- **Direct Update:** Add the knowledge directly to the file using your file-writing tools.
+- **Refactor:** If a file becomes too large or disorganized, propose a structural update to the user.
+- **Consistency:** Ensure cross-references between rules (passive) and knowledge/skills (active) remain valid.
+- **Zero-Touch:** Never store component-specific business logic in global skills. 
+
+**DO NOT create loose files for rules. Curate your `.agent/` folder.**

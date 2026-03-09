@@ -8,17 +8,6 @@
     <actions>
         <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
         <if condition="lc">
-            <set field="statusColorMap" from="[LcLfDraft:'grey-7', LcLfApplied:'orange-8', LcLfIssued:'green-8', LcLfAdvised:'blue-8', LcLfAmended:'indigo-8', LcLfNegotiated:'teal-8', LcLfRevoked:'red-8', LcLfExpired:'brown-7', LcLfClosed:'blue-grey-8', LcTxDraft:'grey-7', LcTxSubmitted:'blue-8', LcTxApproved:'green-8', LcTxRejected:'red-8', LcTxCancelled:'red-7', LcTxClosed:'blue-grey-8']"/>
-            
-            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatus">
-                <field-map field-name="statusId" from="lc.lcStatusId"/></entity-find-one>
-            <set field="lcStatusDesc" from="lcStatus?.description ?: lc.lcStatusId"/>
-            <set field="lcStatusColor" from="statusColorMap[lc.lcStatusId] ?: 'grey-7'"/>
-
-            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="txStatus">
-                <field-map field-name="statusId" from="lc.transactionStatusId"/></entity-find-one>
-            <set field="txStatusDesc" from="txStatus?.description ?: lc.transactionStatusId"/>
-            <set field="txStatusColor" from="statusColorMap[lc.transactionStatusId] ?: 'grey-7'"/>
         </if>
         <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
         <log message="isReadOnly = ${isReadOnly}"/>
@@ -28,11 +17,21 @@
         <section name="LcFoundSection" condition="lc">
             <widgets>
                 <container style="q-pa-md">
-                    <form-single name="LcGeneralForm" map="lc" transition="UpdateLc">
+                    <form-single name="LcGeneralForm" map="lc" transition="UpdateLc" reload-save="true">
                         <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="pk"/>
                         <field name="lcId"><default-field><hidden/></default-field></field>
-                        <field name="lcStatusId"><default-field title="LC Status"><display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/></default-field></field>
-                        <field name="transactionStatusId"><default-field title="Transaction Status"><display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/></default-field></field>
+
+                        <field name="IssueLcField">
+                            <default-field title="">
+                                <section name="IssueLcSection" condition="!isReadOnly &amp;&amp; lc.transactionStatusId == 'LcTxApproved' &amp;&amp; (lc.lcStatusId == 'LcLfDraft' || lc.lcStatusId == 'LcLfApplied')">
+                                    <widgets>
+                                        <link url="IssueLc" text="Issue LC" parameter-map="[lcId:lc.lcId]"
+                                              style="q-btn bg-teal text-white q-px-md shadow-2"
+                                              confirmation="Are you sure you want to finalize and issue this LC? This will generate an MT700 message."/>
+                                    </widgets>
+                                </section>
+                            </default-field>
+                        </field>
                         
                         <!-- 1. Reference & Basic Info -->
                         <field name="lcNumber">
@@ -244,10 +243,7 @@
                             <container style="row justify-end items-center q-mb-md">
                                 <container style="row items-center q-gutter-sm">
                                     <field-ref name="submitButton"/>
-                                    <link url="IssueLc" text="Issue LC" parameter-map="[lcId:lc.lcId]"
-                                        style="q-btn bg-teal text-white q-px-md shadow-2"
-                                        condition="!isReadOnly &amp;&amp; lc.transactionStatusId == 'LcTxApproved' &amp;&amp; (lc.lcStatusId == 'LcLfDraft' || lc.lcStatusId == 'LcLfApplied')"
-                                        confirmation="Are you sure you want to finalize and issue this LC? This will generate an MT700 message."/>
+                                    <field-ref name="IssueLcField"/>
                                 </container>
                             </container>
 
@@ -258,9 +254,7 @@
                                 <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">1. REFERENCE &amp; BASIC INFO</container>
                                 <container style="q-pa-md">
                                     <container style="row q-col-gutter-sm">
-                                        <container style="col-12 col-md-4"><field-ref name="lcNumber"/></container>
-                                        <container style="col-12 col-md-4"><field-ref name="lcStatusId"/></container>
-                                        <container style="col-12 col-md-4"><field-ref name="transactionStatusId"/></container>
+                                        <container style="col-12 col-md-12"><field-ref name="lcNumber"/></container>
                                     </container>
                                     <container style="row q-col-gutter-sm">
                                         <container style="col-12 col-md-4"><field-ref name="sequenceTotal_27"/></container>

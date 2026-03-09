@@ -13,6 +13,9 @@
 - **Modular Dashboard:** Global overview management.
 - **Tab Panel:** LC Details divided into functional tabs (MainLC, Amendments, Drawings, Financials) for clarity.
 - **Premium Status Chips:** Transaction and Lifecycle statuses must be displayed as color-coded chips (`q-chip`) in the header for visual hierarchy. Use `green-8`, `blue-8`, `orange-8`, and `red-8` for semantic consistency.
+- **Safe Subscreen Detection (CRITICAL):** When using subscreens, headers and tabs must be hidden on the list view but shown on detail views. Use the pattern `!['FindLc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())`. 
+  - **DANGER:** Do not include the parent screen name (e.g., `'Lc'`) in the exclusion list, as direct navigation or redirects to the parent with an ID will hide the header.
+- **Button Navigation:** Use `style="q-btn bg-primary text-white"` for primary buttons. Avoid idiosyncratic attributes like `btn-type`. Ensure `url-type="screen"` is used for all internal navigation.
 - **View Entities:** Use `view-entity` for joining tables (e.g., `LcAmendmentDetailView`) to display centralized information (e.g., LC Number, Applicant Name).
 
 ## XML & Framework Constraints

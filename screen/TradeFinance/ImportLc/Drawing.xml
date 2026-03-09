@@ -20,7 +20,7 @@
                 <field-map field-name="drawingSeqId" from="drawingId"/>
             </entity-find-one>
             <if condition="drawing">
-                <set field="statusColorMap" from="[LcDrReceived:'grey-7', LcDrCompliant:'blue-8', LcDrDiscrepant:'orange-8', LcDrAccepted:'green-8', LcDrUnderTrust:'indigo-8', LcDrPaid:'teal-8', LcDrRejected:'red-8']"/>
+                <set field="statusColorMap" from="['LcDrReceived':'grey-7', 'LcDrCompliant':'blue-8', 'LcDrDiscrepant':'orange-8', 'LcDrAccepted':'green-8', 'LcDrUnderTrust':'indigo-8', 'LcDrPaid':'teal-8', 'LcDrRejected':'red-8']"/>
 
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="drStatus" is-pk="true">
                     <field-map field-name="statusId" from="drawing.drawingStatusId"/></entity-find-one>
@@ -42,7 +42,7 @@
     </subscreens>
 
     <widgets>
-        <section name="DrawingDetailHeader" condition="drawingId &amp;&amp; drawing &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindDrawing'">
+        <section name="DrawingDetailHeader" condition="drawingId &amp;&amp; !['FindDrawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -63,14 +63,14 @@
                                           style="${st.toStatusId == 'LcDrRejected' ? 'q-btn-outline text-red' : 'q-btn bg-primary text-white'}"/>
                                 </widgets>
                             </section-iterate>
-                            <link url="." text="Back to List" parameter-map="[drawingId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
+                            <link url="." text="Back" parameter-map="[drawingId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
                         </container>
                     </container>
                 </container>
             </widgets>
         </section>
 
-        <section name="DrawingContentTabs" condition="drawingId &amp;&amp; drawing &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindDrawing'">
+        <section name="DrawingContentTabs" condition="drawingId &amp;&amp; drawing &amp;&amp; !['FindDrawing', 'Drawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="DrawingDetailTabs" type="tab"/>

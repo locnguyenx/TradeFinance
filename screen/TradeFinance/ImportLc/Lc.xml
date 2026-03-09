@@ -20,8 +20,9 @@
         <if condition="lcId">
             <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <log message="Lc.xml: lcId=${lcId}, found=${lc != null}, targetScreen=${sri.screenUrlInfo.targetScreen?.getScreenName()}"/>
             <if condition="lc">
-                <set field="statusColorMap" from="[LcLfDraft:'grey-7', LcLfApplied:'orange-8', LcLfIssued:'green-8', LcLfAdvised:'blue-8', LcLfAmended:'indigo-8', LcLfNegotiated:'teal-8', LcLfRevoked:'red-8', LcLfExpired:'brown-7', LcLfClosed:'blue-grey-8', LcTxDraft:'grey-7', LcTxSubmitted:'blue-8', LcTxApproved:'green-8', LcTxRejected:'red-8', LcTxCancelled:'red-7', LcTxClosed:'blue-grey-8']"/>
+                <set field="statusColorMap" from="['LcLfDraft':'grey-7', 'LcLfApplied':'orange-8', 'LcLfIssued':'green-8', 'LcLfAdvised':'blue-8', 'LcLfAmended':'indigo-8', 'LcLfNegotiated':'teal-8', 'LcLfRevoked':'red-8', 'LcLfExpired':'brown-7', 'LcLfClosed':'blue-grey-8', 'LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8', 'LcTxCancelled':'red-7', 'LcTxClosed':'blue-grey-8']"/>
                 
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatus" is-pk="true">
                     <field-map field-name="statusId" from="lc.lcStatusId"/></entity-find-one>
@@ -57,7 +58,7 @@
     </subscreens>
 
     <widgets>
-        <section name="LcDetailHeader" condition="lcId &amp;&amp; lc &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindLc'">
+        <section name="LcDetailHeader" condition="lcId &amp;&amp; !['FindLc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -81,7 +82,7 @@
                                     </section-iterate>
                                 </widgets>
                             </section>
-                            <link url="." text="Back to List" url-type="screen" parameter-map="[lcId:null]" style="q-btn-flat text-grey-7 q-ml-md" condition="!isReadOnly"/>
+                            <link url="." text="Back" url-type="screen" parameter-map="[lcId:null]" style="q-btn-flat text-grey-7 q-ml-md" condition="!isReadOnly"/>
                             <section name="CloseViewSection" condition="isReadOnly">
                                 <widgets>
                                     <link url="${lastScreenUrl ?: '.'}" text="Back" url-type="screen" parameter-map="[lcId:lcIdToPass, amendmentSeqId:amndSeqToPass, drawingId:drSeqToPass]" style="q-btn-flat text-grey-7 q-ml-md"/>
@@ -93,7 +94,7 @@
             </widgets>
         </section>
 
-        <section name="LcContentTabs" condition="lcId &amp;&amp; lc &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindLc'">
+        <section name="LcContentTabs" condition="lcId &amp;&amp; !['FindLc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="LcDetailTabs" type="tab"/>

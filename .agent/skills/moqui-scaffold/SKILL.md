@@ -1,25 +1,20 @@
 # Skill: moqui-scaffold
-**Description**: Scaffolds a new Moqui UI module (Parent, Find, and Detail screens) using native file-writing tools. Use this whenever the user asks to create a new UI, module, or screen.
+**Description**: Scaffolds a new Moqui UI module or screen (Parent, Find, and Detail screens).
 
-## Execution Instructions
-Do not execute a script. Use your native file-writing capabilities to create the following three files in the requested directory. Replace `[Name]` with the requested entity name in PascalCase (e.g., `Vendor`) and `[name]` with the camelCase version (e.g., `vendor`).
+## Execution Steps
+Use your native file-writing capabilities to generate three XML files in the target directory. Replace `[Name]` with the requested entity name (PascalCase) and `[name]` with the camelCase version.
 
-**File 1: `[Name].xml` (Parent Screen)**
-Write a standard Moqui parent screen. 
-- Include transitions for `find[Name]` and `[Name]Detail`.
-- Include `<subscreens default-item="Find[Name]">`.
-- Include a `<section>` wrapper for safe subscreen detection: `condition="[name]Id && !['Find[Name]', '[Name]'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())"`.
+1. **Create `[Name].xml` (Parent):**
+   - Write the `<screen>` root with transitions to `find[Name]` and `[Name]Detail`.
+   - Add `<subscreens default-item="Find[Name]">`.
+   - Wrap the `<subscreens-panel>` in a `<section>` checking `condition="[name]Id && !['Find[Name]', '[Name]'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())"`.
 
-**File 2: `Find[Name].xml` (List Screen)**
-Write the list screen.
-- Include `<entity-find entity-name="YourNamespace.[Name]" list="[name]List">` in `<actions>`.
-- Create `<form-list name="[Name]List" list="[name]List" header-dialog="true">`.
-- Add a `<container-dialog>` for creation.
-- In row actions, map the ID to keep parent routing clean: `<script>[name]IdToPass = [name]Id</script>`.
+2. **Create `Find[Name].xml` (List):**
+   - Add `<entity-find>` in the `<actions>` block.
+   - Build a `<form-list>` with a `<container-dialog>` for creation.
+   - Map the ID in row actions: `<script>[name]IdToPass = [name]Id</script>`.
 
-**File 3: `[Name]Detail.xml` (Detail Screen)**
-Write the detail editing screen.
-- Require parameter `[name]Id`.
-- Fetch record with `<entity-find-one>`.
-- Build a `<form-single>` to update the record.
-- Add a back button linking to `${lastScreenUrl ?: '.'}`.
+3. **Create `[Name]Detail.xml` (Detail):**
+   - Require the `[name]Id` parameter.
+   - Fetch the record via `<entity-find-one>`.
+   - Build a `<form-single>` to map and update the record. Include a back button to `lastScreenUrl`.

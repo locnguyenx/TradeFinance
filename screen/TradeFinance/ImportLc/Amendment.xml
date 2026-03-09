@@ -19,7 +19,7 @@
                 <field-map field-name="amendmentSeqId" from="amendmentSeqId"/>
             </entity-find-one>
             <if condition="amendment">
-                <set field="statusColorMap" from="[LcTxDraft:'grey-7', LcTxSubmitted:'blue-8', LcTxApproved:'green-8', LcTxRejected:'red-8', LcTxCancelled:'red-7', LcTxClosed:'blue-grey-8', LcAmndPending:'orange-8', LcAmndConfirmed:'green-8', LcAmndRejected:'red-8']"/>
+                <set field="statusColorMap" from="['LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8', 'LcTxCancelled':'red-7', 'LcTxClosed':'blue-grey-8', 'LcAmndPending':'orange-8', 'LcAmndConfirmed':'green-8', 'LcAmndRejected':'red-8']"/>
 
                 <entity-find-one entity-name="moqui.basic.StatusItem" value-field="amndStatus" is-pk="true">
                     <field-map field-name="statusId" from="amendment.amendmentStatusId"/></entity-find-one>
@@ -42,7 +42,7 @@
     </subscreens>
 
     <widgets>
-        <section name="AmendmentDetailHeader" condition="amendmentSeqId &amp;&amp; amendment &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindAmendment'">
+        <section name="AmendmentDetailHeader" condition="amendmentSeqId &amp;&amp; !['FindAmendment'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -71,14 +71,14 @@
                                     <field name="submitButton"><default-field title="Save"><submit/></default-field></field>
                                 </form-single>
                             </container-dialog>
-                            <link url="." text="Back to List" parameter-map="[amendmentSeqId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
+                            <link url="." text="Back" parameter-map="[amendmentSeqId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
                         </container>
                     </container>
                 </container>
             </widgets>
         </section>
 
-        <section name="AmendmentContentTabs" condition="amendmentSeqId &amp;&amp; amendment &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindAmendment'">
+        <section name="AmendmentContentTabs" condition="amendmentSeqId &amp;&amp; amendment &amp;&amp; !['FindAmendment', 'Amendment'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="AmendmentDetailTabs" type="tab"/>

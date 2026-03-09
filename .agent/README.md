@@ -11,43 +11,34 @@ This project uses a highly optimized agentic architecture. Instead of overwhelmi
 ### Directory Structure
 
 ```text
-moqui-antigravity-template/
-├── .agent/
-│   ├── rules/                 # Passive guardrails loaded dynamically
-│   │   ├── global.md          (Always On)
-│   │   ├── moqui-screen-*.md  (Glob: **/screen/**/*.xml)
-│   │   ├── moqui-services.md  (Glob: **/service/**/*.xml, *.groovy)
-│   │   └── moqui-entities.md  (Glob: **/entity/**/*.xml)
-│   ├── skills/                # Active Standard Operating Procedures (SOPs)
-│   │   ├── moqui-scaffold/
-│   │   │   └── SKILL.md       (Instructions for native file generation)
-│   │   ├── moqui-screen-validator/
-│   │   │   └── SKILL.md       (Instructions for semantic XML linting)
-│   │   └── moqui-diagnostics/
-│   │       └── SKILL.md       (Instructions for semantic error matching)
-│   └── knowledge/             # On-Demand reference data
-│       └── moqui-errors.json  (Searched by the diagnostics skill)
-├── framework/                 # Standard Moqui framework
-├── runtime/                   # Standard Moqui runtime
-└── README.md
-
+.agent/
+├── rules/                 # Passive guardrails (Glob-targeted)
+│   ├── global.md          (Always On - Zero-Touch enforcement)
+│   ├── session_protocol.md (Always On - Git & Session standards)
+│   ├── moqui-screens.md   (Glob: **/screen/**/*.xml)
+│   ├── moqui-services.md  (Glob: **/service/**/*.xml, *.groovy)
+│   └── moqui-entities.md  (Glob: **/entity/**/*.xml)
+├── skills/                # Active Standard Operating Procedures (SOPs)
+│   ├── moqui-diagnostics/ (Instructional error-matching & learning)
+│   ├── moqui-scaffold/    (Native XML boilerplate generation)
+│   ├── moqui-screen-validator/ (Semantic XML linting)
+│   └── doc-sync/          (BRD/TDS alignment audit)
+└── knowledge/             # Synchronized reference data
+    ├── moqui-errors.json  (Automated diagnostics cache)
+    ├── moqui-patterns.md  (Categorized architectural lessons)
+    ├── moqui-testing.md   (Mandates & traps for Spock/UI tests)
+    └── moqui_syntax_ref.md (Expanded XML tag reference)
 ```
 
 ### 1. Rules (Passive Guardrails)
+- **Zero-Touch Enforcement:** `global.md` strictly forbids modifications outside `runtime/component/TradeFinance/`.
+- **Session Standards:** `session_protocol.md` (consolidated) manages Git branching and session closing.
+- **Contextual Globs:** Rules for screens, services, and entities are injected only when relevant.
 
-Located in `.agent/rules/`, these Markdown files act as the AI's "Brain." They use **Glob Patterns** to inject context *only* when the agent opens a relevant file, saving thousands of tokens:
-
-* **UI Rules (`screen`):** Enforces Quasar layout rules, button naming (`Save`, not `Update`), and secure subscreen routing.
-* **Backend Rules (`service`/`groovy`):** Enforces Execution Context (`ec`) standards, safe-navigation (`?.`), and transaction management.
-* **Database Rules (`entity`):** Enforces Moqui data types and SQL-free view-entity structures.
-
-### 2. Skills (Native Agent SOPs)
-
-Located in `.agent/skills/`, these are instruction files that tell the agent *how* to use its native file-reading and writing abilities. There are no Python scripts to maintain.
-
-* **`moqui-scaffold`**: The agent generates perfectly routed Parent, Find, and Detail XML screens by following our boilerplate instructions.
-* **`moqui-screen-validator`**: The agent acts as a semantic linter, reading its own XML output to catch XSD layout violations and Quasar styling errors before finishing a task.
-* **`moqui-diagnostics`**: When an error occurs, the agent opens our local JSON knowledge base, matches the stack trace using its semantic reasoning, and applies our exact historical fixes.
+### 2. Skills (Active SOPs)
+Instructions telling the agent *how* to use its native abilities. No external scripts are required.
+- **`moqui-diagnostics`**: Now uses the synchronized `moqui-errors.json` and `moqui-patterns.md` for self-healing.
+- **`doc-sync`**: Performs dual-layer audits (Business vs Technical).
 
 ---
 

@@ -14,12 +14,11 @@ trigger: always_on
 
 * **Primary Context:** Always check for `RECAP.md` upon session start. This is the authoritative "handoff" document.
 
-## 2. Git & Concurrency
+## 2. Git & Concurrency (Isolated Sessions)
 
 * **Isolation:** Use a dedicated feature branch for every session.
-
 * **Verification:** Run `git branch --show-current` at the start of every session. If on `main` or `master`, prompt the user to create a branch.
-
+* **Focus:** Focus edits strictly on Moqui component files; ignore runtime logs, temporary files, or database stores.
 * **Conflict Prevention:** If `git status` shows modifications that this session did not initiate, notify the user before proceeding.
 
 ## 3. Automated Exit Protocol (Mandatory)

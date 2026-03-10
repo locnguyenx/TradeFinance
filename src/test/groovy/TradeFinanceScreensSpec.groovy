@@ -256,4 +256,18 @@ class TradeFinanceScreensSpec extends Specification {
         // Check for the URL
         str.output.contains("/apps/trade-finance/ImportLc/Lc")
     }
+
+    def "Lc parent screen with lcId does NOT render detail tabs"() {
+        when:
+        // Rendering the parent screen 'Lc' with an ID (which happens after a redirect to '.')
+        // should NOT show the detail tabs/header anymore.
+        ScreenTestRender str = screenTest.render("ImportLc/Lc", [lcId: "DEMO_LC_01"], null)
+
+        then:
+        !str.errorMessages
+        // Verify it rendered the FindLc sub-screen (default)
+        str.assertContains("Import Letters of Credit")
+        // Verify it does NOT contain the detail header
+        !str.output.contains("Letter of Credit Detail")
+    }
 }

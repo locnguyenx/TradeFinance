@@ -7,8 +7,12 @@
 
     <transition name="transitionDrawingStatus">
         <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"/>
-        <default-response url="."/></transition>
-    <transition name="ExamineDocs"><service-call name="moqui.trade.finance.DrawingServices.examine#LcDrawing"/><default-response url="."/></transition>
+        <default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'DrawingDetail'}"/>
+    </transition>
+    <transition name="ExamineDocs">
+        <service-call name="moqui.trade.finance.DrawingServices.examine#LcDrawing"/>
+        <default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'DrawingDetail'}"/>
+    </transition>
 
     <actions>
         <if condition="lcId">
@@ -42,7 +46,7 @@
     </subscreens>
 
     <widgets>
-        <section name="DrawingDetailHeader" condition="drawingId &amp;&amp; !['FindDrawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="DrawingDetailHeader" condition="drawingId &amp;&amp; !['FindDrawing', 'Drawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">

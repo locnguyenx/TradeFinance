@@ -5,9 +5,9 @@
     <parameter name="lcId" required="false"/>
     <parameter name="amendmentSeqId"/>
 
-    <transition name="SubmitAmendment"><service-call name="moqui.trade.finance.AmendmentServices.submit#LcAmendment"/><default-response url="."/></transition>
-    <transition name="ApproveAmendment"><service-call name="moqui.trade.finance.AmendmentServices.approve#LcAmendment"/><default-response url="."/></transition>
-    <transition name="ConfirmAmendment"><service-call name="moqui.trade.finance.AmendmentServices.confirm#LcAmendment"/><default-response url="."/></transition>
+    <transition name="SubmitAmendment"><service-call name="moqui.trade.finance.AmendmentServices.submit#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
+    <transition name="ApproveAmendment"><service-call name="moqui.trade.finance.AmendmentServices.approve#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
+    <transition name="ConfirmAmendment"><service-call name="moqui.trade.finance.AmendmentServices.confirm#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
 
     <actions>
         <if condition="lcId">
@@ -42,7 +42,7 @@
     </subscreens>
 
     <widgets>
-        <section name="AmendmentDetailHeader" condition="amendmentSeqId &amp;&amp; !['FindAmendment'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="AmendmentDetailHeader" condition="amendmentSeqId &amp;&amp; !['FindAmendment', 'Amendment'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">

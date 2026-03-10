@@ -2,6 +2,7 @@
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
         require-authentication="false">
     <always-actions><set field="appRoot" value="trade-finance"/></always-actions><!-- set variable appRoot="trade-finance" so as this variable will be used in navigation of screens in this component -->
+    
     <subscreens default-item="Home" always-use-full-path="true"/>
     <widgets>
         <subscreens-panel id="TradeFinancePanel" type="popup" title="Trade Finance"/>

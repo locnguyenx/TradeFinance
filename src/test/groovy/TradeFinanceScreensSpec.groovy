@@ -110,7 +110,7 @@ class TradeFinanceScreensSpec extends Specification {
         "ImportLc/Lc/FindLc"              | ["ILC-2026-0005", "Green Agriculture Co"]
 
         // ---- Detail Screen: Closed Sight LC (DEMO_LC_01) — fully populated ----
-        "ImportLc/Lc/MainLC?lcId=DEMO_LC_01" | ["ILC-2026-0001", "Amendments", "Drawings",
+        "ImportLc/Lc/MainLC?lcId=DEMO_LC_01" | ["Letter of Credit Detail", "ILC-2026-0001", "Amendments", "Drawings",
                                                 "Financials", "History"]
 
         // ---- Detail Screen: Draft LC (DEMO_LC_05) — minimal data ----

@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
         default-menu-title="Import LC Dashboard" default-menu-index="1">
+    <transition-include name="CreateLc" location="component://TradeFinance/template/lc/LcTransitions.xml"/>
     <actions>
         <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="importLcList"/>
         <set field="totalCount" from="importLcList.size()"/>
@@ -62,8 +62,8 @@
                     <container style="q-pa-md bg-grey-1 rounded-borders border">
                         <label text="Import LC Actions" type="h6" style="q-mb-md text-grey-8"/>
                         <container style="column q-gutter-sm">
-                            <link url="../Lc" text="New LC Application" icon="fa fa-file-circle-plus" style="q-btn bg-primary text-white full-width" url-type="screen"/>
-                            <link url="../Lc" text="Browse All Records" icon="fa fa-table-list" style="q-btn q-btn-outline full-width" url-type="screen"/>
+                            <include-screen location="component://TradeFinance/template/lc/CreateLc.xml"/>
+                            <link url="../Lc" text="Browse All Records" icon="fa fa-table-list" style="q-btn q-btn-outline" url-type="screen"/>
                         </container>
                         
                         <label text="Quick Help" type="h6" style="q-mt-xl q-mb-sm text-grey-8"/>

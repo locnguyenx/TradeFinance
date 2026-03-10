@@ -2,8 +2,10 @@
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
         default-menu-title="Drawing" default-menu-index="4">
 
+<!-- don't explicitly declare parameters in this parent screen 
     <parameter name="lcId" required="false"/>
     <parameter name="drawingId"/>
+-->
 
     <transition name="transitionDrawingStatus">
         <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"/>
@@ -15,6 +17,7 @@
     </transition>
 
     <actions>
+        <set field="lcId" from="lcId ?: lcSeqId"/>
         <if condition="lcId">
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
         </if>
@@ -47,7 +50,7 @@
     </subscreens>
 
     <widgets>
-        <section name="DrawingDetailHeader" condition="drawing &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+        <section name="DrawingDetailHeader" condition="drawing">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -75,14 +78,14 @@
             </widgets>
         </section>
 
-        <section name="DrawingContentTabs" condition="drawing &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+        <section name="DrawingContentTabs" condition="drawing">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="DrawingDetailTabs" type="tab"/>
                 </container>
             </widgets>
             <fail-widgets>
-                <subscreens-panel id="DrawingMainPanel" type="popup"/>
+                <subscreens-panel id="DrawingMainPanel" type="none"/>
             </fail-widgets>
         </section>
     </widgets>

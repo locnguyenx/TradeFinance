@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
         default-menu-title="Letter of Credit" default-menu-index="2">
-
+<!-- don't explicitly declare parameters in this parent screen 
     <parameter name="lcId"/>
     <parameter name="readOnly"/>
     <parameter name="lastScreenUrl"/>
     <parameter name="amendmentSeqId"/>
     <parameter name="drawingId"/>
-
+-->
     <transition name="transitionTransactionStatus">
         <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"/>
-        <default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'MainLC'}"/>
+        <!-- this will return only target screen name, that cause issue in navigation: url="${sri.screenUrlInfo.targetScreen?.getScreenName()}"-->
+        <default-response url="./MainLC" parameter-map="[lcId:lcId]"/>
     </transition>
 
     <actions>
-        <set field="lcIdToPass" from="null"/>
-        <set field="amndSeqToPass" from="null"/>
-        <set field="drSeqToPass" from="null"/>
+        
         <set field="lcId" from="lcId ?: lcSeqId"/>
         <if condition="lcId">
             <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
@@ -58,7 +57,7 @@
     </subscreens>
 
     <widgets>
-        <section name="LcDetailHeader" condition="lc &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+        <section name="LcDetailHeader" condition="lc">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -94,14 +93,14 @@
             </widgets>
         </section>
 
-        <section name="LcContentTabs" condition="lc &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+        <section name="LcContentTabs" condition="lc">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="LcDetailTabs" type="tab"/>
                 </container>
             </widgets>
             <fail-widgets>
-                <subscreens-panel id="LcMainPanel" type="popup"/>
+                <subscreens-panel id="LcMainPanel" type="none"/>
             </fail-widgets>
         </section>
     </widgets>

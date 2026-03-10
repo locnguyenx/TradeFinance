@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+    <transition-include name="CreateLc" location="component://TradeFinance/template/lc/LcTransitions.xml"/>
     <actions>
         <!-- Import LC Stats -->
         <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="importLcList"/>
@@ -78,7 +78,7 @@
                             </container>
                         </container>
                         <container style="display: flex; gap: 8px; margin-top: 10px;">
-                            <link url="../ImportLc/Lc" text="Apply New" style="q-btn bg-primary text-white" url-type="screen"/>
+                            <include-screen location="component://TradeFinance/template/lc/CreateLc.xml"/>
                             <link url="../ImportLc" text="Manage Pipeline" style="q-btn q-btn-outline" url-type="screen"/>
                         </container>
                     </container>

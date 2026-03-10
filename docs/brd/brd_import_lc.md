@@ -1,46 +1,74 @@
+---
+Document ID: BRD-002
+Module: Trade Finance
+Feature: Letter of Credit (LC) - Import LC
+Status: DRAFT
+Last Updated: 2026-03-10
+Author: [LocNX]
+---
+
 # Business Requirements Document: Trade Finance System - Import LC
 
-## 1. Overview
+## 1. Executive Summary
 This document outlines the requirements for the Import Letter of Credit (LC) module, handling the full lifecycle of LCs issued by the bank for importers.
 
 ## 2. Standard Compliance
 Refer to requirements in the main business requirements document.
 
-## 3. Data Requirements
-
-### 3.1. MT700
+### 2.1. MT700
 Refer to file ./MT/MT700.md for details
 
 ## 4. UI/UX Requirements
 - **Grouped Layout**: The detail screen MUST group fields into General, Parties, Shipment, and Docs/Payment blocks.
-- **Hierarchical Navigation**: The system MUST follow a `Find (List) -> Detail (Standardized Tabs)` navigation pattern.
 - **Visual Status Tracking**: Key statuses MUST be displayed using high-visibility colored chips ("Premium Status Chips") in the detail header.
+- **Reusable UI Components**: Core actions (e.g., LC Creation, Amendment Initiation) MUST use standardized, reusable dialog templates to ensure a consistent user experience across different entry points.
+- **Hierarchical Navigation**: The system MUST follow a `Find (List) -> Detail (Standardized Tabs)` navigation pattern.
 - **Cross-Module Linkage**: When viewing linked entities (e.g., LC from an Amendment), the target entity MUST be displayed in a **Read-Only** mode to prevent accidental data corruption.
 - **Data Integrity**: Fields with invalid characters must be flagged immediately upon submission.
 - **Activity Log**: Immutable history of all status changes and internal comments.
 
-## 5. Integration Requirements
-- **SWIFT MT7**: The system MUST be able to generate SWIFT MT700 messages for LC issuance.
-- **CBS**: The system MUST be able to integrate with Core Banking system to: 
-    - generate accounting entries for LC issuance.
-    - do payment for LC transaction.
-    - retrieve customer information.
-    - retrieve and update collateral information.
-    - retrieve and update limit information.
-    - retrieve account information and balance
-    - retrieve currency exchange rate
-    
-## 6. Transaction Workflow Requirements
-  - The system MUST support the following Transaction lifecycle states:
+## 5. User Roles & Permissions
+Define who will use the system and what business actions they are allowed to perform.
+
+| User Role | Description | Permitted Actions |
+| :--- | :--- | :--- |
+| **Applicant** | Corporate Customer | Create Draft, View Own LCs, Submit Application |
+| **Branch Operator** | Bank Front-Office Staff| Create Draft, View Own LCs, Submit Application |
+| **Branch Supervisor** | Bank Front-Office Manager| View All LCs, Review, Reject |
+| **Trade Operator** | Bank Back-Office Staff| View All LCs, Review, Reject, Issue |
+| **Trade Supervisor** | Bank Back-Office Manager| View All LCs, Review, Approve, Reject |
+| **Trade Auditor** | Risk/Compliance | View All LCs, View History (Read-Only) |
+
+## 6. Business Lifecycle (State Machine)
+### 6.1 Transaction Workflow Requirements
+
+Define the statuses a record (transaction) goes through from creation to closure.
+
+The system MUST support the following Transaction lifecycle states:
     - Draft
-    - Submitted
+    - Pending Review
+    - Pending Processing
+    - Returned
+    - Pending Approval
     - Approved
     - Rejected
     - Cancelled
-    - Closed
 
-## 7. LC Status Requirements
-  - The system MUST support the following LC lifecycle states:
+
+**The state flow:**
+
+| Current Status | User Action / Trigger | Next Status | Business Condition |
+| :--- | :--- | :--- | :--- |
+| `Draft` | Applicant or Branch Operator clicks "Submit for Review" | `Pending Review` | All mandatory application fields must be complete. |
+| `Pending Review`| Branch Supervisor clicks "Submit for Processing" | `Pending Processing` | Requires Branch Supervisor authority. |
+| `Pending Processing`| Trade Operator clicks "Submit for Approval" | `Pending Approval` | Requires Trade Operator authority. |
+| `Pending Approval`| Trade Supervisor clicks "Approve" | `Approved` | Requires Trade Supervisor authority. |
+| `Pending Review`/`Pending Approval`/`Pending Processing`  | Authorized user clicks "Reject" | `Rejected` | User must provide a rejection reason. |
+| `Pending Review`/`Pending Approval`/`Pending Processing`  | Authorized user clicks "Return" | `Returned` | User must provide a returnning reason. |
+
+
+### 6.2 LC Status Requirements
+* The system MUST support the following LC lifecycle states:
     - Draft
     - Applied
     - Issued
@@ -50,7 +78,37 @@ Refer to file ./MT/MT700.md for details
     - Revoked
     - Expired
 
-## 8. Functionality Requirements / Use Cases
+* **When the LC Application transaction is not Approved:** LC status is Draft
+* **The LC status flow when the LC Application transaction is Approved:**
+
+| Current Status | User Action / Trigger | Next Status | Business Condition |
+| :--- | :--- | :--- | :--- |
+| `Draft` | Trade Supervisor do "Approve" the transaction | `Applied` | Transaction status must be `Approved` |
+| `Applied` |  Authorized user (i.e Trade Operator) do "Issue" the LC | `Issued` | Funds must be successfully reserved. |
+| `Issued` |  Authorized user (i.e Trade Operator) complete "Amendment" for the LC | `Amended` | The Amendment must be confirmed |
+
+## 7. Automated System Processes
+Define the chain of background processing the system must perform without direct human intervention:
+
+### Process 1: LC Issuance Finalization
+* **Trigger:** The LC status changes to `Issued`.
+* **Processing Steps:**
+  1. Generate the official LC PDF document.
+  2. Deduct the issuance fee from the Applicant's primary operating account.
+  3. Send an email notification to the Applicant and the Beneficiary.
+  4. Log the transaction in the bank's general ledger.
+* **Expected Result:** The LC is officially active, fees are collected, the GL is balanced, and all parties are notified. If step 2 (fee deduction) fails, the entire process must halt and alert the Operator.
+
+### Process 2: LC Expiration
+* **Trigger:** LC is on expiry date
+* **Processing Steps:**
+  1. Change LC Status to `Expired`
+  2. Release the provision
+  3. Send an email notification to the Applicant and the Beneficiary.
+  4. Log the transaction in the bank's general ledger.
+* **Expected Result:** The LC is expired, provision amount is paid back to customer account, the GL is balanced, and all parties are notified. If step 2 (Release the provision) fails, the entire process must halt and alert the Operator.
+
+## 8. User Interface & Data Requirements
   - The system MUST support the following LC functionalities, implemented using Moqui/Mantle patterns.
 
 ### 8.1 Import LC - Overall Business Process Flow
@@ -175,6 +233,8 @@ Each product has its own configuration, such as:
 - **UC8.5.3: Finalize Amendment & MT707**: (Step 4) Apply shadow record field changes, update amendment number, and generate SWIFT MT707.
 - **UC8.5.3.a: Manage Read-Only LC Access**: Ensure users can view the original LC context from an amendment in a robust, non-editable mode.
 
+- **UC8.5.4: Standardized Amendment View**: The system MUST provide a consistent list view of Amendments (both in the main Find screen and the LC Detail tab) including Request ID, Amendment Number, Date, and Status tracking for both internal processing and counterparty confirmation.
+- **UC8.5.5: Unified Amendment Initiation**: "Initiate New Request" MUST use a shared, context-aware dialog that automatically handles the LC link when initiated from within a specific LC record.
 
 #### LC Expiry
 ##### Business process flow
@@ -294,4 +354,17 @@ Each product has its own configuration, such as:
 
 3. Step 3: SWIFT messages generated by the system are stored as read-only attachments. Incoming SWIFT messages received via the messaging gateway are parsed and linked automatically.
 
-**Last Updated:** 2026-03-07
+## 9. Non-Functional Requirements
+
+### Integration Requirements
+- **SWIFT MT7**: The system MUST be able to generate SWIFT MT700 messages for LC issuance.
+- **CBS**: The system MUST be able to integrate with Core Banking system to: 
+    - generate accounting entries for LC issuance.
+    - do payment for LC transaction.
+    - retrieve customer information.
+    - retrieve and update collateral information.
+    - retrieve and update limit information.
+    - retrieve account information and balance
+    - retrieve currency exchange rate
+
+**Last Updated:** 2026-03-10

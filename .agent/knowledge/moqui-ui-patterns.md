@@ -103,3 +103,18 @@ Moqui widget templates like `enumDropDown` are case-sensitive. parameters (e.g.,
 
 ### 6. Organizing Shared Fragments
 **Pattern**: Store reusable XML fragments (shared forms, dialogs, transitions) in a `template/` directory within the component (e.g., `template/lc/`). This keeps the `screen/` directory focused strictly on navigation and page structure, matching Moqui's own framework organization.
+
+### 7. Reusable Dialog Template (Standardized Creation Flow)
+**Problem:** Duplicating complex creation forms (like LC creation or Amendment initiation) leads to UI inconsistencies and duplicated transition logic.
+
+**Solution:**
+1.  **Shared Dialog Screen**: Create a dedicated fragment screen (e.g., `template/lc/CreateAmendment.xml`) containing just the `<container-dialog>` and its `<form-single>`.
+2.  **Context-Aware Inputs**: Use `<section>` with conditions to handle context. For example, show a hidden `lcId` if it exists in the current context, but a `<drop-down>` if it's missing (needed for standalone Find screens).
+3.  **Inclusion**:
+    ```xml
+    <!-- In the host screen -->
+    <transition-include name="CreateAction" location="component://.../template/...Transitions.xml"/>
+    ...
+    <include-screen name="CreateAction" location="component://.../template/...CreateAction.xml"/>
+    ```
+4.  **Benefits**: Single source of truth for form data, consistent redirection (via shared transitions), and reduced maintenance.

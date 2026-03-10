@@ -18,12 +18,13 @@
     - Resolved race conditions in Amendment services and non-deterministic audit logs.
     - Validated Drawing Flow and CBS Integration.
 
-- [x] **Phase 6: Agent Optimization & Standards** (2026-03-09)
-    - Consolidated rules, refactored knowledge base, and optimized skill protocols.
-    - Synchronized `moqui-errors.json` and categorized `moqui-*-patterns.md`.
+- [x] **Phase 6: UI/UX Harmonization & Standard Standards** (2026-03-10)
+    - Refactored Amendment flow into reusable templates (`CreateAmendment.xml`, `AmendmentTransitions.xml`).
+    - Standardized list UI across LC Detail and Find screens.
+    - Updated BRD to reflect new UI/UX requirements.
 
 - [ ] Adapt MT707 generator for shadow record model.
 - [ ] Implement full SWIFT fields for Drawing module.
 - [ ] Implement SWIFT MT756 (Payment Advice).
 
-**Last Updated:** 2026-03-09
+**Last Updated:** 2026-03-10

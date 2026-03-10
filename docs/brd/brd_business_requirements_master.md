@@ -1,7 +1,16 @@
+---
+Document ID: BRD-001
+Module: Trade Finance
+Feature: Letter of Credit (LC)
+Status: DRAFT
+Last Updated: 2026-03-10
+Author: [LocNX]
+---
+
 # Business Requirements Document: Trade Finance System
 
 ## 1. Executive Summary
-The Trade Finance System is designed to digitize and automate the management of Letters of Credit (LC) to improve efficiency, reduce errors, and ensure compliance with international trading standards.
+**Business Goal:** The Trade Finance System is designed to digitize and automate the management of Letters of Credit (LC) to improve efficiency, reduce errors, and ensure compliance with international trading standards.
 
 ## 2. Stakeholders
 - **Applicants (Importers)**: Initiate LC applications to provide payment security to vendors.
@@ -12,9 +21,9 @@ The Trade Finance System is designed to digitize and automate the management of 
 ## 3. Standard Compliance
 The system MUST comply with the following international standards:
 - **UCP 600**: Uniform Customs and Practice for Documentary Credits.
-- **SWIFT MT700**: Standard for issuing a Documentary Credit.
+- **SWIFT MTxxx**: Standard for Letter of Credit.
 
-## 4. Application Modules
+## 4. Trade Finance Business Modules
 
 ### 4.1. Import LC
 Refer to brd_import_lc.md for detailed requirements.
@@ -80,4 +89,5 @@ Refer to brd_import_lc.md for detailed requirements.
 - **Usability**: Modern, state-of-the-art dashboard interface for quick decision-making.
 - **Integration**: connect to bank host systems
 
-
+## 6. Out of Scope
+Explicitly list related business requirements that are NOT part of this specific delivery.

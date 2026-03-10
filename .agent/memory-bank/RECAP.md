@@ -1,19 +1,19 @@
-# Session Recap: Refactoring Create LC and Fixing Quasar Redirection
+# Session Recap: Amendment UI Harmonization & Reusable Templates
 
 ## 1. Accomplishments
-- **Reusable "Create New LC" Component**: Refactored the LC creation dialog and transition into shared components in `template/lc/` (`CreateLc.xml` and `LcTransitions.xml`).
-- **Standardized Navigation**: Updated `Home.xml`, `Dashboard.xml`, and `FindLc.xml` to use `<transition-include>` and `<include-screen>` for the reusable LC creation flow.
-- **Quasar Redirection FixES**:
-    - Fixed broken URLs after LC creation using sparse paths (`//${appRoot}/`).
-    - Fixed status change navigation in `Lc.xml` and `MainLC.xml` using explicit relative paths (`./MainLC`) and `parameter-map` for context preservation.
-- **UI Synchronization**: Styled "Browse All Records" on Dashboard to match "New LC Application" button width.
-- **Knowledge Update**: Documented "Clean Parent" pattern and Quasar-specific redirection lessons in `moqui-ui-patterns.md`.
+- **Reusable Amendment Templates**: Created `CreateAmendment.xml` and `AmendmentTransitions.xml` in `template/lc/` to standardize the amendment initiation flow.
+- **UI Harmonization**: Updated the "Amendments" tab in LC Detail to match the `FindAmendment` screen, using `LcAmendmentDetailView` for enriched data and synchronized list columns.
+- **Context-Aware Dialogs**: Implemented a pattern where the "Initiate New Request" dialog automatically detects the `lcId` context, providing a seamless experience from both search and detail screens.
+- **Documentation Sync**: Updated `brd_import_lc.md` and `moqui-ui-patterns.md` to reflect these new design standards and use cases.
 
 ## 2. Technical Findings
-- **Redirection in Quasar**: Absolute/Sparse paths can trigger full page reloads in the Quasar router. For in-tab status changes, explicit relative paths (e.g., `./MainLC`) are more stable and keep navigation within the SPA hash.
-- **Dynamic Screen Names**: `${sri.screenUrlInfo.targetScreen?.getScreenName()}` may fail to resolve correctly in some Quasar contexts; hardcoding the target sub-screen (e.g., `./MainLC`) is safer.
-- **Parameter Passing**: Even with relative redirects, `parameter-map="[lcId:lcId]"` is mandatory to prevent the router from losing the record context.
+- **Dialog & Transition Include Pattern**: Proved more robust and maintainable than inline forms for complex business processes.
+- **Sparse Path Navigation**: Used `//${appRoot}/...` in shared transitions to ensure reliable redirection across different screen depths.
+- **Read-Only Guards**: Enforced `isReadOnly` state in the Amendments tab to prevent unauthorized requests on finalized LCs.
 
-## 3. Pending Issues / Next Steps
-- **Build Path Errors**: Persistent `JRE System Library [JavaSE-21]` and build path errors in the `TradeFinance` project need resolution.
-- **Test Failure**: `TradeFinanceScreensSpec` still has failures in some edge cases (specifically related to forced IDs in list views).
+## 3. Next Steps
+- **Drawing Rework**: Extend the reusable template pattern to the Drawing module.
+- **Field Expansion**: Continue adding full SWIFT fields for Drawings.
+- **Service Alignment**: Update MT707 generator to work with the latest shadow record entity model.
+
+**Last Update:** 2026-03-10

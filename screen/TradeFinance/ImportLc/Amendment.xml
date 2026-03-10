@@ -2,17 +2,21 @@
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
         default-menu-title="Amendment" default-menu-index="3">
 
+<!-- don't explicitly declare parameters in this parent screen 
     <parameter name="lcId" required="false"/>
     <parameter name="amendmentSeqId"/>
+-->
 
     <transition name="SubmitAmendment"><service-call name="moqui.trade.finance.AmendmentServices.submit#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
     <transition name="ApproveAmendment"><service-call name="moqui.trade.finance.AmendmentServices.approve#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
     <transition name="ConfirmAmendment"><service-call name="moqui.trade.finance.AmendmentServices.confirm#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
 
     <actions>
+        <set field="lcId" from="lcId ?: lcSeqId"/>
         <if condition="lcId">
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
         </if>
+        <set field="amendmentSeqId" from="amendmentSeqId"/>
         <if condition="amendmentSeqId">
             <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment">
                 <field-map field-name="lcId" from="lcId"/>
@@ -42,7 +46,7 @@
     </subscreens>
 
     <widgets>
-        <section name="AmendmentDetailHeader" condition="amendment &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+        <section name="AmendmentDetailHeader" condition="amendment">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -78,14 +82,14 @@
             </widgets>
         </section>
 
-        <section name="AmendmentContentTabs" condition="amendment &amp;&amp; sri.screenUrlInfo.extraPathNameList">
+        <section name="AmendmentContentTabs" condition="amendment">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="AmendmentDetailTabs" type="tab"/>
                 </container>
             </widgets>
             <fail-widgets>
-                <subscreens-panel id="AmendmentMainPanel" type="popup"/>
+                <subscreens-panel id="AmendmentMainPanel" type="none"/>
             </fail-widgets>
         </section>
     </widgets>

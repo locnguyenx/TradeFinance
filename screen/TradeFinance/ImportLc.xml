@@ -4,9 +4,12 @@
     <subscreens default-item="Dashboard">
         <subscreens-item name="Dashboard" location="component://TradeFinance/screen/TradeFinance/ImportLc/Dashboard.xml"/>
         <subscreens-item name="TaskQueue" menu-title="Task Queue" location="component://TradeFinance/screen/TradeFinance/ImportLc/TaskQueue.xml"/>
-        <subscreens-item name="Lc" menu-title="Letter of Credit" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc.xml"/>
-        <subscreens-item name="Amendment" menu-title="Amendments" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment.xml"/>
-        <subscreens-item name="Drawing" menu-title="Drawings" location="component://TradeFinance/screen/TradeFinance/ImportLc/Drawing.xml"/>
+        <subscreens-item name="Lc" menu-title="Letter of Credit" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc.xml"
+                         parameter-map="[lcId:null]"/>
+        <subscreens-item name="Amendment" menu-title="Amendments" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment.xml"
+                         parameter-map="[amendmentSeqId:null]"/>
+        <subscreens-item name="Drawing" menu-title="Drawings" location="component://TradeFinance/screen/TradeFinance/ImportLc/Drawing.xml"
+                         parameter-map="[drawingId:null]"/>
     </subscreens>
     
     <widgets>

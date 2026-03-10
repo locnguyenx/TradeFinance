@@ -2,7 +2,7 @@
         default-menu-include="false" default-menu-title="Find Import LC" default-menu-index="2">
     
     <transition name="LcDetail"><default-response url="../MainLC"/></transition>
-    <transition name="CreateLc"><service-call name="moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit"/><default-response url="."/></transition>
+    <transition-include name="CreateLc" location="component://TradeFinance/template/lc/LcTransitions.xml"/>
     <transition name="DeleteLc"><service-call name="moqui.trade.finance.TradeFinanceServices.delete#LetterOfCredit"/><default-response url="."/></transition>
 
     <actions>
@@ -16,21 +16,7 @@
         <container style="q-pa-md">
             <container style="row justify-between items-center q-mb-md">
                 <label text="Import Letters of Credit" type="h5" style="text-weight-bold text-primary"/>
-                <container-dialog id="CreateLcDialog" button-text="Create New LC">
-                    <form-single name="CreateLcForm" transition="CreateLc">
-                        <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
-                        <field name="lcNumber"><default-field title="LC Number (20)"><text-line size="20"/></default-field></field>
-                        <field name="amount"><default-field title="Amount"><text-line size="15"/></default-field></field>
-                        <field name="amountCurrencyUomId"><default-field title="Currency">
-                            <drop-down allow-empty="false">
-                                <entity-options key="${uomId}" text="${description}">
-                                    <entity-find entity-name="moqui.basic.Uom"><econdition field-name="uomTypeEnumId" value="UT_CURRENCY_MEASURE"/></entity-find>
-                                </entity-options>
-                            </drop-down>
-                        </default-field></field>
-                        <field name="submitButton"><default-field title="Submit Application"><submit/></default-field></field>
-                    </form-single>
-                </container-dialog>
+                <include-screen location="component://TradeFinance/template/lc/CreateLc.xml"/>
             </container>
 
             <form-list name="LcList" list="lcList" skip-form="true" header-dialog="true">

@@ -2,8 +2,14 @@
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
     <parameter name="lcId" required="true"/>
     <parameter name="readOnly"/>
-    <transition name="UpdateLc" condition="!isReadOnly"><service-call name="moqui.trade.finance.TradeFinanceServices.update#LetterOfCredit"/><default-response url="."/></transition>
-    <transition name="IssueLc" condition="!isReadOnly"><service-call name="moqui.trade.finance.LifecycleServices.issue#LetterOfCredit"/><default-response url="."/></transition>
+    <transition name="UpdateLc" condition="!isReadOnly">
+        <service-call name="moqui.trade.finance.TradeFinanceServices.update#LetterOfCredit"/>
+        <default-response url="." parameter-map="[lcId:lcId]"/>
+    </transition>
+    <transition name="IssueLc" condition="!isReadOnly">
+        <service-call name="moqui.trade.finance.LifecycleServices.issue#LetterOfCredit"/>
+        <default-response url="." parameter-map="[lcId:lcId]"/>
+    </transition>
     
     <actions>
         <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
@@ -242,7 +248,6 @@
                         <field-layout>
                             <container style="row justify-end items-center q-mb-md">
                                 <container style="row items-center q-gutter-sm">
-                                    <field-ref name="submitButton"/>
                                     <field-ref name="IssueLcField"/>
                                 </container>
                             </container>

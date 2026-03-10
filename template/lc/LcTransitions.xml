@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd"
+        always-use-full-path="true">
+    <transition name="CreateLc">
+        <service-call name="moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit" in-map="context" out-map="context"/>
+        <default-response url="//${appRoot}/ImportLc/Lc/MainLC" parameter-map="[lcId:lcId]"/>
+    </transition>
+    <widgets></widgets>
+</screen>

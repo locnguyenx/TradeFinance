@@ -20,7 +20,7 @@
 
 - [x] **Phase 6: Agent Optimization & Standards** (2026-03-09)
     - Consolidated rules, refactored knowledge base, and optimized skill protocols.
-    - Synchronized `moqui-errors.json` and categorized `moqui-patterns.md`.
+    - Synchronized `moqui-errors.json` and categorized `moqui-*-patterns.md`.
 
 - [ ] Adapt MT707 generator for shadow record model.
 - [ ] Implement full SWIFT fields for Drawing module.

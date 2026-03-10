@@ -25,7 +25,10 @@ This project uses a highly optimized agentic architecture. Instead of overwhelmi
 │   └── doc-sync/          (BRD/TDS alignment audit)
 └── knowledge/             # Synchronized reference data
     ├── moqui-errors.json  (Automated diagnostics cache)
-    ├── moqui-patterns.md  (Categorized architectural lessons)
+    ├── moqui-ui-patterns.md (Categorized UI architectural lessons)
+    ├── moqui-entity-patterns.md (Categorized Entity architectural lessons)
+    ├── moqui-service-patterns.md (Categorized Service architectural lessons)
+    ├── moqui-other-patterns.md (Testing & Integration architectural lessons)
     ├── moqui-testing.md   (Mandates & traps for Spock/UI tests)
     └── moqui_syntax_ref.md (Expanded XML tag reference)
 ```
@@ -37,7 +40,7 @@ This project uses a highly optimized agentic architecture. Instead of overwhelmi
 
 ### 2. Skills (Active SOPs)
 Instructions telling the agent *how* to use its native abilities. No external scripts are required.
-- **`moqui-diagnostics`**: Now uses the synchronized `moqui-errors.json` and `moqui-patterns.md` for self-healing.
+- **`moqui-diagnostics`**: Now uses the synchronized `moqui-errors.json` and categorized `moqui-*-patterns.md` for self-healing.
 - **`doc-sync`**: Performs dual-layer audits (Business vs Technical).
 
 ---

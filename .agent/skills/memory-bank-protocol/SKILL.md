@@ -107,7 +107,7 @@ When the user says "finish session" or similar:
 
 ### 1. Identify the Destination
 - **Recurring Errors/Bugs:** Update `.agent/knowledge/moqui-errors.json`.
-- **Architectural Patterns/Lessons:** Update `.agent/knowledge/moqui-patterns.md`.
+- **Architectural Patterns/Lessons:** Update `moqui-ui-patterns.md`, `moqui-entity-patterns.md`, or `moqui-service-patterns.md`.
 - **Tool/Task Specific SOPs:** Update the relevant `SKILL.md` in `.agent/skills/`.
 - **Syntax/XSD Discoveries:** Update `.agent/knowledge/moqui_syntax_ref.md`.
 

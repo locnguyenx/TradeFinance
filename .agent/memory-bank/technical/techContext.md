@@ -10,7 +10,7 @@
 ## Configuration
 - **Component:** `runtime/component/TradeFinance`
 - **Skills:** Custom skills in `.agent/skills/` (e.g., `moqui-diagnostics`, `moqui-screen-validator`).
-- **Knowledge Base:** Curated lessons in `.agent/knowledge/moqui-errors.json` and `moqui-patterns.md`.
+- **Knowledge Base:** Curated lessons in `.agent/knowledge/moqui-errors.json` and categorized `moqui-*-patterns.md`.
 - **Entities:** Defined in `TradeFinanceEntities.xml`.
 - **Services:** Organized in `AmendmentServices.xml`, `DrawingServices.xml`.
 - **Demo Data:** `30_TradeFinanceDemoData.xml` (Schema updated 2026-03-06).

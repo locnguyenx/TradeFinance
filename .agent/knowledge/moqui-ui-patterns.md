@@ -1,0 +1,38 @@
+# Moqui UI & Screen Patterns
+## Introduction
+## Patterns & Lession Learned
+### 1. Safe Subscreen Detection (Header Visibility)
+**Problem:** Detail headers or tabs appearing on list views (leakage) or disappearing on direct navigation to the parent.
+**Pattern:**
+```xml
+<section name="DetailHeader" condition="recordId && !['FindRecord'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+```
+**DANGER:** 
+- NEVER include the parent screen name (e.g., `'Lc'`) in the exclusion list. 
+- If the user lands on the parent URL with an ID (e.g., `.../Lc?lcId=123`), the `targetScreen` is the parent itself. Excluding it will hide the header.
+- ONLY exclude explicitly designated search/list screens (e.g., `'FindLc'`, `'LcList'`).
+
+### 2. Layout & Styling Rules
+- **Encapsulation:** NEVER place a `<link>` or `<container>` directly inside a `<field-layout>`. It must be wrapped in a `<field>` and referenced via `<field-ref>`.
+- **Quasar Classes:** `<container>` does not support Quasar `class` attributes. Use the `style` attribute (e.g., `style="q-card shadow-2"`).
+- **Standard Actions:** Use `Create`, `Save` (NEVER "Update"), and `Delete` (style `text-negative`). Primary actions belong in the top header via `<field-ref>`.
+- **Navigation:** Always use `url-type="screen"` and relative paths. Use `${lastScreenUrl ?: '.'}` for back links.
+- **Refresh Logic:** Add `reload-save="true"` to `<form-single>` if it modifies data shown in the header/tabs.
+
+### 3. Stale UI Cache
+- **Symptom:** Tabs persist after switching a subscreen-panel from `type="tab"` to `type="popup"`.
+- **Fix:** Execute `./gradlew cleanAll` and perform a hard browser refresh (Cmd+Shift+R).
+
+### UI Fix: Form List Column Field-Ref
+Inside `<form-list-column>`, always use `<field-ref>` to include fields. Using `<field>` directly will result in an empty list display.
+
+### UI: Relative Transitions in Nested Modules
+When nesting screens in subdirectories (e.g., `ImportLc/List`), relative URLs in transitions must account for the new depth. Use `../../Detail` instead of `../Detail` to reach screens in the parent directory.
+
+### UI: Tabbed Navigation
+Use `<subscreens-panel type="tab"/>` instead of legacy `<subscreens-tabs/>` for modular parent screens. The `<subscreens-tabs/>` tag is outmoded and may show "not yet implemented" errors in modern Moqui renderers.
+
+### UI: Widget Template Case Sensitivity
+Moqui widget templates like `enumDropDown` are case-sensitive. parameters (e.g., `enumTypeId`) must match the database/entity case exactly.
+
+

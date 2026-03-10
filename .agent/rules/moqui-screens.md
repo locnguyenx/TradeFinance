@@ -34,5 +34,5 @@ globs: "**/screen/**/*.xml"
 - **Widget References:** All widgets (links, containers) MUST be defined in a `<field>` and referenced via `<field-ref>`.
 
 ## 5. Complex Implementations (The Cookbook)
-- For complex UI architecture—including **Safe Subscreen Detection** (preventing tab leakage), **Idiomatic Status Chips**, and **Parent Context Clearing**—you MUST consult the approved code snippets in `.agent/knowledge/moqui-patterns.md`.
+- For complex UI architecture—including **Safe Subscreen Detection** (preventing tab leakage), **Idiomatic Status Chips**, and **Parent Context Clearing**—you MUST consult the approved code snippets in `.agent/knowledge/moqui-ui-patterns.md`.
 - For questions about valid Moqui tags, consult `.agent/knowledge/moqui_syntax_ref.md`.

@@ -7,7 +7,7 @@
 - **Extract error:** Identify the core exception string (e.g., "SAXParseException", "formInstance was null").
 - **Read Knowledge:** 
   1. Read `.agent/knowledge/moqui-errors.json` for immediate matches.
-  2. Read `.agent/knowledge/moqui-patterns.md` for UI/Entity architectural context.
+  2. Read `.agent/knowledge/moqui-ui-patterns.md`, `moqui-entity-patterns.md`, or `moqui-service-patterns.md` for architectural context, resolution, best practices.
 
 ### 2. Match & Apply
 - If a match is found in the JSON or Markdown patterns:

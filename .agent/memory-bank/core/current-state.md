@@ -8,7 +8,7 @@
 - [x] Achieved 100% test coverage for Trade Finance module (108 tests passing).
 - [x] Optimized `.agent/` directory (Rules, Skills, Knowledge).
 - [x] Consolidated `git_workflow.md` into `session_protocol.md`.
-- [x] Refactored `moqui-errors.json` and `moqui-patterns.md`.
+- [x] Refactored `moqui-errors.json` and categorized `moqui-*-patterns.md`.
 
 ## Key Considerations (Blockers/Issues)
 - **Zero-Touch:** Strict enforcement of component boundary in `global.md`.

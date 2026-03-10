@@ -1,13 +1,13 @@
-## Handover Status
-- **Agent Optimized**: Rules, Skills, and Knowledge the `.agent/` directory are fully synchronized and optimized.
-- **100% Test Coverage**: Maintained for Import LC module.
+# Notes for Next Session
+
+## Status
+- All Import LC screens (`Lc`, `Amendment`, `Drawing`) are now aligned with `SimpleScreens` best practices.
+- Redundant header issue is resolved with robust regex-based visibility guards.
+- Screen test coverage is 100% (30/30 passed).
+
+## Technical Details
+- Used `condition="lc && !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Lc')"` to hide headers on search/parent screens while keeping them on detail tabs.
+- Transitions use dynamic `sri.screenUrlInfo.targetScreen?.getScreenName()` for redirects.
 
 ## Next Steps
-1.  **MT707 Adaptation**: Modify the MT707 generator to pull data from the `LcAmendment` shadow record.
-2.  **Drawing Expansion**: Continue SWIFT field expansion.
-
-## Critical Warnings
-- **Transaction Rollback**: Always use `ec.message.addError()` in scripts; `<message error="true">` in XML does not roll back transactions.
-- **Nesting Constraints**: Follow `<field-layout>` nesting rules in `moqui-screens.md`.
-
-**Last Updated:** 2026-03-09
+- Consider applying same patterns to `TaskQueue.xml` or other modules.

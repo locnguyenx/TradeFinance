@@ -86,20 +86,13 @@ Before modifying ANY documentation file (Memory Bank, Docs, Skills):
 **NEVER ASSUME DATES.**
 
 
-### 3. Session Closing Protocol
-When the user says "finish session" or similar:
-1.  
-**Update `current-state.md`**
-: Reflect the latest status.
-2.  
-**Update `progress.md`**
-: Log completed milestones.
-3.  
-**Update `NOTES_NEXT_SESSION.md`**
-: Write clear instructions for the "next you".
-4.  
-**Cleanup**
-: Remove temp files or logs.
+### 3. Session Closing Protocol (The "Gardener" Handoff)
+Before signaling task completion or ending a session:
+1.  **Perform Self-Improvement**: Scan the session for new patterns, fixed errors, or syntax discoveries. Update `.agent/knowledge/` and `.agent/skills/` accordingly (see Directive below).
+2.  **Update `current-state.md`**: Reflect the latest status.
+3.  **Update `progress.md`**: Log completed milestones.
+4.  **Update `NOTES_NEXT_SESSION.md`**: Write clear instructions for the "next you".
+5.  **Run `/recap` Workflow**: Generate the final handoff and commit message.
 
 ## 🚀 Self-Improvement Directive (The "Gardener")
 

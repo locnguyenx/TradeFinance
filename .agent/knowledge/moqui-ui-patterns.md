@@ -8,6 +8,15 @@
    ```xml
    <section name="DetailHeader" condition="record && !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|ParentName')">
    ```
+
+### Robust Screen Hierarchy Guard
+To ensure detail headers and tabs only show on sub-screens (and not the list/parent screen), use `sri.screenUrlInfo.extraPathNameList` to detect the presence of a sub-path:
+
+```xml
+<section name="LcDetailHeader" condition="lc && sri.screenUrlInfo.extraPathNameList">
+```
+
+This is more robust than checking for specific screen names or using regex, as it correctly identifies when the user is at the parent screen level (where `extraPathNameList` is empty).
 2. **Sub-screens**: Explicitly mark ID parameters as `required="true"`. This allows Moqui to handle tab visibility more naturally.
 3. **Menu Exclusion**: Set `default-menu-include="false"` on "Find" screens that are default sub-screen items to prevent redundant tabs.
 

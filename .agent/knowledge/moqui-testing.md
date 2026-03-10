@@ -95,6 +95,12 @@ directory `runtime/component/TradeFinance/build/test-results/test/`
   }
   ```
 
+- **Best Practice Implementation**:
+  ```xml
+  <section name="LcDetailHeader" condition="lc && sri.screenUrlInfo.extraPathNameList">
+  ```
+  This is the preferred guard because it correctly detects the absence of a sub-path regardless of naming conventions.
+
 ### 7. Parameter Naming Standardization
 - **Pattern**: When building cross-module navigation (e.g., from Lc to Amendment), standardize ID parameter names. Use `lcId`, `amendmentSeqId`, and `drawingId` consistently in all screens, links, and services.
 - **Why**: Mixed naming (e.g., `drawingSeqId` vs `drawingId`) leads to broken links and navigation failures during screen transitions.

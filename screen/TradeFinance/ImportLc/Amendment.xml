@@ -42,7 +42,7 @@
     </subscreens>
 
     <widgets>
-        <section name="AmendmentDetailHeader" condition="amendment &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindAmendment'">
+        <section name="AmendmentDetailHeader" condition="amendment &amp;&amp; sri.screenUrlInfo.extraPathNameList">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -78,7 +78,7 @@
             </widgets>
         </section>
 
-        <section name="AmendmentContentTabs" condition="amendment &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindAmendment'">
+        <section name="AmendmentContentTabs" condition="amendment &amp;&amp; sri.screenUrlInfo.extraPathNameList">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="AmendmentDetailTabs" type="tab"/>

@@ -57,7 +57,7 @@
     </subscreens>
 
     <widgets>
-        <section name="LcDetailHeader" condition="lcId &amp;&amp; !['FindLc', 'Lc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="LcDetailHeader" condition="lc &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Lc')">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -93,7 +93,7 @@
             </widgets>
         </section>
 
-        <section name="LcContentTabs" condition="lcId &amp;&amp; !['FindLc', 'Lc'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="LcContentTabs" condition="lc &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Lc')">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="LcDetailTabs" type="tab"/>

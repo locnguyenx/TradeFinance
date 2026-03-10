@@ -46,7 +46,7 @@
     </subscreens>
 
     <widgets>
-        <section name="DrawingDetailHeader" condition="drawingId &amp;&amp; !['FindDrawing', 'Drawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="DrawingDetailHeader" condition="drawing &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Drawing')">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -74,7 +74,7 @@
             </widgets>
         </section>
 
-        <section name="DrawingContentTabs" condition="drawingId &amp;&amp; drawing &amp;&amp; !['FindDrawing', 'Drawing'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
+        <section name="DrawingContentTabs" condition="drawing &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Drawing')">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="DrawingDetailTabs" type="tab"/>

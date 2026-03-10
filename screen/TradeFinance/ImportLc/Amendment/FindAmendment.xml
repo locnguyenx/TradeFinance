@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
-        default-menu-title="Find Amendment">
+        default-menu-include="false" default-menu-title="Find Amendment">
     
     <transition name="AmendmentDetail"><default-response url="../AmendmentDetail"/></transition>
     <transition name="LcDetail"><default-response url="../../Lc/MainLC"/></transition>

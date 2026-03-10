@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
-        default-menu-title="Find Import LC" default-menu-index="2">
+        default-menu-include="false" default-menu-title="Find Import LC" default-menu-index="2">
     
     <transition name="LcDetail"><default-response url="../MainLC"/></transition>
     <transition name="CreateLc"><service-call name="moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit"/><default-response url="."/></transition>

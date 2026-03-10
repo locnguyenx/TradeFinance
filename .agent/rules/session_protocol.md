@@ -21,11 +21,10 @@ trigger: always_on
 * **Focus:** Focus edits strictly on Moqui component files; ignore runtime logs, temporary files, or database stores.
 * **Conflict Prevention:** If `git status` shows modifications that this session did not initiate, notify the user before proceeding.
 
-## 3. Automated Exit Protocol (Mandatory)
-
 - **Trigger:** Before signaling task completion or ending a session, you MUST:
-    1. Run the procedure in the '/recap' workflow.
-    2. **Auto-Commit:** Run \`git add RECAP.md\` and \`git commit -m "docs: auto-update session recap [skip ci]"\`.
+    1. **Self-Improvement**: Update bits of knowledge in `.agent/knowledge/` and skills in `.agent/skills/` derived from the session.
+    2. Run the procedure in the '/recap' workflow.
+    3. **Auto-Commit**: Run \`git add .agent/ RECAP.md\` and \`git commit -m "docs: auto-update session recap [skip ci]"\`.
 - **Enforcement:** If the user says "goodbye" or "done," you must perform these steps before your final response.
 
 ## 4. Documentation Compliance (Mandatory)

@@ -20,7 +20,6 @@
         <if condition="lcId">
             <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
-            <log message="Lc.xml: lcId=${lcId}, found=${lc != null}, targetScreen=${sri.screenUrlInfo.targetScreen?.getScreenName()}"/>
             <if condition="lc">
                 <set field="statusColorMap" from="['LcLfDraft':'grey-7', 'LcLfApplied':'orange-8', 'LcLfIssued':'green-8', 'LcLfAdvised':'blue-8', 'LcLfAmended':'indigo-8', 'LcLfNegotiated':'teal-8', 'LcLfRevoked':'red-8', 'LcLfExpired':'brown-7', 'LcLfClosed':'blue-grey-8', 'LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8', 'LcTxCancelled':'red-7', 'LcTxClosed':'blue-grey-8']"/>
                 

@@ -11,5 +11,6 @@
   "Link disabled in ScreenTestRender": "If a screen with a 'Close View' or 'Back' link is rendered in a ScreenTest, the link might appear disabled in the HTML output. Ensure the lastScreenUrl passed to the test resolves to a valid absolute or relative path.",
   "Invalid URL or Routing errors": "Internal links across modules are failing. Always set a consistent appRoot variable in the <always-actions> of your main parent screen to simplify links (e.g., url=\"//${appRoot}/Module/Screen\"), and ensure you are using relative paths (../../) correctly.",
   "java.lang.NoClassDefFoundError": "Moqui system artifacts or build classes are corrupt. Execute './gradlew cleanAll' followed by './gradlew loadSave' to rebuild and restore the data snapshot.",
-  "Unique index or primary key violation": "Data integrity error, likely due to reloading data over existing records or sequence collisions. Run './gradlew cleanDb loadSave' to reset the environment state."
+  "Unique index or primary key violation": "Data integrity error, likely due to reloading data over existing records or sequence collisions. Run './gradlew cleanDb loadSave' to reset the environment state.",
+  "MissingPropertyException: No such property: urlMap": "CRITICAL: Occurs when trying to access 'urlMap' directly from 'sri.screenUrlInfo'. This property is not public or does not exist. Use 'sri.screenUrlInfo.targetScreen?.getScreenName()' to safely check the destination screen name instead."
 }

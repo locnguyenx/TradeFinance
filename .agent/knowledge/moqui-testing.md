@@ -80,6 +80,21 @@ directory `runtime/component/TradeFinance/build/test-results/test/`
 - When heavily utilizing Quasar for tabs, dialogs, and dynamic rendering, `ScreenTestRender` `assertContains` checks for basic screen text may fail because Quasar collapses or lazy-loads data. 
 - Ensure you test for static layout strings (e.g., Tab Headers like "AMENDMENTS") rather than deep data components if lazy-loading is suspected, OR use `@Ignore` to bypass legacy screen tests to focus resources solely on Service unit testing.
 
+### Parent Screen Visibility Testing
+**Pattern:** When refactoring parent screens to use conditional headers/tabs, always add a test case that renders the parent screen *with* an ID.
+- **Goal**: Verify that the "List" view remains clean (no detail tabs) even if an ID is present in the parameters (to handle redirects/deep links).
+- **Example**:
+  ```groovy
+  def "Parent screen with ID does NOT render detail tabs"() {
+      when:
+      ScreenTestRender str = screenTest.render("Module/ParentScreen", [recordId: "DEMO_01"], null)
+      then:
+      !str.errorMessages
+      str.assertContains("List Header Text")
+      !str.output.contains("Detail Header Text")
+  }
+  ```
+
 ### 7. Parameter Naming Standardization
 - **Pattern**: When building cross-module navigation (e.g., from Lc to Amendment), standardize ID parameter names. Use `lcId`, `amendmentSeqId`, and `drawingId` consistently in all screens, links, and services.
 - **Why**: Mixed naming (e.g., `drawingSeqId` vs `drawingId`) leads to broken links and navigation failures during screen transitions.

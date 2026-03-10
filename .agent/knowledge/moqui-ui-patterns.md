@@ -1,16 +1,17 @@
 # Moqui UI & Screen Patterns
 ## Introduction
 ## Patterns & Lession Learned
-### 1. Safe Subscreen Detection (Header Visibility)
+### 1. Robust Screen Hierarchy (SimpleScreens Pattern)
 **Problem:** Detail headers or tabs appearing on list views (leakage) or disappearing on direct navigation to the parent.
-**Pattern:**
-```xml
-<section name="DetailHeader" condition="recordId && !['FindRecord'].contains(sri.screenUrlInfo.targetScreen?.getScreenName())">
-```
-**DANGER:** 
-- NEVER include the parent screen name (e.g., `'Lc'`) in the exclusion list. 
-- If the user lands on the parent URL with an ID (e.g., `.../Lc?lcId=123`), the `targetScreen` is the parent itself. Excluding it will hide the header.
-- ONLY exclude explicitly designated search/list screens (e.g., `'FindLc'`, `'LcList'`).
+**Standard Pattern (following SimpleScreens/Asset):**
+1. **Parent Screen**: Fetch the entity and use its presence as the primary condition.
+   ```xml
+   <section name="DetailHeader" condition="record && !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|ParentName')">
+   ```
+2. **Sub-screens**: Explicitly mark ID parameters as `required="true"`. This allows Moqui to handle tab visibility more naturally.
+3. **Menu Exclusion**: Set `default-menu-include="false"` on "Find" screens that are default sub-screen items to prevent redundant tabs.
+
+**Lession Learned (Regex Guard):** The regex `matches('Find.*|ParentName')` is the most robust way to ensure headers are hidden on BOTH the search screen and the parent screen itself while remaining visible on all other detail tabs (Financials, History, etc.).
 
 ### 2. Layout & Styling Rules
 - **Encapsulation:** NEVER place a `<link>` or `<container>` directly inside a `<field-layout>`. It must be wrapped in a `<field>` and referenced via `<field-ref>`.

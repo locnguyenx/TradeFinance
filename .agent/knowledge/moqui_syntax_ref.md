@@ -6,6 +6,7 @@
 | `<entity-find>` | `entity-name`, `list` | Fetches data from DB. Use `<search-form-inputs/>` for filtering. |
 | `<entity-find-one>` | `entity-name`, `value-field` | Fetches single record by PK. |
 | `<service-call>` | `name`, `in-map`, `out-map` | Calls a service. Use `transition#Name` for screen transitions. |
+| `<parameter>` | `name`, `required="true"` | Defines screen parameters. Marking primary IDs as `required="true"` in detail sub-screens is a best practice for clean tabbed navigation. |
 | `<set>` | `field`, `from`, `value` | Sets a variable. Use Groovy expressions in `from`. |
 | `<script>` | `type="groovy"` | Multi-line logic. Wrap in `<![CDATA[ ... ]]>`. |
 | `<if>` / `<else>` | `condition` | Conditional logic. `<else>` MUST be nested inside `<if>`. |
@@ -14,7 +15,7 @@
 ## 2. UI Structure & Containers
 | Tag | Key Attributes | Usage |
 | :--- | :--- | :--- |
-| `<screen>` | `require-authentication` | Root element. |
+| `<screen>` | `require-authentication, default-menu-include, default-menu-title, default-menu-index` | Root element. Use `default-menu-include="false"` for search screens to keep the navigation clean. |
 | `<subscreens>` | `default-item` | Defines child screens/tabs. |
 | `<subscreens-panel>` | `type="tab\|popup"` | Renders subscreen navigation. |
 | `<widgets>` | N/A | Container for visual elements. |

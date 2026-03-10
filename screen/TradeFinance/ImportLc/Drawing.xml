@@ -18,6 +18,7 @@
         <if condition="lcId">
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
         </if>
+        <set field="drawingId" from="drawingId ?: drawingSeqId"/>
         <if condition="drawingId">
             <entity-find-one entity-name="moqui.trade.finance.LcDrawing" value-field="drawing">
                 <field-map field-name="lcId" from="lcId"/>
@@ -46,7 +47,7 @@
     </subscreens>
 
     <widgets>
-        <section name="DrawingDetailHeader" condition="drawing &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Drawing')">
+        <section name="DrawingDetailHeader" condition="drawing &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindDrawing'">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -74,7 +75,7 @@
             </widgets>
         </section>
 
-        <section name="DrawingContentTabs" condition="drawing &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Drawing')">
+        <section name="DrawingContentTabs" condition="drawing &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindDrawing'">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="DrawingDetailTabs" type="tab"/>

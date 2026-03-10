@@ -17,6 +17,7 @@
         <set field="lcIdToPass" from="null"/>
         <set field="amndSeqToPass" from="null"/>
         <set field="drSeqToPass" from="null"/>
+        <set field="lcId" from="lcId ?: lcSeqId"/>
         <if condition="lcId">
             <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
@@ -57,7 +58,7 @@
     </subscreens>
 
     <widgets>
-        <section name="LcDetailHeader" condition="lc &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Lc')">
+        <section name="LcDetailHeader" condition="lc &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindLc'">
             <widgets>
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
@@ -93,7 +94,7 @@
             </widgets>
         </section>
 
-        <section name="LcContentTabs" condition="lc &amp;&amp; !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|Lc')">
+        <section name="LcContentTabs" condition="lc &amp;&amp; sri.screenUrlInfo.targetScreen?.getScreenName() != 'FindLc'">
             <widgets>
                 <container style="q-pa-md pt-none">
                     <subscreens-panel id="LcDetailTabs" type="tab"/>

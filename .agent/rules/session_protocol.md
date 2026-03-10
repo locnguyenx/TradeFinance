@@ -21,11 +21,13 @@ trigger: always_on
 * **Focus:** Focus edits strictly on Moqui component files; ignore runtime logs, temporary files, or database stores.
 * **Conflict Prevention:** If `git status` shows modifications that this session did not initiate, notify the user before proceeding.
 
+## 3. Automated Exit Protocol (Mandatory)
+
 - **Trigger:** Before signaling task completion or ending a session, you MUST:
-    1. **Self-Improvement**: Update bits of knowledge in `.agent/knowledge/` and skills in `.agent/skills/` derived from the session.
+    1. Initiate the Self-Improvement Protocol
     2. Run the procedure in the '/recap' workflow.
     3. **Auto-Commit**: Run \`git add .agent/ RECAP.md\` and \`git commit -m "docs: auto-update session recap [skip ci]"\`.
-- **Enforcement:** If the user says "goodbye" or "done," you must perform these steps before your final response.
+- **Enforcement:** If the user approves the end of a session by says something like "goodbye" or "done" you must perform these steps before your final response.
 
 ## 4. Documentation Compliance (Mandatory)
 - **Source of Truth:** The files in \`/docs/brd/\` and \`/docs/tds\` are the ultimate authority for this project.
@@ -33,4 +35,3 @@ trigger: always_on
     1. Read the relevant section of the BRD/Design doc.
     2. Confirm that the proposed code change aligns with the documented architecture.
 - **Verification:** If a user request contradicts the Technical Design, you must point out the discrepancy and ask for clarification before proceeding.
-

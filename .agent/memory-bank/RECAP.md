@@ -1,4 +1,8 @@
 # Moqui Session Handoff
-**Branch:** main
-**Modified:** .agent/knowledge/ (Split moqui-patterns.md into UI, Entity, Service, and Other), .agent/skills/ (Updated references).
-**Next Step:** Adapt MT707 generator for shadow record model and resume Drawing field expansion. Knowledge base is now categorized and refined with specific UI/Testing tips.
+**Branch:** feature/fix-lc-status-transition-navigation
+**Modified:** 
+- **Screens:** `Lc.xml`, `Amendment.xml`, `Drawing.xml` (Fixed redundant tabs and transition redirects).
+- **Tests:** `TradeFinanceScreensSpec.groovy` (New exclusion test; updated 'Close View' assertion).
+- **Core Agent:** `moqui-testing.md`, `moqui-test-runner/SKILL.md` (Integrated individual test execution instructions).
+
+**Next Step:** Perform manual smoke tests on the "Status Change" flow to ensure the dynamic redirect resolves correctly across all user roles.

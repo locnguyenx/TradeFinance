@@ -17,6 +17,8 @@ All data loading and test execution must use `./gradlew` tasks only.
 - Check if there's a running process of this moqui application. If YES then kill it.
 - Use your bash/terminal tool to execute the test command. 
 - **Required Format:** `JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home ./gradlew reloadSave :runtime:component:[ComponentName]:test`
+- **Individual Spec (Fast):** To run a single test class (e.g., `TradeFinanceScreensSpec`), append `--tests [PackageName].[ClassName]`:
+  `... ./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec`
 - *Note:* If the user specifies they changed entity data recently, execute `cleanDb loadSave` first.
 
 > [!CAUTION]

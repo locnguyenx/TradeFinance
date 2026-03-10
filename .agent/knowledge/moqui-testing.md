@@ -25,7 +25,11 @@ If the Moqui system becomes unresponsive, tests hang indefinitely, or you see `N
 **CRITICAL RULE:** Do NOT touch any files outside of the application component folder you are working in (e.g. `./runtime/component/TradeFinance`). If a framework-level file is suspected to be broken, inform the user and request them to verify it manually or pull it from the source. NEVER attempt to fix, modify, or restore framework code.
 
 For example, to run tests inside `runtime/component/TradeFinance`:
-`./gradlew reloadSave runtime:component:TradeFinance:test -x combineBaseJs -x combineVuetJs` (use `-x` to bypass broken framework tasks if necessary)
+`./gradlew reloadSave :runtime:component:TradeFinance:test`
+
+**Running Individual Test Specs (Time Saver):**
+To run only a specific test class (e.g., `TradeFinanceScreensSpec`), use the `--tests` filter:
+`./gradlew reloadSave :runtime:component:TradeFinance:test --tests moqui.trade.finance.TradeFinanceScreensSpec`
 
 ## 1. The Environment Mandates
 * **NEVER** run `java -jar moqui.war` for data loading or testing. 

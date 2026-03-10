@@ -9,14 +9,53 @@
    <section name="DetailHeader" condition="record && !sri.screenUrlInfo.targetScreen?.getScreenName()?.matches('Find.*|ParentName')">
    ```
 
-### Robust Screen Hierarchy Guard
-To ensure detail headers and tabs only show on sub-screens (and not the list/parent screen), use `sri.screenUrlInfo.extraPathNameList` to detect the presence of a sub-path:
+### Robust Screen Hierarchy Guard (Definitive "Clean Parent" Pattern)
+Based on project best practices (as seen in `SimpleScreens`), avoid declaring ID parameters in parent/shell screens that host both list and detail views.
 
+#### 1. Menu-Level Clearing (The Entry Point)
+Clear parameters at the menu level to ensure a clean start for list/search screens.
 ```xml
-<section name="LcDetailHeader" condition="lc && sri.screenUrlInfo.extraPathNameList">
+<!-- In ImportLc.xml -->
+<subscreens-item name="Lc" location="..." parameter-map="[lcId:null]"/>
 ```
 
-This is more robust than checking for specific screen names or using regex, as it correctly identifies when the user is at the parent screen level (where `extraPathNameList` is empty).
+#### 2. The Clean Parent (The Shell)
+Comment out or remove parameter declarations in the parent screen. This prevents the parent from "adopting" parameters that should only belong to sub-screens.
+
+```xml
+<!-- Lc.xml (Parent) -->
+<!-- don't explicitly declare parameters here
+    <parameter name="lcId"/>
+-->
+
+<actions>
+    <!-- Use context fields instead of declaring parameters -->
+    <set field="lcId" from="lcId ?: lcSeqId"/>
+    <if condition="lcId">
+        <entity-find-one entity-name="..." value-field="lc"/>
+    </if>
+</actions>
+
+<widgets>
+    <!-- Visibility is naturally handled by the presence of 'lc' -->
+    <section name="LcHeader" condition="lc">
+        <widgets>...</widgets>
+    </section>
+</widgets>
+```
+
+#### 3. Targeted Sub-screens (The Detail)
+Sub-screens (like `MainLC.xml` or `AmendmentDetail.xml`) SHOULD declare their parameters as `required="true"`. This makes them robust entry points for detail views.
+
+**Why this works**:
+- **Menu Freshness**: The menu ensures the list is clean.
+- **Natural Visibility**: By not declaring parameters in the shell, you avoid "parameter stickiness" issues where a shell screen might hold onto an ID and pass it to a sub-screen that doesn't want it (like a Find screen).
+- **Simplicity**: No complex `extraPathNameList` or `targetScreen` exclusion lists are needed in the UI code.
+
+**Benefits**:
+- **Clean UI**: Visibility conditions stay simple (`condition="item"`).
+- **Navigation Safety**: Prevents "parameter leakage" from persistent IDs.
+- **Maintenance**: No need to maintain a list of all "Detail" tabs; only list the search/parent screens.
 2. **Sub-screens**: Explicitly mark ID parameters as `required="true"`. This allows Moqui to handle tab visibility more naturally.
 3. **Menu Exclusion**: Set `default-menu-include="false"` on "Find" screens that are default sub-screen items to prevent redundant tabs.
 
@@ -46,3 +85,21 @@ Use `<subscreens-panel type="tab"/>` instead of legacy `<subscreens-tabs/>` for 
 Moqui widget templates like `enumDropDown` are case-sensitive. parameters (e.g., `enumTypeId`) must match the database/entity case exactly.
 
 
+### 4. Transition Logic Reusability (transition-include)
+**Problem:** Duplicating transition logic (especially for creation/deletion) across multiple screens leads to "stale logic" where one screen's button breaks when the underlying service or redirection changes.
+**Solution:**
+1.  **Shared Transition File**: Create a dedicated XML screen file (e.g., `template/lc/LcTransitions.xml`) to house common transitions.
+2.  **Include**: Use `<transition-include name="..." location="..." />` in any screen that needs the logic.
+
+### 5. Robust Redirection in Quasar (Relative vs Sparse)
+**Problem**: Redirection in Quasar's hash-routing can be brittle.
+1. **Full Reloads**: Absolute paths (`/`) or Sparse paths (`//`) often trigger a full page reload in the browser, which can break session state or be slow.
+2. **Path Resolution**: Using just the screen name in `url` (e.g., `url="${screenName}"`) can sometimes fail to resolve correctly in the Quasar router.
+
+**Solution**:
+- **Prefer Explicit Relative Paths**: Use `./` prefix for redirects within the same screen group.
+- **Example**: `<default-response url="./MainLC" parameter-map="[lcId:lcId]"/>`
+- **Why**: The `./` prefix ensures the Quasar router treats the navigation as an in-app hash change, preserving the SPA experience and ensuring the path is correctly appended to the current route.
+
+### 6. Organizing Shared Fragments
+**Pattern**: Store reusable XML fragments (shared forms, dialogs, transitions) in a `template/` directory within the component (e.g., `template/lc/`). This keeps the `screen/` directory focused strictly on navigation and page structure, matching Moqui's own framework organization.

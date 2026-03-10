@@ -22,7 +22,7 @@ trigger: always_on
 * **Conflict Prevention:** If `git status` shows modifications that this session did not initiate, notify the user before proceeding.
 
 ## 3. Automated Exit Protocol (Mandatory)
-
+- **DEFINTION OF THE DONE:** a task is completed only when all required tests are passed, or user approves the manual testing result
 - **Trigger:** Before signaling task completion or ending a session, you MUST:
     1. Initiate the Self-Improvement Protocol
     2. Run the procedure in the '/recap' workflow.

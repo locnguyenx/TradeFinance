@@ -6,6 +6,7 @@
 | `<entity-find>` | `entity-name`, `list` | Fetches data from DB. Use `<search-form-inputs/>` for filtering. |
 | `<entity-find-one>` | `entity-name`, `value-field` | Fetches single record by PK. |
 | `<service-call>` | `name`, `in-map`, `out-map` | Calls a service. Use `transition#Name` for screen transitions. |
+| `<transition-include>` | `name`, `location` | Reuses a transition defined in another XML screen file. Essential for centralized logic. |
 | `<parameter>` | `name`, `required="true"` | Defines screen parameters. Marking primary IDs as `required="true"` in detail sub-screens is a best practice for clean tabbed navigation. |
 | `<set>` | `field`, `from`, `value` | Sets a variable. Use Groovy expressions in `from`. |
 | `<script>` | `type="groovy"` | Multi-line logic. Wrap in `<![CDATA[ ... ]]>`. |

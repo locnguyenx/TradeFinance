@@ -14,7 +14,7 @@ All data loading and test execution must use `./gradlew` tasks only.
 - **Verify Path:** Ensure you are targeting the correct component for testing (e.g., `TradeFinance`).
 
 ### 2. Execution
-- Check if there's a running process of this moqui application. If YES then kill it.
+- Check if there's a running java process related to this moqui application. If YES then kill it.
 - Use your bash/terminal tool to execute the test command. 
 - **Required Format:** `JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home ./gradlew reloadSave :runtime:component:[ComponentName]:test`
 - **Individual Spec (Fast):** To run a single test class (e.g., `TradeFinanceScreensSpec`), append `--tests [PackageName].[ClassName]`:

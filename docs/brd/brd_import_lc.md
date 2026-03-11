@@ -1,5 +1,6 @@
 ---
 Document ID: BRD-002
+Version: 0.1
 Module: Trade Finance
 Feature: Letter of Credit (LC) - Import LC
 Status: DRAFT
@@ -18,7 +19,7 @@ Refer to requirements in the main business requirements document.
 ### 2.1. MT700
 Refer to file ./MT/MT700.md for details
 
-## 4. UI/UX Requirements
+## 3. UI/UX Requirements
 - **Grouped Layout**: The detail screen MUST group fields into General, Parties, Shipment, and Docs/Payment blocks.
 - **Visual Status Tracking**: Key statuses MUST be displayed using high-visibility colored chips ("Premium Status Chips") in the detail header.
 - **Reusable UI Components**: Core actions (e.g., LC Creation, Amendment Initiation) MUST use standardized, reusable dialog templates to ensure a consistent user experience across different entry points.
@@ -27,7 +28,7 @@ Refer to file ./MT/MT700.md for details
 - **Data Integrity**: Fields with invalid characters must be flagged immediately upon submission.
 - **Activity Log**: Immutable history of all status changes and internal comments.
 
-## 5. User Roles & Permissions
+## 4. User Roles & Permissions
 Define who will use the system and what business actions they are allowed to perform.
 
 | User Role | Description | Permitted Actions |
@@ -39,8 +40,8 @@ Define who will use the system and what business actions they are allowed to per
 | **Trade Supervisor** | Bank Back-Office Manager| View All LCs, Review, Approve, Reject |
 | **Trade Auditor** | Risk/Compliance | View All LCs, View History (Read-Only) |
 
-## 6. Business Lifecycle (State Machine)
-### 6.1 Transaction Workflow Requirements
+## 5. Business Lifecycle (State Machine)
+### 5.1 Transaction Workflow Requirements
 
 Define the statuses a record (transaction) goes through from creation to closure.
 
@@ -67,7 +68,7 @@ The system MUST support the following Transaction lifecycle states:
 | `Pending Review`/`Pending Approval`/`Pending Processing`  | Authorized user clicks "Return" | `Returned` | User must provide a returnning reason. |
 
 
-### 6.2 LC Status Requirements
+### 5.2 LC Status Requirements
 * The system MUST support the following LC lifecycle states:
     - Draft
     - Applied
@@ -87,31 +88,11 @@ The system MUST support the following Transaction lifecycle states:
 | `Applied` |  Authorized user (i.e Trade Operator) do "Issue" the LC | `Issued` | Funds must be successfully reserved. |
 | `Issued` |  Authorized user (i.e Trade Operator) complete "Amendment" for the LC | `Amended` | The Amendment must be confirmed |
 
-## 7. Automated System Processes
-Define the chain of background processing the system must perform without direct human intervention:
 
-### Process 1: LC Issuance Finalization
-* **Trigger:** The LC status changes to `Issued`.
-* **Processing Steps:**
-  1. Generate the official LC PDF document.
-  2. Deduct the issuance fee from the Applicant's primary operating account.
-  3. Send an email notification to the Applicant and the Beneficiary.
-  4. Log the transaction in the bank's general ledger.
-* **Expected Result:** The LC is officially active, fees are collected, the GL is balanced, and all parties are notified. If step 2 (fee deduction) fails, the entire process must halt and alert the Operator.
+## 7. Functionalities
+  - Describe the functionalities of the system, including the business process flow, User Interface & Data Requirements.
 
-### Process 2: LC Expiration
-* **Trigger:** LC is on expiry date
-* **Processing Steps:**
-  1. Change LC Status to `Expired`
-  2. Release the provision
-  3. Send an email notification to the Applicant and the Beneficiary.
-  4. Log the transaction in the bank's general ledger.
-* **Expected Result:** The LC is expired, provision amount is paid back to customer account, the GL is balanced, and all parties are notified. If step 2 (Release the provision) fails, the entire process must halt and alert the Operator.
-
-## 8. User Interface & Data Requirements
-  - The system MUST support the following LC functionalities, implemented using Moqui/Mantle patterns.
-
-### 8.1 Import LC - Overall Business Process Flow
+### 7.1 Import LC - Overall Business Process Flow
 
 Step 1: The exporter and importer sign a trade contract, clearly stating that the payment method is Letter of Credit.
 
@@ -145,7 +126,7 @@ Each product has its own configuration, such as:
 - SWIFT message type
 
 ### 8.3 LC Application
-##### Business process flow
+#### Business process flow
 
 1. Step 1: The importer (Applicant) submits an LC Application form specifying all required LC terms, including parties, shipment details, and document requirements.
 2. Step 2: The CSR (Customer Service Representative) inputs the data into the system, creating a Draft LC.
@@ -170,17 +151,17 @@ Each product has its own configuration, such as:
 9. Step 9: Once the LC issuance is completed, system notify related users. 
 10. Step 10: The CSR print out the LC document, get signature and stamp from authorized person, and give the original LC to the customer. A scanned copy of signedLC document is attached to the LC record in the system.
 
-##### System Use Cases
-- **UC8.3.1: Create Draft LC Application**: (Steps 1-2) CSR inputs data, system validates, and creates a Draft LC.
-- **UC8.3.2: Attach Document to LC Application**: (Step 3, 10) CSR attaches necessary documents (e.g. Applicant requests, Signed LC scan) to the LC record.
-- **UC8.3.3: Manage Customer Credit Limits**: (Step 4) CSR inputs collateral info, retrieves approved credit limit from CBS, updates available limit.
-- **UC8.3.4: Application Approval Routing**: (Step 5) Process flows from CSR -> Supervisor -> IPC.
-- **UC8.3.5: Provision & Charge Assessment**: (Steps 6-7) IPC calculates amounts, CSR validates customer funds and collects signs.
-- **UC8.3.6: System Notification for Application**: (Steps 6, 9) System notifies CSR and other related users upon processing/issuance events.
-- **UC8.3.7: Finalize Application**: (Steps 8, 10) IPC verifies and proceeds; CSR handles physical printing and signing.
+#### System Use Cases
+- **R8.3-UC1: Create Draft LC Application**: (Steps 1-2) CSR inputs data, system validates, and creates a Draft LC.
+- **R8.3-UC2: Attach Document to LC Application**: (Step 3, 10) CSR attaches necessary documents (e.g. Applicant requests, Signed LC scan) to the LC record.
+- **R8.3-UC3: Manage Customer Credit Limits**: (Step 4) CSR inputs collateral info, retrieves approved credit limit from CBS, updates available limit.
+- **R8.3-UC4: Application Approval Routing**: (Step 5) Process flows from CSR -> Supervisor -> IPC.
+- **R8.3-UC5: Provision & Charge Assessment**: (Steps 6-7) IPC calculates amounts, CSR validates customer funds and collects signs.
+- **R8.3-UC6: System Notification for Application**: (Steps 6, 9) System notifies CSR and other related users upon processing/issuance events.
+- **R8.3-UC7: Finalize Application**: (Steps 8, 10) IPC verifies and proceeds; CSR handles physical printing and signing.
 
 ### 8.4 LC Issuance
-##### Business process flow
+#### Business process flow
 
 1. Step 1: IPC user reviews the LC application and documents, complete inputting the LC details, and save the LC record as in draft status.
 2. Step 2: Once all LC details are completed, IPC user submits the LC application for approval.
@@ -192,17 +173,29 @@ Each product has its own configuration, such as:
    - The system generates the standard SWIFT MT700 message and attaches it to the LC record for transmission.
    - The system generate accounting entries in CBS for the contingent entries of LC issuance, and  charges and provision if any.
 
-##### System Use Cases
-- **UC8.4.1: Draft & Review Issuance details**: (Step 1) IPC user reviews the approved application and saves LC record as draft.
-- **UC8.4.2: Submit Issuance & Automated CBS Hooks**: (Step 2) IPC user submits. System runs SWIFT rules, holds CBS provision accounts, and calculates upfront charges.
-- **UC8.4.3: Supervisor Final Approval**: (Step 3) Final review by IPC supervisor.
-- **UC8.4.4: Issue LC Instrument & MT700**: (Step 4) System transitions status to `Issued`/`Closed`, generates MT700, and posts internal ledger (accounting) entries in CBS.
+#### System Use Cases
+- **R8.4-UC1: Draft & Review Issuance details**: (Step 1) IPC user reviews the approved application and saves LC record as draft.
+- **R8.4-UC2: Submit Issuance & Automated CBS Hooks**: (Step 2) IPC user submits. System runs SWIFT rules, holds CBS provision accounts, and calculates upfront charges.
+- **R8.4-UC3: Supervisor Final Approval**: (Step 3) Final review by IPC supervisor.
+- **R8.4-UC4: Issue LC Instrument & MT700**: (Step 4) System transitions status to `Issued`/`Closed`, generates MT700, and posts internal ledger (accounting) entries in CBS.
 
+#### Automated System Processes
+Define the chain of background processing the system must perform without direct human intervention:
 
-### 8.5 Manage Import LC (Post-Issuance)
+##### Process 1: LC Issuance Finalization
+* **Trigger:** The LC status changes to `Issued`.
+* **Processing Steps:**
+  1. Generate the official LC PDF document (MT700 SWIFT Message is generated during the issuance service).
+  2. Activate Provisions: Transition all held funds for provisions (`LcPrvHeld`) to active status (`LcPrvActive`).
+  3. Contingent Accounting: Post contra-entries in CBS (mocked) for the full LC amount to track off-balance sheet liability.
+      - Debit: `CONTINGENT_ASSET_ACC`
+      - Credit: `CONTINGENT_LIAB_ACC`
+  4. Deduct issuance fees: Collect calculated charges and notify CBS for ledger updates.
+  5. Send an email/system notification to the Applicant and related users.
+* **Expected Result:** The LC is officially active, fees are collected, contingent liability is recorded, and all parties are notified. If any critical accounting step fails, the issuance service must roll back.
 
-#### LC Amendment
-##### Business process flow
+### 8.5 LC Amendment
+#### Business process flow
 
 1. Step 1: The importer (Applicant) submits an amendment request to the Issuing Bank, specifying the changes (e.g., extend expiry date, increase amount, change shipment terms). The RM reviews the request for completeness and feasibility.
 
@@ -216,7 +209,7 @@ Each product has its own configuration, such as:
 
 6. Step 6: The CSR archives the amendment documentation and updates the LC file.
 
-##### Supplemental Info
+#### Supplemental Info
 
 - Once LC is issed, it can't be changed. In business, we usually call the issued LC as original LC, or LC document
 - To amend a issued LC, we make an admendment request. Basically, we can amend most of LC document details, except some info like LC Number, Applicant, Currency, Issuing Bank, Advising Bank... are not allowed to change
@@ -227,17 +220,17 @@ Each product has its own configuration, such as:
   - Latest effective term: the original LC terms plus last confirmed ammendment
   - and a list of amendment for this LC
 
-##### System Use Cases
-- **UC8.5.1: Create Amendment Request**: (Steps 1-2) Create `LcAmendment` record and linked `Request`.
-- **UC8.5.2: Process Amendment Approval**: (Step 3) Workflow from CSR -> Supervisor -> IPC.
-- **UC8.5.3: Finalize Amendment & MT707**: (Step 4) Apply shadow record field changes, update amendment number, and generate SWIFT MT707.
-- **UC8.5.3.a: Manage Read-Only LC Access**: Ensure users can view the original LC context from an amendment in a robust, non-editable mode.
+#### System Use Cases
+- **R8.5-UC1: Create Amendment Request**: (Steps 1-2) Create `LcAmendment` record and linked `Request`.
+- **R8.5-UC2: Process Amendment Approval**: (Step 3) Workflow from CSR -> Supervisor -> IPC.
+- **R8.5-UC3: Finalize Amendment & MT707**: (Step 4) Apply shadow record field changes, update amendment number, and generate SWIFT MT707.
+- **R8.5-UC3a: Manage Read-Only LC Access**: Ensure users can view the original LC context from an amendment in a robust, non-editable mode.
 
-- **UC8.5.4: Standardized Amendment View**: The system MUST provide a consistent list view of Amendments (both in the main Find screen and the LC Detail tab) including Request ID, Amendment Number, Date, and Status tracking for both internal processing and counterparty confirmation.
-- **UC8.5.5: Unified Amendment Initiation**: "Initiate New Request" MUST use a shared, context-aware dialog that automatically handles the LC link when initiated from within a specific LC record.
+- **R8.5-UC4: Standardized Amendment View**: The system MUST provide a consistent list view of Amendments (both in the main Find screen and the LC Detail tab) including Request ID, Amendment Number, Date, and Status tracking for both internal processing and counterparty confirmation.
+- **R8.5-UC5: Unified Amendment Initiation**: "Initiate New Request" MUST use a shared, context-aware dialog that automatically handles the LC link when initiated from within a specific LC record.
 
-#### LC Expiry
-##### Business process flow
+### 8.6 LC Expiry
+#### Business process flow
 
 1. Step 1: A scheduled service runs daily to identify LCs where `dateOfExpiry` has passed and there are no pending drawings (`LcDrawing` with status not in `Paid`, `Accepted`).
 
@@ -245,13 +238,24 @@ Each product has its own configuration, such as:
 
 3. Step 3: The system generates a notification to the RM and CSR, and optionally releases any remaining provisions/collateral holds via CBS integration.
 
-##### System Use Cases
-- **UC8.5.4: Automated Expiry Processing**: (Steps 1-2) Periodic job to transition qualifying LCs to `Expired`.
-- **UC8.5.5: Notify Expiry & Release Provisions**: (Step 3) Notify stakeholders and release CBS funds hold.
+#### System Use Cases
+- **R8.6-UC1: Automated Expiry Processing**: (Steps 1-2) Periodic job to transition qualifying LCs to `Expired`.
+- **R8.6-UC2: Notify Expiry & Release Provisions**: (Step 3) Notify stakeholders and release CBS funds hold.
 
+#### Automated System Processes
+Define the chain of background processing the system must perform without direct human intervention:
 
-#### LC Revocation
-##### Business process flow
+##### Process 1: LC Expiration
+* **Trigger:** LC is on expiry date
+* **Processing Steps:**
+  1. Change LC Status to `Expired`
+  2. Release the provision
+  3. Send an email notification to the Applicant and the Beneficiary.
+  4. Log the transaction in the bank's general ledger.
+* **Expected Result:** The LC is expired, provision amount is paid back to customer account, the GL is balanced, and all parties are notified. If step 2 (Release the provision) fails, the entire process must halt and alert the Operator.
+
+### 8.7 LC Revocation
+#### Business process flow
 
 1. Step 1: For revocable LCs (rare under UCP 600), the Issuing Bank may revoke the LC at any time before documents are presented. The operator initiates a revocation request.
 
@@ -259,15 +263,16 @@ Each product has its own configuration, such as:
 
 3. Step 3: SWIFT MT799 (Free Format Message) is sent to the Advising Bank to notify of revocation. Provisions are released.
 
-##### System Use Cases
-- **UC8.5.6: Initiate LC Revocation**: (Steps 1-2) Operator creates revocation request, approved via standard workflow.
-- **UC8.5.7: Execute Revocation & MT799**: (Step 3) Transition to `Revoked`, generate SWIFT MT799, release provisions.
+#### System Use Cases
+- **R8.7-UC1: Initiate LC Revocation**: (Steps 1-2) Operator creates revocation request, approved via standard workflow.
+- **R8.7-UC2: Execute Revocation & MT799**: (Step 3) Transition to `Revoked`, generate SWIFT MT799, release provisions.
 
 
-### 8.6 Manage LC Payment & Drawings
+### 8.8 Document Presentation (Drawings)
 
-#### Document Presentation (Drawings)
-##### Business process flow
+This function is for LC Payment & Drawings
+
+#### Business process flow
 
 1. Step 1: The Advising/Presenting Bank sends the document set (Bill of Lading, Commercial Invoice, Packing List, Insurance Certificate, Certificate of Origin, etc.) to the Issuing Bank, usually accompanied by a SWIFT MT750 (Advice of Discrepancy) or MT754 (Advice of Payment/Acceptance/Negotiation).
 
@@ -281,13 +286,16 @@ Each product has its own configuration, such as:
 
 4. Step 4: If documents are compliant, the drawing status transitions to `Compliant` and proceeds to payment/acceptance. If discrepancies are found, the drawing status transitions to `Discrepant`.
 
-##### System Use Cases
-- **UC8.6.1: Register Document Presentation**: (Steps 1-2) Log `LcDrawing` and attach incoming documents.
-- **UC8.6.2: Execute Document Examination**: (Steps 3-4) Compare docs against LC terms, transition to `Compliant` or `Discrepant`.
+#### System Use Cases
+- **R8.8-UC1: Register Document Presentation**: (Steps 1-2) Log `LcDrawing` and attach incoming documents.
+- **R8.8-UC2: Execute Document Examination**: (Steps 3-4) Compare docs against LC terms, transition to `Compliant` or `Discrepant`.
 
 
-#### LC Discrepancy Handling
-##### Business process flow
+### 8.9 LC Discrepancy Handling
+
+This function is for LC Payment & Drawings, after document presentation.
+
+#### Business process flow
 
 1. Step 1: When discrepancies are identified during document examination, the IPC officer records each discrepancy against the `LcDrawing`. Common discrepancies include: late presentation, inconsistent documents, missing documents, incorrect amounts, stale transport documents.
 
@@ -303,13 +311,16 @@ Each product has its own configuration, such as:
 
 7. Step 7: **Document Under Trust** — In some cases, the Issuing Bank may release discrepant documents to the Applicant under a Trust Receipt, pending formal acceptance or payment. The `LcDrawing` status transitions to `UnderTrust`.
 
-##### System Use Cases
-- **UC8.6.3: Record Discrepancies & MT734**: (Steps 1-2) Log findings, generate Refusal SWIFT (MT734).
-- **UC8.6.4: Resolve Discrepancies**: (Steps 4-7) Process Applicant acceptance, rejection, or waiver.
+#### System Use Cases
+- **R8.9-UC1: Record Discrepancies & MT734**: (Steps 1-2) Log findings, generate Refusal SWIFT (MT734).
+- **R8.9-UC2: Resolve Discrepancies**: (Steps 4-7) Process Applicant acceptance, rejection, or waiver.
 
 
-#### LC Acceptance & Payment
-##### Business process flow
+### 8.10 LC Acceptance & Payment
+
+This function is for LC Payment & Drawings, after document presentation and discrepancy handling if any.
+
+#### Business process flow
 
 1. Step 1: **Sight Payment** — For LCs available by sight payment (`availableWithBy_41A` = `By Payment`), upon compliant document presentation (or accepted discrepancies), the Issuing Bank debits the Applicant's account and remits payment to the Presenting Bank. SWIFT MT756 (Advice of Reimbursement or Payment) is generated.
 
@@ -321,13 +332,12 @@ Each product has its own configuration, such as:
 
 5. Step 5: Upon payment completion, the `LcDrawing` status transitions to `Paid`. If the total drawings equal or exceed the LC amount (within tolerance), the `lcStatusId` transitions to `Closed` (fully utilized). Provisions are released via CBS.
 
-##### System Use Cases
-- **UC8.6.5: Process Sight Payment & MT756**: (Step 1) Debit applicant, remit to beneficiary bank, generate MT756.
-- **UC8.6.6: Manage Acceptance/Deferred Maturity**: (Steps 2-3) Accept drafts, calculate `maturityDate`, handle usance payments.
-- **UC8.6.7: Finalize Drawing & LC Closure**: (Step 5) Transition Statuses to `Paid`/`Closed`, release provisions.
+#### System Use Cases
+- **R8.10-UC1: Process Sight Payment & MT756**: (Step 1) Debit applicant, remit to beneficiary bank, generate MT756.
+- **R8.10-UC2: Manage Acceptance/Deferred Maturity**: (Step 2) Accept drafts, calculate `maturityDate`, handle usance payments.
+- **R8.10-UC3: Finalize Drawing & LC Closure**: (Step 5) Transition Statuses to `Paid`/`Closed`, release provisions.
 
-
-### 8.7 Core Infrastructure
+### 8.11 Core Infrastructure
 
 #### Manage LC Provision & Charge
 ##### Business process flow
@@ -341,8 +351,13 @@ Each product has its own configuration, such as:
 4. Step 4: Upon LC expiry, closure, or revocation, remaining provisions are released.
 
 ##### System Use Cases
-- **UC8.7.1: Assessment of Charges & Provisions**: (Steps 1-2) Automated calculation based on product templates.
-- **UC8.7.2: CBS Accounting Integration**: (Integration Requirement) Posting contingent and actual ledger entries for Issuance and Payment events.
+- **R8.11-UC1: Assessment of Charges & Provisions**: (Steps 1-2) 
+  - Collect charges and provisions inputted in related transaction i.e LC Application, Amendment, Drawing...
+  - Automated calculation based on product templates, show infomation on the transaction
+- **R8.11-UC2: CBS Accounting Integration**: (Step 3) (Integration Requirement) 
+  When the transaction is Approved and transaction is Issuance, Amendment, Payment, Drawing: osting actual ledger entries of charges and provisions.
+- **R8.11-UC3: CBS Accounting Integration**: (Step 4) (Integration Requirement) 
+  When the transaction is Approved and transaction is Expiry, Closure, or Revocation: Posting reversal  ledger entries of charges and provisions 
 
 
 #### Manage LC Documents

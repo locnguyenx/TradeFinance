@@ -317,4 +317,66 @@
             <script>ec.resource.getLocationReference('dbresource://trade-finance/lc/swift/' + lcId + '_MT734_' + drawingSeqId + '.txt').putText(swiftMessageText)</script>
         </actions>
     </service>
+    <!-- ========================================================= -->
+    <!-- Parse SWIFT MT700 Service                                 -->
+    <!-- Extracts fields from a raw MT700 string into a Map       -->
+    <!-- ========================================================= -->
+    <service verb="parse" noun="SwiftMt700">
+        <in-parameters><parameter name="swiftTextCode" required="true"/></in-parameters>
+        <out-parameters><parameter name="fieldMap" type="Map"/></out-parameters>
+        <actions>
+            <script><![CDATA[
+                def fieldMap = [:]
+                // Simple regex-based parsing for standard tags
+                def tagRegex = /:([0-9A-Z]{2,3}):([\s\S]*?)(?=\n:[0-9A-Z]{2,3}:|\n-}|$)/
+                def matcher = (swiftTextCode =~ tagRegex)
+                
+                while (matcher.find()) {
+                    def tag = matcher.group(1)
+                    def value = matcher.group(2).trim()
+                    fieldMap[tag] = value
+                }
+                
+                // Map to logical names for convenience
+                context.fieldMap = [
+                    lcNumber: fieldMap['20'],
+                    formOfCredit: fieldMap['40A'],
+                    applicableRules: fieldMap['40E'],
+                    issueDate: fieldMap['31C'],
+                    expiry: fieldMap['31D'],
+                    amount: fieldMap['32B'],
+                    applicant: fieldMap['50'],
+                    beneficiary: fieldMap['59'],
+                    descriptionOfGoods: fieldMap['45A'],
+                    docsRequired: fieldMap['46A'],
+                    allTags: fieldMap
+                ]
+            ]]></script>
+        </actions>
+    </service>
+
+    <service verb="parse" noun="SwiftMt707">
+        <in-parameters><parameter name="swiftTextCode" required="true"/></in-parameters>
+        <out-parameters><parameter name="fieldMap" type="Map"/></out-parameters>
+        <actions>
+            <script><![CDATA[
+                def fieldMap = [:]
+                def tagRegex = /:([0-9A-Z]{2,3}):([\s\S]*?)(?=\n:[0-9A-Z]{2,3}:|\n-|$)/
+                def matcher = (swiftTextCode =~ tagRegex)
+                
+                while (matcher.find()) {
+                    def tag = matcher.group(1)
+                    def value = matcher.group(2).trim()
+                    fieldMap[tag] = value
+                }
+                
+                context.fieldMap = [
+                    lcNumber: fieldMap['20'],
+                    amendmentNumber: fieldMap['26E'],
+                    amendmentDetails: fieldMap['79'],
+                    allTags: fieldMap
+                ]
+            ]]></script>
+        </actions>
+    </service>
 </services>

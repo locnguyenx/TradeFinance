@@ -15,8 +15,8 @@
 - **Services:** Organized in `AmendmentServices.xml`, `DrawingServices.xml`.
 - **Demo Data:** `30_TradeFinanceDemoData.xml` (Schema updated 2026-03-06).
 
-## Development Workflow
 - Build and Test: `./gradlew load` for data, `./gradlew test` for suite.
+- Specific Specs: `TradeFinanceAmendmentSpec.groovy` (Phase 4), `TradeFinanceDrawingFlowSpec.groovy` (Phase 5 plan).
 - XSD compliance: Validate against Moqui schemas in `framework/xsd/`.
 
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-11

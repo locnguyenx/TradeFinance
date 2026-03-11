@@ -1,20 +1,17 @@
 # Current State
 
-## Active Phase
-**Phase 6:** Agent Optimization & Global Standards. (Current)
-**Phase 7:** Full Document Expansion (Drawings) and Export LC Module. (Upcoming)
-
-- [x] Optimized `.agent/` directory (Rules, Skills, Knowledge).
-- [x] Refactored Amendment initiation and list UI using reusable template pattern.
-- [x] Standardized Amendment list view in LC Detail to match Find Amendment.
-- [x] Synchronized BRD with latest UI/UX harmonization.
+## Status updates
+- [x] Phase 4 (LC Amendment) 100% complete and verified.
+- [x] Achieved full screen parity between `MainLC.xml` and `AmendmentDetail.xml`.
+- [x] Implemented "Credit & Collateral" section across all relevant screens.
+- [x] Verified full amendment lifecycle with MT707 generation via `TradeFinanceAmendmentSpec.groovy`.
 
 ## Key Considerations (Blockers/Issues)
-- **Zero-Touch:** Strict enforcement of component boundary in `global.md`.
-- **UI Consistency**: Ensure all new modules follow the "Dialog & Transition Include" pattern.
+- **Seed Data**: Fixed missing `LcTransaction` status transitions in `10_TradeFinanceData.xml`.
+- **Data Refresh**: Established pattern of using `<entity-find-one>` after status changes to avoid stale local state.
 
 ## Confidence & Next Steps
-- **Confidence Score:** 100% (Harmonization pattern proven and documented).
-- **Next Steps:** Extend reusable pattern to Drawing creation and continue field expansion.
+- **Confidence Score:** 100% (Phase 4 verified and documented).
+- **Next Steps:** Proceed to Phase 5 (CBS Integration) and align the Drawing module with new UI standards.
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-11

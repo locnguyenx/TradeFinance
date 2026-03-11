@@ -12,8 +12,19 @@
         <description>Validates LC fields against SWIFT Character Set X and UCP 600 rules.</description>
         <in-parameters>
             <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
+            <parameter name="isStrict" type="Boolean" default="false"/>
         </in-parameters>
         <actions>
+            <if condition="isStrict">
+                <!-- Strict validation for submission -->
+                <if condition="!productId"><message error="true">Product is required for submission.</message></if>
+                <if condition="!amount"><message error="true">Amount is required for submission.</message></if>
+                <if condition="!amountCurrencyUomId"><message error="true">Currency is required for submission.</message></if>
+                <if condition="!applicantPartyId"><message error="true">Applicant Party is required for submission.</message></if>
+                <if condition="!beneficiaryPartyId"><message error="true">Beneficiary Party is required for submission.</message></if>
+                <if condition="!expiryDate"><message error="true">Expiry Date is required for submission.</message></if>
+            </if>
+
             <script><![CDATA[
                 // SWIFT Character Set X: A-Z, a-z, 0-9, / - ? : ( ) . , ' + space, CR, LF
                 def swiftXChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/-?:().,'+ \r\n"
@@ -45,13 +56,13 @@
             </if>
 
             <!-- SWIFT field length validations -->
-            <if condition="lcNumber &amp;&amp; lcNumber.length() &gt; 16">
+            <if condition="lcNumber &amp;&amp; lcNumber.length() > 16">
                 <message error="true">LC Number (20) exceeds 16 character limit.</message></if>
-            <if condition="applicantName &amp;&amp; applicantName.length() &gt; 140">
+            <if condition="applicantName &amp;&amp; applicantName.length() > 140">
                 <message error="true">Applicant Name (50) exceeds 140 character limit (4 lines of 35).</message></if>
-            <if condition="beneficiaryName &amp;&amp; beneficiaryName.length() &gt; 140">
+            <if condition="beneficiaryName &amp;&amp; beneficiaryName.length() > 140">
                 <message error="true">Beneficiary Name (59) exceeds 140 character limit (4 lines of 35).</message></if>
-            <if condition="descriptionOfGoods_45A &amp;&amp; descriptionOfGoods_45A.length() &gt; 6500">
+            <if condition="descriptionOfGoods_45A &amp;&amp; descriptionOfGoods_45A.length() > 6500">
                 <message error="true">Goods Description (45A) exceeds 6500 character limit (100 lines of 65).</message></if>
             <if condition="amountTolerance_39A &amp;&amp; !(amountTolerance_39A ==~ /^[0-9]{1,2}\/[0-9]{1,2}$/)">
                 <message error="true">Amount Tolerance (39A) must be in format n/n (e.g. 10/10).</message>
@@ -91,15 +102,41 @@
                          description:('Letter of Credit issuance request for ' + lcNumber)]"/>
             <set field="requestId" from="reqOut.requestId"/>
 
+            <!-- Fetch Product Defaults -->
+            <if condition="productId">
+                <entity-find-one entity-name="moqui.trade.finance.LcProduct" value-field="product"/>
+                <if condition="product">
+                    <set field="lcProductTypeEnumId" from="product.lcProductTypeEnumId"/>
+                    <!-- Default provision rate from product if not manually specified -->
+                    <if condition="provisionRate == null">
+                        <set field="provisionRate" from="product.defaultProvisionRate"/>
+                    </if>
+                </if>
+            </if>
+
             <!-- Create the LetterOfCredit record -->
             <service-call name="create#moqui.trade.finance.LetterOfCredit" in-map="context" out-map="newLcOut"/>
             <set field="lcId" from="newLcOut.lcId"/>
+
+            <!-- Automated Charge Calculation based on Product Template -->
+            <if condition="product">
+                <entity-find entity-name="moqui.trade.finance.LcProductCharge" list="productCharges">
+                    <econdition field-name="productId"/></entity-find>
+                <iterate list="productCharges" entry="prodCharge">
+                    <service-call name="create#moqui.trade.finance.LcCharge"
+                        in-map="[lcId:lcId, chargeTypeEnumId:prodCharge.chargeTypeEnumId,
+                                 chargeAmount:prodCharge.defaultAmount,
+                                 chargeCurrencyUomId:prodCharge.defaultCurrencyUomId,
+                                 chargeDate:ec.user.nowTimestamp, waived:'N',
+                                 remarks:('Default charge for product: ' + product.productName)]"/>
+                </iterate>
+            </if>
 
             <!-- Record initial history entry -->
             <service-call name="create#moqui.trade.finance.LcHistory"
                 in-map="[lcId:lcId, changeType:'StatusChange', fieldName:'lcStatusId',
                          newValue:lcStatusId, changedByUserId:ec.user.userId,
-                         comments:comments ?: 'LC application created']"/>
+                         comments:comments ?: ('LC application created for product: ' + (product?.productName ?: 'N/A'))]"/>
 
             <!-- Send Notification -->
             <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
@@ -141,6 +178,130 @@
                 <script>ec.message.addError("Letter of Credit not found with ID: " + lcId)</script>
                 <return/>
             </else></if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Submit LC Service                                         -->
+    <!-- Performs strict validation and transitions to Submitted.  -->
+    <!-- ========================================================= -->
+    <service verb="submit" noun="LetterOfCredit">
+        <description>Submits a Draft LC for bank review. Performs strict validation.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="comments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- Check current state -->
+            <if condition="lc.transactionStatusId != 'LcTxDraft' &amp;&amp; lc.transactionStatusId != 'LcTxReturned'">
+                <return error="true" message="Only Draft or Returned LCs can be submitted for review."/>
+            </if>
+
+            <!-- Strict Validation -->
+            <script>validateIn = lc.getMap(); validateIn.isStrict = true</script>
+            <service-call name="moqui.trade.finance.TradeFinanceServices.validate#LetterOfCredit"
+                in-map="validateIn"/>
+            <check-errors/>
+
+            <!-- Transition to Pending Review -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"
+                in-map="[lcId:lcId, toStatusId:'LcTxPendingReview', comments:comments ?: 'Submitted for review']"/>
+            
+            <!-- LC Status remains Draft until Approval as per BRD 5.2 -->
+
+            <!-- Update Mantle Request Status -->
+            <if condition="lc.requestId">
+                <service-call name="update#mantle.request.Request"
+                    in-map="[requestId:lc.requestId, statusId:'ReqSubmitted']"/>
+            </if>
+
+            <log level="info" message="LC ID ${lcId} successfully submitted for review."/>
+        </actions>
+    </service>
+
+    <service verb="approve" noun="LcBySupervisor">
+        <description>Branch Supervisor approves and submits for processing.</description>
+        <in-parameters><parameter name="lcId" required="true"/><parameter name="comments"/></in-parameters>
+        <actions>
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"
+                in-map="[lcId:lcId, toStatusId:'LcTxPendingProcessing', comments:comments ?: 'Supervisor approved']"/>
+        </actions>
+    </service>
+
+    <service verb="approve" noun="LcByTradeOperator">
+        <description>Trade Operator submits for final approval. Calculates charges/provisions and holds funds.</description>
+        <in-parameters><parameter name="lcId" required="true"/><parameter name="comments"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            
+            <!-- Automated Charge & Provision Calculation -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.calculate#LcChargesAndProvisions"
+                in-map="[lcId:lcId]"/>
+            
+            <!-- CBS Funds Hold for Provision -->
+            <entity-find entity-name="moqui.trade.finance.LcProvision" list="provisions">
+                <econdition field-name="lcId"/><econdition field-name="provisionStatusId" value="LcPrvDraft"/></entity-find>
+            <iterate list="provisions" entry="provision">
+                <service-call name="moqui.trade.finance.CbsIntegrationServices.hold#Funds"
+                    in-map="[partyId:lc.applicantPartyId, amount:provision.provisionAmount, 
+                             currencyUomId:provision.provisionCurrencyUomId, referenceId:lcId]"
+                    out-map="holdOut"/>
+                <if condition="!holdOut.success">
+                    <return error="true" message="Failed to hold funds for provision: ${holdOut.message}"/>
+                </if>
+                <service-call name="update#moqui.trade.finance.LcProvision"
+                    in-map="[lcId:lcId, provisionSeqId:provision.provisionSeqId, 
+                             provisionStatusId:'LcPrvHeld', cbsHoldReference:holdOut.holdReference]"/>
+            </iterate>
+
+            <!-- CBS Accounting Entry for Upfront Charges -->
+            <entity-find entity-name="moqui.trade.finance.LcCharge" list="charges">
+                <econdition field-name="lcId"/><econdition field-name="waived" value="N"/></entity-find>
+            <iterate list="charges" entry="charge">
+                <service-call name="moqui.trade.finance.CbsIntegrationServices.post#AccountingEntries"
+                    in-map="[debitAccountId:'CUST_OPER_ACC', creditAccountId:'BANK_COMM_ACC', 
+                             amount:charge.chargeAmount, currencyUomId:charge.chargeCurrencyUomId,
+                             transactionType:'CHARGE_COLLECTION', referenceId:lcId]"
+                    out-map="postOut"/>
+                <if condition="!postOut.success">
+                    <return error="true" message="Failed to collect charge ${charge.chargeTypeEnumId}: ${postOut.message}"/>
+                </if>
+            </iterate>
+
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"
+                in-map="[lcId:lcId, toStatusId:'LcTxPendingApproval', comments:comments ?: 'Processed by Trade Ops']"/>
+        </actions>
+    </service>
+
+    <service verb="approve" noun="LcByTradeSupervisor">
+        <description>Final approval by Trade Supervisor. Transitions LC Status to Applied.</description>
+        <in-parameters><parameter name="lcId" required="true"/><parameter name="comments"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"
+                in-map="[lcId:lcId, toStatusId:'LcTxApproved', comments:comments ?: 'Final Approval']"/>
+            
+            <!-- Per BRD 5.2: Approved Transaction -> LC Status = Applied -->
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
+                in-map="[lcId:lcId, toStatusId:'LcLfApplied']"/>
+            
+            <if condition="lc?.requestId">
+                <service-call name="update#mantle.request.Request"
+                    in-map="[requestId:lc.requestId, statusId:'ReqCompleted']"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="return" noun="LetterOfCredit">
+        <description>Returns the LC to Draft/Returned for corrections.</description>
+        <in-parameters><parameter name="lcId" required="true"/><parameter name="comments" required="true"/></in-parameters>
+        <actions>
+            <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus"
+                in-map="[lcId:lcId, toStatusId:'LcTxReturned', comments:comments]"/>
         </actions>
     </service>
 
@@ -267,12 +428,88 @@
             <!-- Send Notification for major transitions -->
             <if condition="toStatusId == 'LcTxSubmitted'">
                 <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
-                              in-map="[lcId:lcId, eventDescription:'LC Application Submitted for Review']"/>
+                               in-map="[lcId:lcId, eventDescription:'LC Application Submitted for Review']"/>
             </if>
             <if condition="toStatusId == 'LcTxApproved'">
                 <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
-                              in-map="[lcId:lcId, eventDescription:'LC Application Approved']"/>
+                               in-map="[lcId:lcId, eventDescription:'LC Application Approved']"/>
             </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- BRD Implementation Services                               -->
+    <!-- ========================================================= -->
+
+    <service verb="update" noun="LcApplicationDetail">
+        <description>Updates additional information for LC application (Collateral, Credit Agreement - Step 4).</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="isSecured" type="String"/> <!-- Y/N -->
+            <parameter name="securedPercentage" type="BigDecimal"/>
+            <parameter name="creditAgreementId"/>
+            <parameter name="collateralDescription"/>
+        </in-parameters>
+        <actions>
+            <service-call name="moqui.trade.finance.TradeFinanceServices.update#LetterOfCredit" in-map="context"/>
+            
+            <!-- If creditAgreementId is provided, automatically check limit -->
+            <if condition="creditAgreementId">
+                <service-call name="moqui.trade.finance.TradeFinanceServices.check#CustomerCreditLimit"
+                    in-map="[lcId:lcId, creditAgreementId:creditAgreementId]"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="check" noun="CustomerCreditLimit">
+        <description>Retrieves customer credit limit from CBS and updates the LC record.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="creditAgreementId"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="LC not found"/></if>
+            
+            <service-call name="moqui.trade.finance.CbsIntegrationServices.check#CreditLimit"
+                in-map="[partyId:lc.applicantPartyId, creditAgreementId:creditAgreementId]" out-map="limitOut"/>
+            
+            <if condition="limitOut.availableLimit != null">
+                <service-call name="update#moqui.trade.finance.LetterOfCredit"
+                    in-map="[lcId:lcId, availableCreditLimit:limitOut.availableLimit]"/>
+                <service-call name="create#moqui.trade.finance.LcHistory"
+                    in-map="[lcId:lcId, changeType:'Update', fieldName:'availableCreditLimit', 
+                             newValue:limitOut.availableLimit, changedByUserId:ec.user.userId,
+                             comments:'Credit limit updated from CBS']"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="calculate" noun="LcChargesAndProvisions">
+        <description>Calculates charges and provisions based on product defaults.</description>
+        <in-parameters><parameter name="lcId" required="true"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="LC not found"/></if>
+            
+            <!-- Logic: If provision doesn't exist, create it based on product default rate -->
+            <entity-find entity-name="moqui.trade.finance.LcProvision" list="existingProvisions">
+                <econdition field-name="lcId"/></entity-find>
+            
+            <if condition="!existingProvisions">
+                <entity-find-one entity-name="moqui.trade.finance.LcProduct" value-field="product">
+                    <field-map field-name="productId" from="lc.productId"/></entity-find-one>
+                
+                <if condition="product?.defaultProvisionRate">
+                    <set field="provisionAmount" from="lc.amount * product.defaultProvisionRate / 100"/>
+                    <service-call name="create#moqui.trade.finance.LcProvision"
+                        in-map="[lcId:lcId, provisionAmount:provisionAmount, 
+                                 provisionCurrencyUomId:lc.amountCurrencyUomId,
+                                 effectiveDate:ec.user.nowTimestamp, provisionStatusId:'LcPrvDraft']"/>
+                </if>
+            </if>
+            
+            <!-- Automated charges already handled in create#LetterOfCredit, but could be refreshed here if needed -->
         </actions>
     </service>
 

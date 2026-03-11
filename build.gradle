@@ -22,9 +22,9 @@ test {
     dependsOn cleanTest
     useJUnitPlatform()
     // Only run through the suite class to prevent double execution of specs
-    filter {
-        includeTestsMatching 'moqui.trade.finance.TradeFinanceScreensSpec'
-    }
+    // filter {
+    //    includeTestsMatching 'moqui.trade.finance.TradeFinanceScreensSpec'
+    // }
 
     systemProperty 'moqui.runtime', moquiDir.absolutePath + '/runtime'
     systemProperty 'moqui.conf', 'conf/MoquiDevConf.xml'

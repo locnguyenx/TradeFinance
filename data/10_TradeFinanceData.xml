@@ -2,6 +2,13 @@
 <entity-facade-xml type="seed" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-facade-xml-3.xsd">
 
     <!-- ========================================================= -->
+    <!-- Pre-requisite Seed Data (Fallback)                        -->
+    <!-- ========================================================= -->
+    <mantle.party.RoleType roleTypeId="Internal" description="Internal Organization"/>
+    <mantle.party.RoleType roleTypeId="Issuer" description="Issuer"/>
+    <mantle.party.RoleType roleTypeId="Customer" description="Customer"/>
+
+    <!-- ========================================================= -->
     <!-- Status Types                                              -->
     <!-- ========================================================= -->
 
@@ -15,6 +22,7 @@
     <moqui.basic.StatusType statusTypeId="LcProvisionStatus" description="LC Provision Status"/>
     <!-- LC Amendment Confirmation Status Type -->
     <moqui.basic.StatusType statusTypeId="LcAmendmentConfirmation" description="LC Amendment Confirmation Status"/>
+
 
     <!-- ========================================================= -->
     <!-- LC Lifecycle Status Items & Flow                          -->
@@ -69,15 +77,23 @@
     <moqui.basic.StatusFlow statusFlowId="LcTransaction" description="LC Transaction Processing Flow"/>
 
     <moqui.basic.StatusItem statusId="LcTxDraft" statusTypeId="LcTransaction" description="Draft" sequenceNum="1"/>
-    <moqui.basic.StatusItem statusId="LcTxSubmitted" statusTypeId="LcTransaction" description="Submitted" sequenceNum="2"/>
-    <moqui.basic.StatusItem statusId="LcTxApproved" statusTypeId="LcTransaction" description="Approved" sequenceNum="3"/>
-    <moqui.basic.StatusItem statusId="LcTxRejected" statusTypeId="LcTransaction" description="Rejected" sequenceNum="4"/>
-    <moqui.basic.StatusItem statusId="LcTxCancelled" statusTypeId="LcTransaction" description="Cancelled" sequenceNum="5"/>
-    <moqui.basic.StatusItem statusId="LcTxClosed" statusTypeId="LcTransaction" description="Closed" sequenceNum="6"/>
+    <moqui.basic.StatusItem statusId="LcTxPendingReview" statusTypeId="LcTransaction" description="Pending Review" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcTxPendingProcessing" statusTypeId="LcTransaction" description="Pending Processing" sequenceNum="3"/>
+    <moqui.basic.StatusItem statusId="LcTxReturned" statusTypeId="LcTransaction" description="Returned" sequenceNum="3.5"/>
+    <moqui.basic.StatusItem statusId="LcTxSubmitted" statusTypeId="LcTransaction" description="Submitted" sequenceNum="4"/>
+    <moqui.basic.StatusItem statusId="LcTxPendingApproval" statusTypeId="LcTransaction" description="Pending Approval" sequenceNum="5"/>
+    <moqui.basic.StatusItem statusId="LcTxApproved" statusTypeId="LcTransaction" description="Approved" sequenceNum="6"/>
+    <moqui.basic.StatusItem statusId="LcTxRejected" statusTypeId="LcTransaction" description="Rejected" sequenceNum="7"/>
+    <moqui.basic.StatusItem statusId="LcTxCancelled" statusTypeId="LcTransaction" description="Cancelled" sequenceNum="8"/>
+    <moqui.basic.StatusItem statusId="LcTxClosed" statusTypeId="LcTransaction" description="Closed" sequenceNum="9"/>
 
     <!-- LC Transaction StatusFlow Transitions -->
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxDraft"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxPendingReview"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxPendingProcessing"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxReturned"/>
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxSubmitted"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxPendingApproval"/>
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxApproved"/>
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxRejected"/>
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxCancelled"/>
@@ -85,12 +101,25 @@
 
     <!-- Valid Transitions: Draft -> Submitted -> Approved/Rejected, Approved -> Closed -->
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxSubmitted" transitionName="Submit"/>
-    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxCancelled" transitionName="Cancel"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxApproved" transitionName="Approve"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxRejected" transitionName="Reject"/>
-    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxCancelled" transitionName="Cancel"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxReturned" transitionName="Return"/>
+
+    <!-- Valid Transitions: Draft -> Pending Review -> Pending Processing -> Pending Approval -> Approved -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxPendingReview" transitionName="Submit for Review"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingReview" toStatusId="LcTxPendingProcessing" transitionName="Submit for Processing"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingReview" toStatusId="LcTxReturned" transitionName="Return"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingProcessing" toStatusId="LcTxPendingApproval" transitionName="Submit for Approval"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingProcessing" toStatusId="LcTxReturned" transitionName="Return"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxApproved" transitionName="Approve"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxRejected" transitionName="Reject"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxReturned" transitionName="Return"/>
+    
+    <!-- Backward compatibility and fallback -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxCancelled" transitionName="Cancel"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxApproved" toStatusId="LcTxClosed" transitionName="Close"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxRejected" toStatusId="LcTxDraft" transitionName="Reopen"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxReturned" toStatusId="LcTxDraft" transitionName="Edit and Re-submit"/>
 
     <!-- ========================================================= -->
     <!-- LC Drawing Status Items & Flow                            -->
@@ -127,8 +156,10 @@
     <!-- ========================================================= -->
     <!-- LC Provision Status Items                                 -->
     <!-- ========================================================= -->
-    <moqui.basic.StatusItem statusId="LcPrvActive" statusTypeId="LcProvisionStatus" description="Active" sequenceNum="1"/>
-    <moqui.basic.StatusItem statusId="LcPrvReleased" statusTypeId="LcProvisionStatus" description="Released" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcPrvDraft" statusTypeId="LcProvisionStatus" description="Draft" sequenceNum="0"/>
+    <moqui.basic.StatusItem statusId="LcPrvHeld" statusTypeId="LcProvisionStatus" description="Funds Held" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcPrvActive" statusTypeId="LcProvisionStatus" description="Active" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcPrvReleased" statusTypeId="LcProvisionStatus" description="Released" sequenceNum="3"/>
 
     <!-- ========================================================= -->
     <!-- LC Amendment Confirmation Status Items & Flow             -->
@@ -150,6 +181,10 @@
     <!-- Role Types                                                -->
     <!-- ========================================================= -->
     <mantle.party.RoleType roleTypeId="Bank" description="Bank"/>
+
+    <!-- Request Types -->
+    <moqui.basic.Enumeration enumId="RqtLcIssuance" enumTypeId="RequestType" description="LC Issuance Request"/>
+    <moqui.basic.Enumeration enumId="RqtLcAmendment" enumTypeId="RequestType" description="LC Amendment Request"/>
 
     <!-- ========================================================= -->
     <!-- Enumerations - SWIFT MT700 Field Codes                    -->
@@ -256,6 +291,19 @@
     <moqui.basic.Enumeration enumId="LC_DISRES_WAIVED" enumTypeId="LcDiscrepancyResolution" description="Waived"/>
 
     <!-- ========================================================= -->
+    <!-- LC Product Configuration                                  -->
+    <!-- ========================================================= -->
+    <moqui.trade.finance.LcProduct productId="PROD_ILC_SIGHT" productName="Import LC Sight" lcProductTypeEnumId="LC_PROD_SIGHT" defaultProvisionRate="10" description="Standard Sight Import LC"/>
+    <moqui.trade.finance.LcProduct productId="PROD_ILC_USANCE" productName="Import LC Usance" lcProductTypeEnumId="LC_PROD_USANCE" defaultProvisionRate="15" description="Usance Import LC (up to 180 days)"/>
+    <moqui.trade.finance.LcProduct productId="PROD_ILC_NEGOTIATION" productName="Import LC Negotiation" lcProductTypeEnumId="LC_PROD_NEGOTIATION" defaultProvisionRate="15" description="Negotiation Import LC"/>
+    <moqui.trade.finance.LcProduct productId="PROD_ILC_STANDBY" productName="Import Standby LC" lcProductTypeEnumId="LC_PROD_STANDBY" defaultProvisionRate="100" description="Standby LC (Financial/Performance)"/>
+
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="100" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_SWIFT" defaultAmount="25" defaultCurrencyUomId="USD" itemTypeEnumId="ItemMiscCharge"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_USANCE" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="150" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_STANDBY" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="500" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission"/>
+
+    <!-- ========================================================= -->
     <!-- Scheduled Jobs                                            -->
     <!-- ========================================================= -->
     <!-- Run daily at 1:00 AM server time -->
@@ -263,5 +311,14 @@
                                   description="Auto-expires overdue Letters of Credit"
                                   serviceName="moqui.trade.finance.ScheduledServices.check#LcExpiry" 
                                   cronExpression="0 0 1 * * ?"/>
+
+
+    <!-- ========================================================= -->
+    <!-- Internal Organization / Bank                              -->
+    <!-- ========================================================= -->
+    <mantle.party.Party partyId="ORG_Z_BANK" partyTypeEnumId="PtyOrganization"/>
+    <mantle.party.Organization partyId="ORG_Z_BANK" organizationName="Global Finance Bank"/>
+    <mantle.party.PartyRole partyId="ORG_Z_BANK" roleTypeId="Internal"/>
+    <mantle.party.PartyRole partyId="ORG_Z_BANK" roleTypeId="Issuer"/>
 
 </entity-facade-xml>

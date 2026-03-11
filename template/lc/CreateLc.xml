@@ -4,6 +4,17 @@
         <container-dialog id="CreateLcDialog" button-text="New LC Application" button-style="q-btn bg-primary text-white">
             <form-single name="CreateLcForm" transition="CreateLc">
                 <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
+                <field name="productId">
+                    <default-field title="LC Product">
+                        <drop-down allow-empty="false">
+                            <entity-options key="${productId}" text="${productName}">
+                                <entity-find entity-name="moqui.trade.finance.LcProduct">
+                                    <order-by field-name="productName"/>
+                                </entity-find>
+                            </entity-options>
+                        </drop-down>
+                    </default-field>
+                </field>
                 <field name="lcNumber"><default-field title="LC Number (20)"><text-line size="20"/></default-field></field>
                 <field name="amount"><default-field title="Amount"><text-line size="15"/></default-field></field>
                 <field name="amountCurrencyUomId"><default-field title="Currency">
@@ -16,6 +27,7 @@
                         </entity-options>
                     </drop-down>
                 </default-field></field>
+                <field name="lcProductTypeEnumId"><default-field><hidden/></default-field></field>
                 <field name="submitButton"><default-field title="Submit Application"><submit/></default-field></field>
             </form-single>
         </container-dialog>

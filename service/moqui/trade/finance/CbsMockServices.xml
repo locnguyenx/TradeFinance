@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- Mocked implementations for CBS -->
+    
+    <service verb="hold" noun="FundsMock">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.hold#Funds"/>
+        <actions>
+            <log level="info" message="[CBS MOCK] Holding ${amount} ${currencyUomId} for party ${partyId} (Ref: ${referenceId})"/>
+            <!-- Simulate failure if amount is 999.99 (using a range to avoid scale issues) -->
+            <if condition="amount &gt; 999.98 &amp;&amp; amount &lt; 1000.00">
+                <set field="success" from="false"/><set field="message" value="Insufficient funds (Simulated failure)"/>
+            <else>
+                <set field="holdReference" value="HLD-${ec.user.nowTimestamp.time}"/>
+                <set field="success" from="true"/>
+                <set field="message" value="Funds held successfully (Mock)."/>
+            </else></if>
+        </actions>
+    </service>
+
+    <service verb="release" noun="FundsMock">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.release#Funds"/>
+        <actions>
+            <log level="info" message="[CBS MOCK] Releasing hold ${holdReference} for party ${partyId}"/>
+            <set field="success" value="true"/>
+            <set field="message" value="Funds released successfully (Mock)."/>
+        </actions>
+    </service>
+
+    <service verb="post" noun="AccountingEntriesMock">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.post#AccountingEntries"/>
+        <actions>
+            <log level="info" message="[CBS MOCK] Posting ${amount} ${currencyUomId} - Dr: ${debitAccountId}, Cr: ${creditAccountId}"/>
+            <!-- Simulate failure if amount is exactly 888.88 -->
+            <if condition="amount &gt; 888.87 &amp;&amp; amount &lt; 888.89">
+                <set field="success" from="false"/><set field="message" value="CBS Connection timeout (Simulated failure)"/>
+            <else>
+                <set field="transactionReference" value="TXN-${ec.user.nowTimestamp.time}"/>
+                <set field="success" from="true"/>
+            </else></if>
+        </actions>
+    </service>
+
+    <service verb="check" noun="CreditLimitMock">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.check#CreditLimit"/>
+        <actions>
+            <log level="info" message="[CBS MOCK] Checking credit for party ${partyId}${creditAgreementId ? ' (Agreement: ' + creditAgreementId + ')' : ''}"/>
+            <!-- Return a mock limit based on presence of agreement if needed -->
+            <set field="availableLimit" from="creditAgreementId ? 5000000.00 : 1000000.00"/>
+            <set field="currencyUomId" value="USD"/>
+        </actions>
+    </service>
+
+</services>

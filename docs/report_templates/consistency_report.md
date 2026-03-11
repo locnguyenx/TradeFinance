@@ -1,15 +1,15 @@
 # Documentation Consistency Report
 
-Cross-reference between **Implementation Plans** (v3.2 – v3.5 + current state plan), **BRD**, and the **actual codebase**.
+Cross-reference between **Implementation Plans** (history + current state plan), **BRD**, and the **actual codebase**.
 
 ## 1. Executive Summary
-
-Overall alignment is **High**. The tech stack, entities, services, status flows, UI screens, and SWIFT integrations are consistent between the plans and the BRD. Several minor gaps are documented below as future work items.
+[Example:
+Overall alignment is **High**. The tech stack, entities, services, status flows, UI screens, and SWIFT integrations are consistent between the plans and the BRD. Several minor gaps are documented below as future work items.]
 
 ---
 
 ## 2. Tech Stack Verification
-
+[Update latest info following structure:]
 | Aspect | Plan / BRD Requirement | Actual Codebase | Status |
 | :--- | :--- | :--- | :---: |
 | Framework | Moqui Framework | `runtime/component/TradeFinance/` component | ✅ |
@@ -24,6 +24,7 @@ Overall alignment is **High**. The tech stack, entities, services, status flows,
 ---
 
 ## 3. BRD → Implementation Mapping
+[Prepare completed mapping for each section in BRD, e.g. as following:]
 
 ### 3.1. LC Lifecycle Status (BRD §7)
 
@@ -138,6 +139,8 @@ Overall alignment is **High**. The tech stack, entities, services, status flows,
 ---
 
 ## 5. Gaps & Future Work
+
+[What requirements in BRD are not implemented in the codebase?]
 
 | # | Gap | Source | Severity | Notes |
 | :--- | :--- | :--- | :---: | :--- |

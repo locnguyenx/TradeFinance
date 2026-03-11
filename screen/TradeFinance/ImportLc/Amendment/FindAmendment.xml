@@ -21,15 +21,26 @@
             </container>
 
             <form-list name="AmendmentList" list="amendmentList" skip-form="true" header-dialog="true">
-                <field name="lcId"><header-field title="LC Number" show-order-by="true">
+                <field name="lcNumber"><header-field title="LC Number" show-order-by="true">
                     <drop-down allow-empty="true">
                         <entity-options key="${lcId}" text="${lcNumber}">
                             <entity-find entity-name="moqui.trade.finance.LetterOfCredit"/>
                         </entity-options>
                     </drop-down>
                 </header-field>
-                <default-field>
+                <default-field title="LC #">
                     <link url="../../Lc/MainLC" text="${lcNumber ?: lcId}" url-type="screen" link-type="anchor" parameter-map="[lcId:lcId, readOnly:'true', lastScreenUrl:'../Amendment/FindAmendment']"/>
+                </default-field></field>
+
+                <field name="productId"><header-field title="Product" show-order-by="true">
+                    <drop-down allow-empty="true">
+                        <entity-options key="${productId}" text="${productName}">
+                            <entity-find entity-name="moqui.trade.finance.LcProduct"/>
+                        </entity-options>
+                    </drop-down>
+                </header-field>
+                <default-field>
+                    <display text="${productName}"/>
                 </default-field></field>
                 
                 <field name="amendmentSeqId"><header-field show-order-by="true" title="Request ID"/><default-field>

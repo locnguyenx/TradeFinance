@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <service verb="post" noun="LcChargesToInvoice">
+        <description>
+            Aggregates un-invoiced charges for an LC and creates a Mantle Invoice.
+            Then posts the invoice to the General Ledger.
+        </description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId"/> <!-- If provided, only post charges for this amendment -->
+        </in-parameters>
+        <out-parameters>
+            <parameter name="invoiceId"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- 1. Find all un-invoiced charges -->
+            <entity-find entity-name="moqui.trade.finance.LcCharge" list="chargeList">
+                <econdition field-name="lcId"/>
+                <econdition field-name="amendmentSeqId" from="amendmentSeqId" ignore-if-empty="true"/>
+                <econdition field-name="invoiceId" from="null"/>
+                <econdition field-name="waived" value="N"/>
+            </entity-find>
+
+            <if condition="!chargeList">
+                <log level="info" message="No un-invoiced charges found for LC ${lcId}"/>
+                <return/>
+            </if>
+
+            <!-- 2. Create Mantle Invoice -->
+            <!-- We use InvoiceSales because the bank is charging the customer (applicant) -->
+            <service-call name="create#mantle.account.invoice.Invoice" out-map="invoiceOut"
+                          in-map="[invoiceTypeEnumId: 'InvoiceSales',
+                                   fromPartyId: lc.issuingBankPartyId ?: 'ORG_Z_BANK',
+                                   toPartyId: lc.applicantPartyId,
+                                   invoiceDate: ec.user.nowTimestamp,
+                                   statusId: 'InvoiceFinalized',
+                                   currencyUomId: lc.amountCurrencyUomId]"/>
+            <set field="invoiceId" from="invoiceOut.invoiceId"/>
+
+            <!-- 3. Create Invoice Items for each charge -->
+            <iterate list="chargeList" entry="charge">
+                <!-- Find the itemTypeEnumId from LcProductCharge mapping -->
+                <entity-find-one entity-name="moqui.trade.finance.LcProductCharge" value-field="productCharge" use-cache="true">
+                    <field-map field-name="productId" from="lc.productId"/>
+                    <field-map field-name="chargeTypeEnumId" from="charge.chargeTypeEnumId"/>
+                </entity-find-one>
+                
+                <set field="itemTypeEnumId" from="productCharge?.itemTypeEnumId ?: 'ItemMiscCharge'"/>
+
+                <service-call name="create#mantle.account.invoice.InvoiceItem" out-map="itemOut"
+                              in-map="[invoiceId: invoiceId,
+                                       itemTypeEnumId: itemTypeEnumId,
+                                       amount: charge.chargeAmount,
+                                       quantity: 1,
+                                       description: charge.remarks ?: 'LC Charge']"/>
+                
+                <!-- Link the charge to the invoice item -->
+                <set field="charge.invoiceId" from="invoiceId"/>
+                <set field="charge.invoiceItemSeqId" from="itemOut.invoiceItemSeqId"/>
+                <entity-update value-field="charge"/>
+            </iterate>
+
+            <!-- 4. Post the Invoice to GL -->
+            <service-call name="mantle.ledger.InvoiceAutoPostServices.post#Invoice"
+                          in-map="[invoiceId: invoiceId]" out-map="postOut"/>
+
+            <log level="info" message="Posted LC charges to invoice ${invoiceId} for LC ${lcId}. Result: ${postOut}"/>
+        </actions>
+    </service>
+</services>

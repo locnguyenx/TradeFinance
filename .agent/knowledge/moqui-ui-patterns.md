@@ -118,3 +118,12 @@ Moqui widget templates like `enumDropDown` are case-sensitive. parameters (e.g.,
     <include-screen name="CreateAction" location="component://.../template/...CreateAction.xml"/>
     ```
 4.  **Benefits**: Single source of truth for form data, consistent redirection (via shared transitions), and reduced maintenance.
+
+### 8. Screen Parity & SWIFT Grouping (Standardized Fields)
+**Problem:** Inconsistent field names, groupings, or missing fields between master records (e.g., LetterOfCredit) and shadow records (e.g., LcAmendment).
+
+**Standard Pattern:**
+1.  **Logical Grouping**: Maintain 6-7 standard blocks: General, Dates/Place, Amount, Parties, Shipment, Goods, and Credit/Collateral.
+2.  **Field Parity**: Ensure every amendable field in the shadow record (LcAmendment) exists and is logically grouped in the master record (MainLC).
+3.  **Label Consistency**: Use SWIFT field IDs (e.g., 40A, 31D) in titles to aid domain experts while maintaining user-friendly names.
+4.  **Security Section**: Always group `isSecured`, `securedPercentage`, and `collateralDescription` into a "Credit & Collateral" section for consistent risk visibility.

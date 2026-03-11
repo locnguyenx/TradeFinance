@@ -3,6 +3,7 @@
     <parameter name="lcId" required="true"/>
     
     <actions>
+        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
         <entity-find entity-name="moqui.trade.finance.LcCharge" list="chargeList">
             <econdition field-name="lcId"/>
             <order-by field-name="-chargeDate"/>
@@ -45,6 +46,25 @@
                             </form-list>
                         </container>
                     </container>
+                </container>
+            </container>
+
+            <!-- Security & Collateral Summary (UC8.3.3) -->
+            <container style="q-card q-mt-lg shadow-1 border">
+                <container style="q-pa-sm bg-blue-grey-1 text-blue-grey-10 text-weight-bold">SECURITY &amp; COLLATERAL SUMMARY</container>
+                <container style="q-pa-md">
+                    <form-single name="SecuritySummary" map="lc">
+                        <field name="isSecured"><default-field title="Is Secured?"><display/></default-field></field>
+                        <field name="securedPercentage"><default-field title="Secured %"><display/></default-field></field>
+                        <field name="collateralDescription"><default-field title="Collateral Description"><display/></default-field></field>
+                        <field-layout>
+                            <container style="row q-col-gutter-sm">
+                                <container style="col-12 col-md-4"><field-ref name="isSecured"/></container>
+                                <container style="col-12 col-md-4"><field-ref name="securedPercentage"/></container>
+                            </container>
+                            <field-ref name="collateralDescription"/>
+                        </field-layout>
+                    </form-single>
                 </container>
             </container>
 

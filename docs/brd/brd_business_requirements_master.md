@@ -1,5 +1,6 @@
 ---
 Document ID: BRD-001
+Version: 0.1
 Module: Trade Finance
 Feature: Letter of Credit (LC)
 Status: DRAFT

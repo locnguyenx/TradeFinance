@@ -51,9 +51,11 @@
 
                         <!-- Basic Info -->
                         <field name="sequenceTotal_27" entry-name="lc.sequenceTotal_27"><default-field title="Original Seq of Total (27)"><display/></default-field></field>
-                        <field name="lcProductTypeEnumId" entry-name="lc.lcProductTypeEnumId"><default-field title="Product Type">
-                            <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
-                        </default-field></field>
+                        <field name="productId" entry-name="lc.productId">
+                            <default-field title="LC Product">
+                                <display-entity entity-name="moqui.trade.finance.LcProduct" key-field-name="productId" text="${productName}"/>
+                            </default-field>
+                        </field>
                         <field name="formOfCredit_40A"><default-field title="Form of Credit (40A)">
                             <drop-down allow-empty="false"><entity-options key="${enumId}" text="${description}">
                                 <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcFormOfCredit"/><order-by field-name="description"/></entity-find>
@@ -93,6 +95,21 @@
                         <field name="reimbursingBankPartyId" entry-name="lc.reimbursingBankPartyId"><default-field title="Reimbursing Bank (53A)">
                             <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
                         </default-field></field>
+                        <field name="advisingThroughBankPartyId" entry-name="lc.advisingThroughBankPartyId"><default-field title="Advise Through Bank (57A)">
+                            <display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/>
+                        </default-field></field>
+
+                        <!-- Additional Parties/Names -->
+                        <field name="requestedConfirmationParty_58a"><default-field title="Requested Confirmation Party (58a)"><text-line size="30"/></default-field></field>
+                        <field name="advisingThroughBank_57a"><default-field title="Advise Through Bank Name (57a)"><text-line size="30"/></default-field></field>
+                        <field name="reimbursingBank_53a"><default-field title="Reimbursing Bank Name (53a)"><text-line size="30"/></default-field></field>
+
+                        <!-- Collateral & Security -->
+                        <field name="isSecured"><default-field title="Is Secured?"><drop-down allow-empty="true">
+                            <option key="Y" text="Yes"/><option key="N" text="No"/>
+                        </drop-down></default-field></field>
+                        <field name="securedPercentage"><default-field title="Secured %"><text-line size="10"/></default-field></field>
+                        <field name="collateralDescription"><default-field title="Collateral Description"><text-area rows="2"/></default-field></field>
 
                         <!-- Shipment -->
                         <field name="partialShipment_43P"><default-field title="Partial Ship (43P)">
@@ -156,7 +173,7 @@
                                     <field-col md="6"><field-ref name="formOfCredit_40A"/></field-col>
                                 </field-col-row>
                                 <field-col-row>
-                                    <field-col md="6"><field-ref name="lcProductTypeEnumId"/></field-col>
+                                    <field-col md="6"><field-ref name="productId"/></field-col>
                                     <field-col md="6"><field-ref name="applicableRules_40E"/></field-col>
                                 </field-col-row>
                             </field-group>
@@ -183,9 +200,25 @@
                                     <field-col md="4"><field-ref name="advisingBankPartyId"/></field-col>
                                     <field-col md="4"><field-ref name="reimbursingBankPartyId"/></field-col>
                                 </field-col-row>
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="advisingThroughBankPartyId"/></field-col>
+                                    <field-col md="6"><field-ref name="requestedConfirmationParty_58a"/></field-col>
+                                </field-col-row>
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="advisingThroughBank_57a"/></field-col>
+                                    <field-col md="6"><field-ref name="reimbursingBank_53a"/></field-col>
+                                </field-col-row>
                             </field-group>
 
-                            <field-group title="4. AMENDMENT: SHIPMENT DETAILS" box="true">
+                            <field-group title="4. AMENDMENT: SECURITY &amp; COLLATERAL" box="true">
+                                <field-col-row>
+                                    <field-col md="6"><field-ref name="isSecured"/></field-col>
+                                    <field-col md="6"><field-ref name="securedPercentage"/></field-col>
+                                </field-col-row>
+                                <field-ref name="collateralDescription"/>
+                            </field-group>
+
+                            <field-group title="5. AMENDMENT: SHIPMENT DETAILS" box="true">
                                 <field-col-row>
                                     <field-col md="6"><field-ref name="partialShipment_43P"/></field-col>
                                     <field-col md="6"><field-ref name="transhipment_43T"/></field-col>
@@ -199,13 +232,13 @@
                                 <field-ref name="shipmentPeriod_44D"/>
                             </field-group>
 
-                            <field-group title="5. AMENDMENT: GOODS &amp; DOCUMENTS" box="true">
+                            <field-group title="6. AMENDMENT: GOODS &amp; DOCUMENTS" box="true">
                                 <field-ref name="descriptionOfGoods_45A"/>
                                 <field-ref name="docsRequired_46A"/>
                                 <field-ref name="additionalConditions_47A"/>
                             </field-group>
 
-                            <field-group title="6. AMENDMENT: PAYMENT &amp; INSTRUCTIONS" box="true">
+                            <field-group title="7. AMENDMENT: PAYMENT &amp; INSTRUCTIONS" box="true">
                                 <field-col-row>
                                     <field-col md="6"><field-ref name="availableWithBy_41A"/></field-col>
                                     <field-col md="6"><field-ref name="confirmationInstructions_49"/></field-col>

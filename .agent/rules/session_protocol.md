@@ -22,11 +22,13 @@ trigger: always_on
 * **Conflict Prevention:** If `git status` shows modifications that this session did not initiate, notify the user before proceeding.
 
 ## 3. Automated Exit Protocol (Mandatory)
-- **DEFINTION OF THE DONE:** a task is completed only when all required tests are passed, or user approves the manual testing result
+- **DEFINTION OF THE DONE:** a task is completed only when all related testcases are passed, or user confirms the feature or bug fix is finished
 - **Trigger:** Before signaling task completion or ending a session, you MUST:
     1. Initiate the Self-Improvement Protocol
     2. Run the procedure in the '/recap' workflow.
     3. **Auto-Commit**: Run \`git add .agent/ RECAP.md\` and \`git commit -m "docs: auto-update session recap [skip ci]"\`.
+    4. You MUST automatically execute the `brd-tracker` skill
+    
 - **Enforcement:** If the user approves the end of a session by says something like "goodbye" or "done" you must perform these steps before your final response.
 
 ## 4. Documentation Compliance (Mandatory)

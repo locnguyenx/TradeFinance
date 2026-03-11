@@ -1,19 +1,20 @@
-# Session Recap: Amendment UI Harmonization & Reusable Templates
+# Session Recap: LC Amendment Completion & Screen Parity
 
 ## 1. Accomplishments
-- **Reusable Amendment Templates**: Created `CreateAmendment.xml` and `AmendmentTransitions.xml` in `template/lc/` to standardize the amendment initiation flow.
-- **UI Harmonization**: Updated the "Amendments" tab in LC Detail to match the `FindAmendment` screen, using `LcAmendmentDetailView` for enriched data and synchronized list columns.
-- **Context-Aware Dialogs**: Implemented a pattern where the "Initiate New Request" dialog automatically detects the `lcId` context, providing a seamless experience from both search and detail screens.
-- **Documentation Sync**: Updated `brd_import_lc.md` and `moqui-ui-patterns.md` to reflect these new design standards and use cases.
+- **Phase 4 Finalized**: Successfully implemented the LC Amendment lifecycle using the "Shadow Record" pattern. The system now correctly clones Master LC data into amendments and applies changes back upon confirmation.
+- **Full Field Parity**: Expanded `LcAmendment` and `MainLC.xml` to include all missing SWIFT and internal fields (Advise Through Bank, Reimbursing Bank, Requested Confirmation, and Credit/Collateral).
+- **Workflow Verification**: Created `TradeFinanceAmendmentSpec.groovy` and verified the full `Draft -> Submitted -> Approved -> Confirmed` flow, including version incrementing and MT707 generation.
+- **UI Consistency**: Harmonized the "Parties", "Shipment", and "Security" sections across master and amendment screens for a seamless user experience.
+- **Status Flow Fix**: Updated seed data (`10_TradeFinanceData.xml`) to include missing `LcTransaction` transitions required for amendment processing.
 
 ## 2. Technical Findings
-- **Dialog & Transition Include Pattern**: Proved more robust and maintainable than inline forms for complex business processes.
-- **Sparse Path Navigation**: Used `//${appRoot}/...` in shared transitions to ensure reliable redirection across different screen depths.
-- **Read-Only Guards**: Enforced `isReadOnly` state in the Amendments tab to prevent unauthorized requests on finalized LCs.
+- **Refresh Pattern**: Identified the need for `entity-find-one` refreshes after service calls that transition status to avoid overwriting database changes with stale local objects.
+- **Dynamic Field Clones**: Refined the `script` logic in `AmendmentServices.xml` to handle a broad array (30+) of amendable fields dynamically while maintaining data integrity.
+- **Mock Integration**: Confirmed that delegating to `moqui.trade.finance.AccountingServices` for charge/provision logic provides a clean separation from core business services.
 
 ## 3. Next Steps
-- **Drawing Rework**: Extend the reusable template pattern to the Drawing module.
-- **Field Expansion**: Continue adding full SWIFT fields for Drawings.
-- **Service Alignment**: Update MT707 generator to work with the latest shadow record entity model.
+- **CBS Integration (Phase 5)**: Transition from mock HLD-stubs to a formal integration framework for Credit Limits and GL entries.
+- **Drawing Module Sync**: Extend the field parity and UI grouping patterns to the Drawings and Negotiation screens.
+- **Documentation Pass**: Perform a final audit of the TSD to ensure all automated test references and directory paths are synchronized.
 
-**Last Update:** 2026-03-10
+**Last Update:** 2026-03-11

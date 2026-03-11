@@ -2,6 +2,7 @@
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
     <parameter name="lcId" required="true"/>
     <parameter name="readOnly"/>
+    <transition-include name="SubmitLc" location="component://TradeFinance/template/lc/LcTransitions.xml"/>
     <transition name="UpdateLc" condition="!isReadOnly">
         <service-call name="moqui.trade.finance.TradeFinanceServices.update#LetterOfCredit"/>
         <default-response url="." parameter-map="[lcId:lcId]"/>
@@ -27,6 +28,18 @@
                         <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="pk"/>
                         <field name="lcId"><default-field><hidden/></default-field></field>
 
+                        <field name="SubmitLcField">
+                            <default-field title="">
+                                <section name="SubmitLcSection" condition="lc.transactionStatusId == 'LcTxDraft' && lc.lcStatusId == 'LcLfDraft'">
+                                    <widgets>
+                                        <link url="SubmitLc" text="Submit Application" parameter-map="[lcId:lc.lcId]"
+                                              style="q-btn bg-blue text-white q-px-md shadow-2"
+                                              confirmation="Are you sure you want to submit this LC for bank review? You will not be able to edit it once submitted."/>
+                                    </widgets>
+                                </section>
+                            </default-field>
+                        </field>
+
                         <field name="IssueLcField">
                             <default-field title="">
                                 <section name="IssueLcSection" condition="!isReadOnly &amp;&amp; lc.transactionStatusId == 'LcTxApproved' &amp;&amp; (lc.lcStatusId == 'LcLfDraft' || lc.lcStatusId == 'LcLfApplied')">
@@ -47,6 +60,23 @@
                         <field name="sequenceTotal_27">
                             <conditional-field condition="isReadOnly" title="Seq of Total (27)"><display/></conditional-field>
                             <default-field title="Seq of Total (27)"><text-line size="10" default-value="1/1"/></default-field>
+                        </field>
+                        <field name="productId">
+                            <conditional-field condition="isReadOnly" title="LC Product">
+                                <display-entity entity-name="moqui.trade.finance.LcProduct" key-field-name="productId" text="${productName}"/>
+                            </conditional-field>
+                            <default-field title="LC Product">
+                                <drop-down allow-empty="false">
+                                    <entity-options key="${productId}" text="${productName}">
+                                        <entity-find entity-name="moqui.trade.finance.LcProduct">
+                                            <order-by field-name="productName"/>
+                                        </entity-find>
+                                    </entity-options>
+                                </drop-down>
+                            </default-field>
+                        </field>
+                        <field name="lcProductTypeEnumId">
+                            <default-field title="Product Type (Enum)"><display-entity entity-name="moqui.basic.Enumeration"/></default-field>
                         </field>
                         <field name="formOfCredit_40A">
                             <conditional-field condition="isReadOnly" title="Form of Credit (40A)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
@@ -149,6 +179,26 @@
                                 </entity-options></drop-down>
                             </default-field>
                         </field>
+                        <field name="advisingThroughBankPartyId">
+                            <conditional-field condition="isReadOnly" title="Advise Through Bank (57A)"><display-entity entity-name="mantle.party.PartyDetail" key-field-name="partyId" text="${organizationName}"/></conditional-field>
+                            <default-field title="Advise Through Bank (57A)">
+                                <drop-down allow-empty="true"><entity-options key="${partyId}" text="${organizationName}">
+                                    <entity-find entity-name="mantle.party.PartyDetailAndRole"><econdition field-name="roleTypeId" value="Bank"/><order-by field-name="organizationName"/></entity-find>
+                                </entity-options></drop-down>
+                            </default-field>
+                        </field>
+                        <field name="requestedConfirmationParty_58a">
+                            <conditional-field condition="isReadOnly" title="Requested Confirmation Party (58a)"><display/></conditional-field>
+                            <default-field title="Requested Confirmation Party (58a)"><text-line size="30"/></default-field>
+                        </field>
+                        <field name="advisingThroughBank_57a">
+                            <conditional-field condition="isReadOnly" title="Advise Through Bank Name (57a)"><display/></conditional-field>
+                            <default-field title="Advise Through Bank Name (57a)"><text-line size="30"/></default-field>
+                        </field>
+                        <field name="reimbursingBank_53a">
+                            <conditional-field condition="isReadOnly" title="Reimbursing Bank Name (53a)"><display/></conditional-field>
+                            <default-field title="Reimbursing Bank Name (53a)"><text-line size="30"/></default-field>
+                        </field>
 
                         <!-- 4. Shipment Details -->
                         <field name="partialShipment_43P">
@@ -170,6 +220,10 @@
                         <field name="latestShipDate_44C">
                             <conditional-field condition="isReadOnly" title="Latest Ship Date (44C)"><display/></conditional-field>
                             <default-field title="Latest Ship Date (44C)"><date-time type="date"/></default-field>
+                        </field>
+                        <field name="placeOfReceipt_44A">
+                            <conditional-field condition="isReadOnly" title="Place of Receipt (44A)"><display/></conditional-field>
+                            <default-field title="Place of Receipt (44A)"><text-line size="30"/></default-field>
                         </field>
                         <field name="portOfLoading_44E">
                             <conditional-field condition="isReadOnly" title="Port of Loading (44E)"><display/></conditional-field>
@@ -240,6 +294,22 @@
                             <default-field title="Sender Info (72Z)"><text-area rows="2"/></default-field>
                         </field>
 
+                        <!-- Credit & Collateral -->
+                        <field name="isSecured">
+                            <conditional-field condition="isReadOnly" title="Is Secured?"><display/></conditional-field>
+                            <default-field title="Is Secured?"><drop-down allow-empty="true">
+                                <option key="Y" text="Yes"/><option key="N" text="No"/>
+                            </drop-down></default-field>
+                        </field>
+                        <field name="securedPercentage">
+                            <conditional-field condition="isReadOnly" title="Secured %"><display/></conditional-field>
+                            <default-field title="Secured %"><text-line size="10"/></default-field>
+                        </field>
+                        <field name="collateralDescription">
+                            <conditional-field condition="isReadOnly" title="Collateral Description"><display/></conditional-field>
+                            <default-field title="Collateral Description"><text-area rows="2"/></default-field>
+                        </field>
+
                         <field name="submitButton">
                             <conditional-field condition="isReadOnly"><ignored/></conditional-field>
                             <default-field title="Save"><submit/></default-field>
@@ -248,6 +318,7 @@
                         <field-layout>
                             <container style="row justify-end items-center q-mb-md">
                                 <container style="row items-center q-gutter-sm">
+                                    <field-ref name="SubmitLcField"/>
                                     <field-ref name="IssueLcField"/>
                                 </container>
                             </container>
@@ -265,6 +336,10 @@
                                         <container style="col-12 col-md-4"><field-ref name="sequenceTotal_27"/></container>
                                         <container style="col-12 col-md-4"><field-ref name="issueDate"/></container>
                                         <container style="col-12 col-md-4"><field-ref name="expiryDate"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="productId"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="lcProductTypeEnumId"/></container>
                                     </container>
                                     <container style="row q-col-gutter-sm">
                                         <container style="col-12 col-md-6"><field-ref name="expiryPlace_31D"/></container>
@@ -303,20 +378,42 @@
                                         <container style="col-12 col-md-4"><field-ref name="advisingBankPartyId"/></container>
                                         <container style="col-12 col-md-4"><field-ref name="reimbursingBankPartyId"/></container>
                                     </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="advisingThroughBankPartyId"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="requestedConfirmationParty_58a"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="advisingThroughBank_57a"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="reimbursingBank_53a"/></container>
+                                    </container>
                                 </container>
                             </container>
 
                             <container style="q-card q-mb-md shadow-1 border">
-                                <container style="q-pa-sm bg-orange-1 text-weight-bold">4. SHIPMENT DETAILS</container>
+                                <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">4. CREDIT &amp; COLLATERAL</container>
+                                <container style="q-pa-md">
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="isSecured"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="securedPercentage"/></container>
+                                    </container>
+                                    <field-ref name="collateralDescription"/>
+                                </container>
+                            </container>
+
+                            <container style="q-card q-mb-md shadow-1 border">
+                                <container style="q-pa-sm bg-orange-1 text-weight-bold">5. SHIPMENT DETAILS</container>
                                 <container style="q-pa-md">
                                     <container style="row q-col-gutter-sm">
                                         <container style="col-12 col-md-6"><field-ref name="partialShipment_43P"/></container>
                                         <container style="col-12 col-md-6"><field-ref name="transhipment_43T"/></container>
                                     </container>
                                     <container style="row q-col-gutter-sm">
-                                        <container style="col-12 col-md-4"><field-ref name="latestShipDate_44C"/></container>
-                                        <container style="col-12 col-md-4"><field-ref name="portOfLoading_44E"/></container>
-                                        <container style="col-12 col-md-4"><field-ref name="portOfDischarge_44F"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="latestShipDate_44C"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="placeOfReceipt_44A"/></container>
+                                    </container>
+                                    <container style="row q-col-gutter-sm">
+                                        <container style="col-12 col-md-6"><field-ref name="portOfLoading_44E"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="portOfDischarge_44F"/></container>
                                     </container>
                                     <field-ref name="placeOfFinalDestination_44B"/>
                                     <field-ref name="shipmentPeriod_44D"/>
@@ -324,7 +421,7 @@
                             </container>
 
                             <container style="q-card q-mb-md shadow-1 border">
-                                <container style="q-pa-sm bg-deep-orange-1 text-weight-bold">5. GOODS &amp; DOCUMENTS</container>
+                                <container style="q-pa-sm bg-deep-orange-1 text-weight-bold">6. GOODS &amp; DOCUMENTS</container>
                                 <container style="q-pa-md">
                                     <field-ref name="descriptionOfGoods_45A"/>
                                     <field-ref name="docsRequired_46A"/>
@@ -333,7 +430,7 @@
                             </container>
 
                             <container style="q-card q-mb-md shadow-1 border">
-                                <container style="q-pa-sm bg-blue-1 text-weight-bold">6. PAYMENT &amp; INSTRUCTIONS</container>
+                                <container style="q-pa-sm bg-blue-1 text-weight-bold">7. PAYMENT &amp; INSTRUCTIONS</container>
                                 <container style="q-pa-md">
                                     <container style="row q-col-gutter-sm">
                                         <container style="col-12 col-md-6"><field-ref name="availableWithBy_41A"/></container>
@@ -355,11 +452,10 @@
                         </field-layout>
                     </form-single>
 
-                    <!-- Credit & Collateral Section (UC8.3.3) -->
                     <container style="q-card q-mt-lg shadow-1 border">
-                        <container style="q-pa-sm bg-blue-grey-1 text-blue-grey-10 text-weight-bold">CREDIT &amp; COLLATERAL (CBS)</container>
+                        <container style="q-pa-sm bg-blue-grey-1 text-blue-grey-10 text-weight-bold">CBS INTEGRATION STATUS</container>
                         <container style="q-pa-md">
-                            <label text="Credit Limit and Collateral information retrieved from CBS will be displayed here." style="italic text-grey-7"/>
+                            <label text="CBS communication logs and real-time validation status will be displayed here." style="italic text-grey-7"/>
                         </container>
                     </container>
                 </container>

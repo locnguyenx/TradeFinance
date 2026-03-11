@@ -229,7 +229,7 @@
     <!-- LC #1: Issued & Closed — Sight LC, fully settled -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_01" lcNumber="ILC-2026-0001"
         lcStatusId="LcLfClosed" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC01"
-        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="1"
+        productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="1"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2026-01-15" expiryDate="2026-07-15" expiryPlace_31D="Ho Chi Minh City"
         amount="500000" amountCurrencyUomId="USD" amountTolerance_39A="5/5"
@@ -255,7 +255,7 @@
     <!-- LC #2: Issued, Advised — Usance LC, active, 1 drawing pending -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_02" lcNumber="ILC-2026-0002"
         lcStatusId="LcLfAdvised" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC02"
-        lcProductTypeEnumId="LC_PROD_USANCE" amendmentNumber="0"
+        productId="PROD_ILC_USANCE" lcProductTypeEnumId="LC_PROD_USANCE" amendmentNumber="0"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2026-02-01" expiryDate="2026-08-01" expiryPlace_31D="Bangkok"
         amount="1200000" amountCurrencyUomId="USD"
@@ -273,7 +273,7 @@
     <!-- LC #3: Issued — Negotiation LC, active with amendment -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_03" lcNumber="ILC-2026-0003"
         lcStatusId="LcLfAmended" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC03"
-        lcProductTypeEnumId="LC_PROD_NEGOTIATION" amendmentNumber="1"
+        productId="PROD_ILC_NEGOTIATION" lcProductTypeEnumId="LC_PROD_NEGOTIATION" amendmentNumber="1"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2026-01-20" expiryDate="2026-09-20" expiryPlace_31D="Shanghai"
         amount="2500000" amountCurrencyUomId="USD" amountTolerance_39A="10/10"
@@ -290,7 +290,7 @@
     <!-- LC #4: Applied — Under review, pending approval -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_04" lcNumber="ILC-2026-0004"
         lcStatusId="LcLfApplied" transactionStatusId="LcTxSubmitted" requestId="DEMO_REQ_LC04"
-        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2026-03-01" expiryDate="2026-09-01" expiryPlace_31D="Mumbai"
         amount="750000" amountCurrencyUomId="USD"
@@ -307,7 +307,7 @@
     <!-- LC #5: Draft — Initial draft, not yet submitted -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_05" lcNumber="ILC-2026-0005"
         lcStatusId="LcLfDraft" transactionStatusId="LcTxDraft" requestId="DEMO_REQ_LC05"
-        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
         amount="320000" amountCurrencyUomId="USD"
         applicantPartyId="DEMO_ORG_GREEN" beneficiaryPartyId="DEMO_ORG_BR_AGRO"
         applicantName="Green Agriculture Co" applicantAddress="15 Vo Van Tan, HCM City"
@@ -318,7 +318,7 @@
     <!-- LC #6: Issued, Expired — Expired LC with no drawings -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_06" lcNumber="ILC-2026-0006"
         lcStatusId="LcLfExpired" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC06"
-        lcProductTypeEnumId="LC_PROD_USANCE" amendmentNumber="0"
+        productId="PROD_ILC_USANCE" lcProductTypeEnumId="LC_PROD_USANCE" amendmentNumber="0"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2025-06-01" expiryDate="2025-12-01" expiryPlace_31D="Taipei"
         amount="180000" amountCurrencyUomId="USD"
@@ -336,7 +336,7 @@
     <!-- LC #7: Issued — Standby LC, active guarantee -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_07" lcNumber="ILC-2026-0007"
         lcStatusId="LcLfIssued" transactionStatusId="LcTxClosed" requestId="DEMO_REQ_LC07"
-        lcProductTypeEnumId="LC_PROD_STANDBY" amendmentNumber="0"
+        productId="PROD_ILC_STANDBY" lcProductTypeEnumId="LC_PROD_STANDBY" amendmentNumber="0"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2026-02-15" expiryDate="2027-02-15" expiryPlace_31D="Tokyo"
         amount="3000000" amountCurrencyUomId="USD"
@@ -352,7 +352,7 @@
     <!-- LC #8: Applied — Pending first approval, transferable -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_08" lcNumber="ILC-2026-0008"
         lcStatusId="LcLfApplied" transactionStatusId="LcTxSubmitted" requestId="DEMO_REQ_LC08"
-        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREV_TRANS" applicableRules_40E="LC_RULE_UCP600"
         expiryDate="2026-12-31" expiryPlace_31D="Detroit"
         amount="890000" amountCurrencyUomId="USD" amountTolerance_39A="5/5"
@@ -369,7 +369,7 @@
     <!-- LC #9: Draft — Rejected and reopened for correction -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_09" lcNumber="ILC-2026-0009"
         lcStatusId="LcLfDraft" transactionStatusId="LcTxDraft" requestId="DEMO_REQ_LC09"
-        lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
+        productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT" amendmentNumber="0"
         amount="445000" amountCurrencyUomId="USD"
         applicantPartyId="DEMO_ORG_CHEM" beneficiaryPartyId="DEMO_ORG_KR_CHEM"
         applicantName="Chemical Materials VN" applicantAddress="33 Pasteur, HCM City"
@@ -380,7 +380,7 @@
     <!-- LC #10: Negotiated — Fully negotiated, awaiting final payment -->
     <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_10" lcNumber="ILC-2026-0010"
         lcStatusId="LcLfNegotiated" transactionStatusId="LcTxApproved" requestId="DEMO_REQ_LC10"
-        lcProductTypeEnumId="LC_PROD_NEGOTIATION" amendmentNumber="0"
+        productId="PROD_ILC_NEGOTIATION" lcProductTypeEnumId="LC_PROD_NEGOTIATION" amendmentNumber="0"
         sequenceTotal_27="1/1" formOfCredit_40A="LC_FORM_IRREVOCABLE" applicableRules_40E="LC_RULE_UCP600"
         issueDate="2026-02-20" expiryDate="2026-08-20" expiryPlace_31D="Sydney"
         amount="1800000" amountCurrencyUomId="USD" amountTolerance_39A="3/3"

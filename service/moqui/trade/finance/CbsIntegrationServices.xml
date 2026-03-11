@@ -8,13 +8,15 @@
     <!-- ========================================================= -->
     <!-- Funds Hold / Release Interfaces                           -->
     <!-- ========================================================= -->
+    <!-- Interface services that route to specific implementations -->
+
     <service verb="hold" noun="Funds">
         <description>Places a hold on a customer's account for LC provisions/margins.</description>
         <in-parameters>
             <parameter name="partyId" required="true"/>
             <parameter name="amount" type="BigDecimal" required="true"/>
             <parameter name="currencyUomId" required="true"/>
-            <parameter name="referenceId" required="true"/> <!-- e.g., LC Number -->
+            <parameter name="referenceId" required="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="holdReference"/>
@@ -22,104 +24,65 @@
             <parameter name="message"/>
         </out-parameters>
         <actions>
-            <log level="info" message="[CBS MOCK] Holding ${amount} ${currencyUomId} for party ${partyId} (Ref: ${referenceId})"/>
-            <!-- Mock implementation: Assume success -->
-            <set field="holdReference" value="HLD-${ec.user.nowTimestamp.time}"/>
-            <set field="success" value="true"/>
-            <set field="message" value="Funds held successfully."/>
+            <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
+            <service-call name="moqui.trade.finance.Cbs${implSuffix}Services.hold#Funds${implSuffix}" 
+                          in-map="context" out-map="context"/>
         </actions>
     </service>
 
     <service verb="release" noun="Funds">
-        <description>Releases a previously placed fund hold on a customer's account.</description>
-        <in-parameters>
-            <parameter name="holdReference" required="true"/>
-            <parameter name="partyId" required="true"/>
-            <parameter name="amount" type="BigDecimal" required="true"/>
-        </in-parameters>
-        <out-parameters>
-            <parameter name="success" type="Boolean"/>
-            <parameter name="message"/>
-        </out-parameters>
+        <implements service="moqui.trade.finance.CbsIntegrationServices.hold#Funds"/> <!-- reused parameters -->
+        <in-parameters><parameter name="holdReference" required="true"/></in-parameters>
         <actions>
-            <log level="info" message="[CBS MOCK] Releasing hold ${holdReference} for party ${partyId} to the amount of ${amount}"/>
-            <!-- Mock implementation: Assume success -->
-            <set field="success" value="true"/>
-            <set field="message" value="Funds released successfully."/>
+            <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
+            <service-call name="moqui.trade.finance.Cbs${implSuffix}Services.release#Funds${implSuffix}" 
+                          in-map="context" out-map="context"/>
         </actions>
     </service>
 
-    <!-- ========================================================= -->
-    <!-- General Accounting / Posting                              -->
-    <!-- ========================================================= -->
     <service verb="post" noun="AccountingEntries">
-        <description>Posts accounting entries to the CBS General Ledger.</description>
         <in-parameters>
-            <parameter name="debitAccountId" required="true"/>
-            <parameter name="creditAccountId" required="true"/>
-            <parameter name="amount" type="BigDecimal" required="true"/>
-            <parameter name="currencyUomId" required="true"/>
-            <parameter name="transactionType" required="true"/>
-            <parameter name="referenceId"/>
+            <parameter name="debitAccountId" required="true"/><parameter name="creditAccountId" required="true"/>
+            <parameter name="amount" type="BigDecimal" required="true"/><parameter name="currencyUomId" required="true"/>
+            <parameter name="transactionType" required="true"/><parameter name="referenceId"/>
         </in-parameters>
-        <out-parameters>
-            <parameter name="transactionReference"/>
-            <parameter name="success" type="Boolean"/>
-        </out-parameters>
+        <out-parameters><parameter name="transactionReference"/><parameter name="success" type="Boolean"/></out-parameters>
         <actions>
-            <log level="info" message="[CBS MOCK] Posting ${amount} ${currencyUomId} (Type: ${transactionType}) - Dr: ${debitAccountId}, Cr: ${creditAccountId} (Ref: ${referenceId})"/>
-            <set field="transactionReference" value="TXN-${ec.user.nowTimestamp.time}"/>
-            <set field="success" value="true"/>
+            <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
+            <service-call name="moqui.trade.finance.Cbs${implSuffix}Services.post#AccountingEntries${implSuffix}" 
+                          in-map="context" out-map="context"/>
         </actions>
     </service>
 
-    <!-- ========================================================= -->
-    <!-- Credit Limit Management                                   -->
-    <!-- ========================================================= -->
     <service verb="check" noun="CreditLimit">
-        <description>Checks the available trade limit for a customer.</description>
         <in-parameters>
             <parameter name="partyId" required="true"/>
             <parameter name="limitType" default-value="TRADE_LC"/>
+            <parameter name="creditAgreementId"/>
         </in-parameters>
-        <out-parameters>
-            <parameter name="availableLimit" type="BigDecimal"/>
-            <parameter name="currencyUomId"/>
-        </out-parameters>
+        <out-parameters><parameter name="availableLimit" type="BigDecimal"/><parameter name="currencyUomId"/></out-parameters>
         <actions>
-            <log level="info" message="[CBS MOCK] Checking ${limitType} limit for party ${partyId}"/>
-            <!-- Mock implementation: Return a very large limit to avoid blocking tests -->
-            <set field="availableLimit" value="10000000.00"/>
-            <set field="currencyUomId" value="USD"/>
+            <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
+            <service-call name="moqui.trade.finance.Cbs${implSuffix}Services.check#CreditLimit${implSuffix}" 
+                          in-map="context" out-map="context"/>
         </actions>
     </service>
 
-    <!-- ========================================================= -->
-    <!-- Forex Rates                                               -->
-    <!-- ========================================================= -->
     <service verb="get" noun="ExchangeRate">
-        <description>Retrieves the current exchange rate between two currencies.</description>
-        <in-parameters>
-            <parameter name="fromCurrencyUomId" required="true"/>
-            <parameter name="toCurrencyUomId" required="true"/>
-        </in-parameters>
-        <out-parameters>
-            <parameter name="exchangeRate" type="BigDecimal"/>
-        </out-parameters>
+        <in-parameters><parameter name="fromCurrencyUomId" required="true"/><parameter name="toCurrencyUomId" required="true"/></in-parameters>
+        <out-parameters><parameter name="exchangeRate" type="BigDecimal"/></out-parameters>
         <actions>
-            <log level="info" message="[CBS MOCK] Fetching FX Rate: ${fromCurrencyUomId} -> ${toCurrencyUomId}"/>
-            <!-- Mock implementation -->
-            <if condition="fromCurrencyUomId == toCurrencyUomId">
-                <set field="exchangeRate" value="1.0"/>
-                <return/>
-            </if>
-            <if condition="fromCurrencyUomId == 'USD' &amp;&amp; toCurrencyUomId == 'EUR'">
-                <set field="exchangeRate" value="0.92"/>
-            <else-if condition="fromCurrencyUomId == 'EUR' &amp;&amp; toCurrencyUomId == 'USD'">
-                <set field="exchangeRate" value="1.09"/>
-            </else-if>
+            <!-- FX Rate usually doesn't need a complex adapter, but pattern kept for consistency -->
+            <if condition="fromCurrencyUomId == toCurrencyUomId"><set field="exchangeRate" value="1.0"/><return/></if>
+            <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
+            <!-- Fallback to inline mock if impl not found or just use Mock -->
+            <if condition="implSuffix == 'Mock'">
+                <if condition="fromCurrencyUomId == 'USD' &amp;&amp; toCurrencyUomId == 'EUR'"><set field="exchangeRate" value="0.92"/>
+                <else-if condition="fromCurrencyUomId == 'EUR' &amp;&amp; toCurrencyUomId == 'USD'"><set field="exchangeRate" value="1.09"/></else-if>
+                <else><set field="exchangeRate" value="1.0"/></else></if>
             <else>
-                <set field="exchangeRate" value="1.0"/> <!-- default mockup -->
+                <!-- Placeholder for real FX API -->
+                <set field="exchangeRate" value="1.0"/>
             </else>
             </if>
         </actions>

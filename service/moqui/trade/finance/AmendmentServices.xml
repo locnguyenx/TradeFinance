@@ -34,14 +34,16 @@
             <set field="amendmentMap" from="[:]"/>
             <script><![CDATA[
                 def amendableFields = [
-                    'lcProductTypeEnumId', 'formOfCredit_40A', 'applicableRules_40E', 'expiryDate', 'expiryPlace_31D',
+                    'productId', 'lcProductTypeEnumId', 'formOfCredit_40A', 'applicableRules_40E', 'expiryDate', 'expiryPlace_31D',
                     'amount', 'amountCurrencyUomId', 'amountTolerance_39A', 'maxCreditAmount_39B', 'additionalAmountsCovered_39C',
                     'beneficiaryPartyId', 'beneficiaryName', 'beneficiaryAddress', 'advisingBankPartyId', 'advisingBankName',
-                    'partialShipment_43P', 'transhipment_43T', 'latestShipDate_44C', 'placeOfReceipt_44A', 'portOfLoading_44E',
-                    'portOfDischarge_44F', 'placeOfFinalDestination_44B', 'descriptionOfGoods_45A', 'shipmentPeriod_44D',
-                    'docsRequired_46A', 'additionalConditions_47A', 'instructionsToBank_78', 'periodForPresentation_48',
-                    'charges_71B', 'senderToReceiverInfo_72Z', 'availableWithBy_41A', 'availableWithBankName',
-                    'draftsAt_42C', 'confirmationInstructions_49'
+                    'advisingThroughBankPartyId', 'advisingThroughBank_57a', 'reimbursingBankPartyId', 'reimbursingBank_53a',
+                    'requestedConfirmationParty_58a', 'partialShipment_43P', 'transhipment_43T', 'latestShipDate_44C',
+                    'placeOfReceipt_44A', 'portOfLoading_44E', 'portOfDischarge_44F', 'placeOfFinalDestination_44B',
+                    'descriptionOfGoods_45A', 'shipmentPeriod_44D', 'docsRequired_46A', 'additionalConditions_47A',
+                    'instructionsToBank_78', 'periodForPresentation_48', 'charges_71B', 'senderToReceiverInfo_72Z',
+                    'availableWithBy_41A', 'availableWithBankName', 'draftsAt_42C', 'confirmationInstructions_49',
+                    'isSecured', 'securedPercentage', 'collateralDescription'
                 ]
                 
                 if (context.fieldName) {
@@ -112,17 +114,24 @@
                 <!-- Automated Apply: Copy all shadow fields from Amendment back to LC -->
                 <script>
                     def amendableFields = [
-                        'lcProductTypeEnumId', 'formOfCredit_40A', 'applicableRules_40E', 'expiryDate', 'expiryPlace_31D',
+                        'productId', 'lcProductTypeEnumId', 'formOfCredit_40A', 'applicableRules_40E', 'expiryDate', 'expiryPlace_31D',
                         'amount', 'amountCurrencyUomId', 'amountTolerance_39A', 'maxCreditAmount_39B', 'additionalAmountsCovered_39C',
                         'beneficiaryPartyId', 'beneficiaryName', 'beneficiaryAddress', 'advisingBankPartyId', 'advisingBankName',
-                        'partialShipment_43P', 'transhipment_43T', 'latestShipDate_44C', 'placeOfReceipt_44A', 'portOfLoading_44E',
-                        'portOfDischarge_44F', 'placeOfFinalDestination_44B', 'descriptionOfGoods_45A', 'shipmentPeriod_44D',
-                        'docsRequired_46A', 'additionalConditions_47A', 'instructionsToBank_78', 'periodForPresentation_48',
-                        'charges_71B', 'senderToReceiverInfo_72Z', 'availableWithBy_41A', 'availableWithBankName',
-                        'draftsAt_42C', 'confirmationInstructions_49'
+                        'advisingThroughBankPartyId', 'advisingThroughBank_57a', 'reimbursingBankPartyId', 'reimbursingBank_53a',
+                        'requestedConfirmationParty_58a', 'partialShipment_43P', 'transhipment_43T', 'latestShipDate_44C',
+                        'placeOfReceipt_44A', 'portOfLoading_44E', 'portOfDischarge_44F', 'placeOfFinalDestination_44B',
+                        'descriptionOfGoods_45A', 'shipmentPeriod_44D', 'docsRequired_46A', 'additionalConditions_47A',
+                        'instructionsToBank_78', 'periodForPresentation_48', 'charges_71B', 'senderToReceiverInfo_72Z',
+                        'availableWithBy_41A', 'availableWithBankName', 'draftsAt_42C', 'confirmationInstructions_49',
+                        'isSecured', 'securedPercentage', 'collateralDescription'
                     ]
                     def updateMap = [:]
                     amendableFields.each { field -> if (amendment[field] != null) updateMap[field] = amendment[field] }
+                    // Sync Enum if productId changed
+                    if (updateMap.productId) {
+                        def product = ec.entity.find("moqui.trade.finance.LcProduct").condition("productId", updateMap.productId).one()
+                        if (product) updateMap.lcProductTypeEnumId = product.lcProductTypeEnumId
+                    }
                     lc.setAll(updateMap)
                 </script>
                 
@@ -147,6 +156,10 @@
 
                 <!-- Generate MT707 Amendment Advice -->
                 <service-call name="moqui.trade.finance.SwiftServices.generate#SwiftMt707"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
+
+                <!-- Post Amendment Charges to GL -->
+                <service-call name="moqui.trade.finance.AccountingServices.post#LcChargesToInvoice"
                     in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
             <else>
                 <set field="amendment.confirmationStatusId" value="LcAmndRej"/>

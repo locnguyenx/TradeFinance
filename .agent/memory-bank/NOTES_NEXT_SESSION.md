@@ -1,16 +1,18 @@
 # Notes for Next Session
 
 ## Status
-- Amendment creation and list view are now fully standardized using the "Dialog & Transition Include" pattern.
-- The `Amendments` tab in LC Detail is synchronized with `FindAmendment.xml`.
-- BRD updated to reflect these design standards.
+- **Phase 4 (LC Amendment)** is 100% complete and verified. 
+- Full field parity and screen consistency achieved between Master LC and Amendments.
+- "Credit & Collateral" sections implemented and synchronized across all detail views.
 
 ## Technical Details
-- Reusable templates located in `template/lc/`: `CreateAmendment.xml`, `AmendmentTransitions.xml`.
-- Redirection now uses sparse paths (`//${appRoot}/...`) in shared transitions for global reliability.
-- List view uses `LcAmendmentDetailView` for consistency.
+- **Verification**: `TradeFinanceAmendmentSpec.groovy` is the authoritative test for the amendment lifecycle.
+- **Pattern**: Always use `<entity-find-one>` after status transitions (e.g., `confirm#LcAmendment`) to refresh core value-fields.
+- **Seed Data**: `10_TradeFinanceData.xml` now contains correct `LcTransaction` status flows for amendments.
 
 ## Next Steps
-- Apply the same "Reusable Dialog" pattern to Drawing creation.
-- Resume field expansion for Drawings.
-- Update MT707 generator logic to align with the shadow record model.
+- **Phase 5: CBS Integration**: Move from mocked `HLD-xxx` stubs to a real integration framework for Credit Limits and GL entries.
+- **Drawing Module**: Apply the same screen parity and SWIFT grouping patterns to the Drawings and Negotiation screens.
+- **MT707 Logic**: Final check on MT707 generation to ensure all new shadow fields are correctly mapped to the SWIFT message.
+
+**Last Update:** 2026-03-11

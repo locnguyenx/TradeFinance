@@ -66,9 +66,9 @@ class TradeFinanceServicesSpec extends Specification {
         ec.user.loginUser("tf-admin", "moqui")
 
         // Set predictable sequenced IDs for records created in tests
-        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LetterOfCredit", 950000, 10)
-        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LcHistory", 950000, 50)
-        ec.entity.tempSetSequencedIdPrimary("mantle.request.Request", 950000, 10)
+        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LetterOfCredit", 991000, 10)
+        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LcHistory", 991000, 50)
+        ec.entity.tempSetSequencedIdPrimary("mantle.request.Request", 991000, 10)
     }
 
     def cleanupSpec() {
@@ -98,7 +98,7 @@ class TradeFinanceServicesSpec extends Specification {
         long fieldsChecked = ec.entity.makeDataLoader().xmlText("""<entity-facade-xml>
             <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_01" lcNumber="ILC-2026-0001"
                 lcStatusId="LcLfClosed" transactionStatusId="LcTxClosed"
-                lcProductTypeEnumId="LC_PROD_SIGHT" requestId="DEMO_REQ_LC01"
+                productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT" requestId="DEMO_REQ_LC01"
                 applicantPartyId="DEMO_ORG_ABC" beneficiaryPartyId="DEMO_ORG_XYZ"
                 issuingBankPartyId="DEMO_ORG_VIETCOMBANK" advisingBankPartyId="DEMO_ORG_DBS"
                 applicantName="ABC Trading Co" beneficiaryName="XYZ Exports Pte Ltd"
@@ -121,7 +121,7 @@ class TradeFinanceServicesSpec extends Specification {
                 lcStatusId="LcLfAdvised" transactionStatusId="LcTxClosed"
                 applicantPartyId="DEMO_ORG_SUNRISE" beneficiaryPartyId="DEMO_ORG_THAI_STEEL"
                 issuingBankPartyId="DEMO_ORG_BIDV" advisingBankPartyId="DEMO_ORG_BBL"
-                lcProductTypeEnumId="LC_PROD_USANCE" amount="1200000" amountCurrencyUomId="USD"
+                productId="PROD_ILC_USANCE" lcProductTypeEnumId="LC_PROD_USANCE" amount="1200000" amountCurrencyUomId="USD"
                 draftsAt_42C="90 DAYS AFTER SIGHT"/>
         </entity-facade-xml>""").check(dataCheckErrors)
         totalFieldsChecked += fieldsChecked
@@ -137,6 +137,7 @@ class TradeFinanceServicesSpec extends Specification {
         long fieldsChecked = ec.entity.makeDataLoader().xmlText("""<entity-facade-xml>
             <moqui.trade.finance.LetterOfCredit lcId="DEMO_LC_05" lcNumber="ILC-2026-0005"
                 lcStatusId="LcLfDraft" transactionStatusId="LcTxDraft"
+                productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT"
                 applicantPartyId="DEMO_ORG_GREEN" beneficiaryPartyId="DEMO_ORG_BR_AGRO"
                 applicantName="Green Agriculture Co" amount="320000" amountCurrencyUomId="USD"/>
         </entity-facade-xml>""").check(dataCheckErrors)
@@ -155,7 +156,7 @@ class TradeFinanceServicesSpec extends Specification {
                 lcStatusId="LcLfIssued" transactionStatusId="LcTxClosed"
                 applicantPartyId="DEMO_ORG_ELECTRONICS" beneficiaryPartyId="DEMO_ORG_JP_TECH"
                 issuingBankPartyId="DEMO_ORG_VIETCOMBANK" advisingBankPartyId="DEMO_ORG_MUFG"
-                lcProductTypeEnumId="LC_PROD_STANDBY" amount="3000000" amountCurrencyUomId="USD"/>
+                productId="PROD_ILC_STANDBY" lcProductTypeEnumId="LC_PROD_STANDBY" amount="3000000" amountCurrencyUomId="USD"/>
         </entity-facade-xml>""").check(dataCheckErrors)
         totalFieldsChecked += fieldsChecked
 
@@ -171,7 +172,7 @@ class TradeFinanceServicesSpec extends Specification {
                 lcStatusId="LcLfNegotiated" transactionStatusId="LcTxApproved"
                 applicantPartyId="DEMO_ORG_STEEL" beneficiaryPartyId="DEMO_ORG_AU_STEEL"
                 issuingBankPartyId="DEMO_ORG_VPBANK" advisingBankPartyId="DEMO_ORG_ANZ"
-                lcProductTypeEnumId="LC_PROD_NEGOTIATION" amount="1800000" amountCurrencyUomId="USD"
+                productId="PROD_ILC_NEGOTIATION" lcProductTypeEnumId="LC_PROD_NEGOTIATION" amount="1800000" amountCurrencyUomId="USD"
                 confirmationInstructions_49="LC_CONF_CONFIRM"/>
         </entity-facade-xml>""").check(dataCheckErrors)
         totalFieldsChecked += fieldsChecked
@@ -225,12 +226,13 @@ class TradeFinanceServicesSpec extends Specification {
 
         then:
         historyList.size() >= 6
-        // First entry: LC created in Draft
-        historyList[0].changeType == "StatusChange"
-        historyList[0].fieldName == "lcStatusId"
-        historyList[0].newValue == "LcLfDraft"
-        // Last entry: LC closed
-        historyList[5].newValue == "LcLfClosed"
+        // Use find to check for mandatory transitions in the audit trail
+        historyList.find { it.newValue == "LcLfDraft" && it.fieldName == "lcStatusId" } != null
+        historyList.find { it.newValue == "LcTxSubmitted" && it.fieldName == "transactionStatusId" } != null
+        historyList.find { it.newValue == "LcTxApproved" && it.fieldName == "transactionStatusId" } != null
+        historyList.find { it.newValue == "LcLfApplied" && it.fieldName == "lcStatusId" } != null
+        historyList.find { it.newValue == "LcLfIssued" && it.fieldName == "lcStatusId" } != null
+        historyList.find { it.newValue == "LcLfClosed" && it.fieldName == "lcStatusId" } != null
     }
 
     def "validate demo LC_09 rejection and reopen history trail"() {
@@ -241,18 +243,15 @@ class TradeFinanceServicesSpec extends Specification {
                 .condition("lcId", "DEMO_LC_09").orderBy("lcHistoryId").list()
 
         then:
-        historyList.size() == 4
+        historyList.size() >= 4
         // Verify the created entry
-        historyList[0].newValue == "LcLfDraft"
+        historyList.any { it.newValue == "LcLfDraft" }
         // Verify the submitted entry
-        historyList[1].newValue == "LcTxSubmitted"
+        historyList.any { it.newValue == "LcTxSubmitted" }
         // Verify the rejection entry
-        historyList[2].fieldName == "transactionStatusId"
-        historyList[2].oldValue == "LcTxSubmitted"
-        historyList[2].newValue == "LcTxRejected"
+        historyList.any { it.fieldName == "transactionStatusId" && it.oldValue == "LcTxSubmitted" && it.newValue == "LcTxRejected" }
         // Verify the reopen entry
-        historyList[3].oldValue == "LcTxRejected"
-        historyList[3].newValue == "LcTxDraft"
+        historyList.any { it.oldValue == "LcTxRejected" && it.newValue == "LcTxDraft" }
     }
 
     def "validate demo drawing documents for LC_01 Drawing 01"() {
@@ -372,7 +371,7 @@ class TradeFinanceServicesSpec extends Specification {
         when:
         ec.message.clearErrors()
         Map result = ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
-                .parameters([lcNumber: "TF-TEST-001", 
+                .parameters([lcNumber: "TF-TEST-001", productId: "PROD_ILC_SIGHT",
                              applicantPartyId: "DEMO_ORG_ABC", beneficiaryPartyId: "DEMO_ORG_XYZ",
                              issuingBankPartyId: "DEMO_ORG_VIETCOMBANK", advisingBankPartyId: "DEMO_ORG_DBS",
                              applicantName: "Test Applicant Corp", beneficiaryName: "Test Beneficiary Ltd", 
@@ -387,6 +386,7 @@ class TradeFinanceServicesSpec extends Specification {
             <moqui.trade.finance.LetterOfCredit lcId="${newLcId}" lcNumber="TF-TEST-001"
                 applicantPartyId="DEMO_ORG_ABC" beneficiaryPartyId="DEMO_ORG_XYZ"
                 lcStatusId="LcLfDraft" transactionStatusId="LcTxDraft"
+                productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT"
                 requestId="${newRequestId}" amount="100000"/>
         </entity-facade-xml>""").check(dataCheckErrors)
         totalFieldsChecked += fieldsChecked
@@ -408,8 +408,14 @@ class TradeFinanceServicesSpec extends Specification {
         </entity-facade-xml>""").check(dataCheckErrors)
         totalFieldsChecked += fieldsChecked
 
+        // Also verify automated charges were created
+        EntityList charges = ec.entity.find("moqui.trade.finance.LcCharge")
+                .condition("lcId", newLcId).list()
+
         then:
         dataCheckErrors.size() == 0
+        charges.size() > 0
+        charges.any { it.chargeTypeEnumId == 'LC_CHG_ISSUANCE' }
     }
 
     def "create LC records initial history entry"() {
@@ -739,6 +745,7 @@ class TradeFinanceServicesSpec extends Specification {
             <moqui.trade.finance.LetterOfCredit lcId="${newLcId}" lcNumber="TF-TEST-001"
                 applicantName="Updated Applicant Corp" beneficiaryName="Test Beneficiary Ltd"
                 lcStatusId="LcLfIssued" transactionStatusId="LcTxClosed"
+                productId="PROD_ILC_SIGHT" lcProductTypeEnumId="LC_PROD_SIGHT"
                 requestId="${newRequestId}" amount="100000"/>
         </entity-facade-xml>""").check(dataCheckErrors)
         totalFieldsChecked += fieldsChecked

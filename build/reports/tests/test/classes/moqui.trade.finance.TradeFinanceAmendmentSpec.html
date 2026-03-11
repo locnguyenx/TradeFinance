@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - TradeFinanceAmendmentSpec</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>TradeFinanceAmendmentSpec</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/moqui.trade.finance.html">moqui.trade.finance</a> &gt; TradeFinanceAmendmentSpec</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">2</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">0.659s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a href="#">Tests</a>
+</li>
+<li>
+<a href="#">Standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">Verify Apply Amendment Back to Master LC</td>
+<td class="success">0.479s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">Verify Shadow Field Cloning on Amendment Creation</td>
+<td class="success">0.180s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre id="class-stdout">?[32m23:30:05.168  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initializing Moqui Framework version 4.0.0
+ - runtime directory: /Users/me/myprojects/moqui-antigravity-new/runtime
+ - runtime config:    /Users/me/myprojects/moqui-antigravity-new/runtime/conf/MoquiDevConf.xml
+Starting MClassLoader with parent jdk.internal.loader.ClassLoaders$AppClassLoader
+?[32m23:30:05.170  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Running on Java 21.0.6 VM 21.0.6+7-LTS Runtime 21.0.6+7-LTS
+?[32m23:30:05.383  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component tools              at file:/Users/me/myprojects/moqui-antigravity-new/runtime/base-component/tools
+?[32m23:30:05.392  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component webroot            at file:/Users/me/myprojects/moqui-antigravity-new/runtime/base-component/webroot
+?[32m23:30:05.394  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component MarbleERP          at file:/Users/me/myprojects/moqui-antigravity-new/runtime/component/MarbleERP
+?[32m23:30:05.395  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component SimpleScreens      at file:/Users/me/myprojects/moqui-antigravity-new/runtime/component/SimpleScreens
+?[32m23:30:05.396  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component TradeFinance       at file:/Users/me/myprojects/moqui-antigravity-new/runtime/component/TradeFinance
+?[32m23:30:05.398  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component mantle-udm         at file:/Users/me/myprojects/moqui-antigravity-new/runtime/component/mantle-udm
+?[32m23:30:05.398  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component mantle-usl         at file:/Users/me/myprojects/moqui-antigravity-new/runtime/component/mantle-usl
+?[32m23:30:05.399  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added component moqui-fop          at file:/Users/me/myprojects/moqui-antigravity-new/runtime/component/moqui-fop
+?[32m23:30:05.401  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Components after depends-on sort: [tools, webroot, moqui-fop, mantle-udm, mantle-usl, SimpleScreens, MarbleERP, TradeFinance]
+?[32m23:30:05.409  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging MoquiConf.xml file from component tools
+?[32m23:30:05.417  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging MoquiConf.xml file from component moqui-fop
+?[32m23:30:05.420  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging MoquiConf.xml file from component mantle-udm
+?[32m23:30:05.422  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging MoquiConf.xml file from component SimpleScreens
+?[32m23:30:05.423  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging MoquiConf.xml file from component MarbleERP
+?[32m23:30:05.424  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging MoquiConf.xml file from component TradeFinance
+?[32m23:30:05.424  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Merging runtime configuration at /Users/me/myprojects/moqui-antigravity-new/runtime/conf/MoquiDevConf.xml
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property instance_purpose from default with value [dev]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property default_locale from default with value [en_US]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property default_time_zone from default with value [UTC]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property database_time_zone from default with value [UTC]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property webapp_https_enabled from default with value [false]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property webapp_allow_origins from default with value [*]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property webapp_handle_cors from default with value [true]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property webapp_status_ips from default with value [127.0.0.1]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property webapp_require_session_token from default with value [true]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property webapp_upload_executable_allow from default with value [false]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_db_conf from default with value [h2]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_host from default with value [127.0.0.1]
+?[32m23:30:05.429  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_database from default with value [moqui]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_url from default with value [jdbc:h2:/Users/me/myprojects/moqui-antigravity-new/runtime/db/h2/moqui;lock_timeout=30000]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_user from default with value [sa]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting secret property entity_ds_password from default
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting secret property entity_ds_crypt_pass from default
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting secret property entity_ds_crypt_pass_old from default
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_add_missing_runtime from default with value [false]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_add_missing_startup from default with value [true]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_lock_track from default with value [true]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_statement_timeout from default with value [false]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_empty_db_load from default with value [all]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_on_start_load_types from default with value [none]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_c1_disabled from default with value [true]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property entity_ds_c1_db_conf from default with value [mysql]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property scheduled_job_check_time from default with value [60]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property elasticsearch_url from default with value [http://127.0.0.1:9200]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property kibana_host from default with value [127.0.0.1]
+?[32m23:30:05.438  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Setting property kibana_port from default with value [5601]
+?[32m23:30:05.439  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Found default_time_zone UTC: sun.util.calendar.ZoneInfo[id=&quot;UTC&quot;,offset=0,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+?[32m23:30:05.439  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Default locale en_US, time zone sun.util.calendar.ZoneInfo[id=&quot;UTC&quot;,offset=0,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+?[32m23:30:05.460  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initializing worker ThreadPoolExecutor: queue limit 65535, pool-core 16, pool-max 32, pool-alive 60s
+?[32m23:30:05.463  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initializing MClassLoader context jdk.internal.loader.ClassLoaders$AppClassLoader cur class jdk.internal.loader.ClassLoaders$AppClassLoader system null
+?[32m23:30:05.467  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initialized MClassLoader with parent jdk.internal.loader.ClassLoaders$AppClassLoader
+?[32m23:30:05.474  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Added JARs from component moqui-fop: [antlr4-runtime-4.5.3.jar, avalon-framework-api-4.3.1.jar, avalon-framework-impl-4.2.0.jar, avalon-framework-impl-4.3.1.jar, barcode4j-2.1.jar, barcode4j-fop-ext-2.1.jar, batik-anim-1.19.jar, batik-awt-util-1.19.jar, batik-bridge-1.19.jar, batik-codec-1.19.jar, batik-constants-1.19.jar, batik-css-1.19.jar, batik-dom-1.19.jar, batik-ext-1.19.jar, batik-extension-1.19.jar, batik-gvt-1.19.jar, batik-i18n-1.19.jar, batik-parser-1.19.jar, batik-script-1.19.jar, batik-shared-resources-1.19.jar, batik-svg-dom-1.19.jar, batik-svggen-1.19.jar, batik-transcoder-1.19.jar, batik-util-1.19.jar, batik-xml-1.19.jar, commons-cli-1.0.jar, commons-lang-1.0.jar, cssbox-4.17.jar, cssbox-pdf-1.0-SNAPSHOT.jar, fontbox-3.0.6.jar, fop-core-2.11.jar, fop-events-2.11.jar, fop-util-2.11.jar, jstyleparser-3.5.jar, junit-3.7.jar, moqui-fop-2.0.0.jar, nekohtml-1.9.22.jar, pdfbox-3.0.6.jar, pdfbox-io-3.0.6.jar, qdox-1.12.jar, unbescape-1.1.6.RELEASE.jar, xml-apis-1.4.01.jar, xml-apis-ext-1.3.04.jar, xmlgraphics-commons-2.11.jar]
+?[32m23:30:05.475  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initialized ClassLoaders in 13ms
+?[32m23:30:05.479  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Not loading disabled ToolFactory with class: org.moqui.impl.tools.JackrabbitRunToolFactory
+?[32m23:30:05.479  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Not loading disabled ToolFactory with class: org.moqui.impl.tools.SubEthaSmtpToolFactory
+?[32m23:30:05.480  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Loading ToolFactory with class: org.moqui.impl.tools.MCacheToolFactory
+?[32m23:30:05.483  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Loading ToolFactory with class: org.moqui.impl.tools.H2ServerToolFactory
+?[32m23:30:05.487  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Loading ToolFactory with class: org.moqui.fop.FopToolFactory
+?[32m23:30:05.492  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Cache Facade initialized
+?[32m23:30:05.589  INFO  Test worker         o.moqui.i.c.ResourceFacadeImpl?[m Using xsl-fo-handler-factory FOP (org.moqui.fop.FopToolFactory)
+?[32m23:30:05.589  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Resource Facade initialized
+?[33m23:30:05.628  WARN  Test worker                     b.tm.Configuration?[m Cannot get the unique server ID for this JVM ('bitronix.tm.serverId'). Make sure it is configured and you use only US-ASCII characters. Will use IP address instead (unsafe for production usage!).
+?[32m23:30:05.822  INFO  Test worker      o.moqui.i.c.TransactionFacadeImpl?[m Internal transaction manager initialized: UserTransaction class bitronix.tm.BitronixTransactionManager, TransactionManager class bitronix.tm.BitronixTransactionManager
+?[32m23:30:05.823  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Transaction Facade initialized
+?[32m23:30:05.853  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Database time zone is sun.util.calendar.ZoneInfo[id=&quot;UTC&quot;,offset=0,dstSavings=0,useDaylight=false,transitions=0,lastRule=null]
+?[32m23:30:05.900  INFO  Test worker .moqui.i.c.TransactionInternalBitronix?[m Initializing DataSource transactional_DS (h2) with properties: [user:sa, url:jdbc:h2:/Users/me/myprojects/moqui-antigravity-new/runtime/db/h2/moqui;lock_timeout=30000]
+?[32m23:30:06.281  INFO  Test worker .moqui.i.c.TransactionInternalBitronix?[m Init DataSource transactional_DS (h2) isolation READ_COMMITTED (2), max pool 50
+?[32m23:30:06.286  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Skipping disabled datasource transactional#clone1
+?[32m23:30:06.296  INFO  Test worker                o.moqui.i.e.EntityCache?[m Entity Cache initialized, distributed cache invalidate enabled: false
+?[32m23:30:06.300  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Entity Facade initialized
+?[32m23:30:06.342  INFO  Test worker                    o.moqui.i.s.RestApi?[m Loaded REST API from moqui.rest.xml (83 paths, 89 methods)
+?[32m23:30:06.352  INFO  Test worker                    o.moqui.i.s.RestApi?[m Loaded REST API from mantle.rest.xml (392 paths, 416 methods)
+?[32m23:30:06.352  INFO  Test worker                    o.moqui.i.s.RestApi?[m Loaded REST API files, 2 roots, in 27ms
+?[32m23:30:06.353  INFO  Test worker          o.moqui.i.s.ServiceFacadeImpl?[m Setting Service Job worker pool size to 16 based on available processors * 2
+?[32m23:30:06.353  INFO  Test worker          o.moqui.i.s.ServiceFacadeImpl?[m Initializing Service Job ThreadPoolExecutor: queue limit 0, pool-core 2, pool-max 16, pool-alive 120s
+?[32m23:30:06.353  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Service Facade initialized
+?[32m23:30:06.360  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Screen Facade initialized
+?[32m23:30:06.360  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Loading entity definitions
+?[32m23:30:06.425  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Found entities in 43 files in 65ms
+?[32m23:30:06.515  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Found 0 view-entity definitions in database (DbViewEntity records)
+?[32m23:30:06.597  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity mantle.party.PartyDimension
+?[32m23:30:06.606  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity mantle.product.ProductDimension
+?[32m23:30:06.607  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity mantle.product.ProductDimensionAndType
+?[32m23:30:06.610  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity mantle.product.ProductUomDimension
+?[32m23:30:06.611  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity mantle.product.ProductUomDimensionAndType
+?[32m23:30:06.676  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity moqui.screen.form.DbFormFieldAttribute
+?[32m23:30:06.676  INFO  Test worker                  o.moqui.i.e.FieldInfo?[m Replacing column name VALUE with replace name THE_VALUE for entity moqui.screen.form.DbFormFieldEntOptsCond
+?[32m23:30:06.690  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Loaded 884 entity definitions in 329ms
+?[32m23:30:06.696  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Checking tables for entities in groups [transactional]
+?[32m23:30:06.730  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column PRODUCT_ID to table LC_AMENDMENT for field productId of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.735  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column ADVISING_THROUGH_BANK_PARTY_ID to table LC_AMENDMENT for field advisingThroughBankPartyId of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.740  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column ADVISING_THROUGH_BANK_57A to table LC_AMENDMENT for field advisingThroughBank_57a of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.743  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column REIMBURSING_BANK_PARTY_ID to table LC_AMENDMENT for field reimbursingBankPartyId of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.746  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column REIMBURSING_BANK_53A to table LC_AMENDMENT for field reimbursingBank_53a of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.749  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column REQUESTED_CONFIRMATION_PARTY_58A to table LC_AMENDMENT for field requestedConfirmationParty_58a of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.751  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column IS_SECURED to table LC_AMENDMENT for field isSecured of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.754  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column SECURED_PERCENTAGE to table LC_AMENDMENT for field securedPercentage of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.757  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column COLLATERAL_DESCRIPTION to table LC_AMENDMENT for field collateralDescription of entity moqui.trade.finance.LcAmendment in group transactional
+?[32m23:30:06.759  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column INVOICE_ID to table LC_CHARGE for field invoiceId of entity moqui.trade.finance.LcCharge in group transactional
+?[32m23:30:06.761  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column INVOICE_ITEM_SEQ_ID to table LC_CHARGE for field invoiceItemSeqId of entity moqui.trade.finance.LcCharge in group transactional
+?[32m23:30:06.762  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Creating table for moqui.trade.finance.LcProduct pks: [productId]
+?[32m23:30:06.762  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created table LC_PRODUCT for entity moqui.trade.finance.LcProduct in group transactional
+?[32m23:30:06.793  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Created 1550 automatic reverse relationships
+?[32m23:30:06.799  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created index IDXLcProductLPTypeEnumeration for entity moqui.trade.finance.LcProduct
+?[32m23:30:06.802  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Creating table for moqui.trade.finance.LcProductCharge pks: [productId, chargeTypeEnumId]
+?[32m23:30:06.803  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created table LC_PRODUCT_CHARGE for entity moqui.trade.finance.LcProductCharge in group transactional
+?[32m23:30:06.805  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created index IDXLcProductChargeLcProduct for entity moqui.trade.finance.LcProductCharge
+?[32m23:30:06.808  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created index IDXLcProductChargLChrgTypnmrtn for entity moqui.trade.finance.LcProductCharge
+?[32m23:30:06.808  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created index IDXLcProductChargeItemTypnmrtn for entity moqui.trade.finance.LcProductCharge
+?[32m23:30:06.816  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column PRODUCT_ID to table LETTER_OF_CREDIT for field productId of entity moqui.trade.finance.LetterOfCredit in group transactional
+?[32m23:30:06.823  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column IS_SECURED to table LETTER_OF_CREDIT for field isSecured of entity moqui.trade.finance.LetterOfCredit in group transactional
+?[32m23:30:06.829  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column SECURED_PERCENTAGE to table LETTER_OF_CREDIT for field securedPercentage of entity moqui.trade.finance.LetterOfCredit in group transactional
+?[32m23:30:06.833  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column CREDIT_AGREEMENT_ID to table LETTER_OF_CREDIT for field creditAgreementId of entity moqui.trade.finance.LetterOfCredit in group transactional
+?[32m23:30:06.837  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column COLLATERAL_DESCRIPTION to table LETTER_OF_CREDIT for field collateralDescription of entity moqui.trade.finance.LetterOfCredit in group transactional
+?[32m23:30:06.841  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Added column AVAILABLE_CREDIT_LIMIT to table LETTER_OF_CREDIT for field availableCreditLimit of entity moqui.trade.finance.LetterOfCredit in group transactional
+?[32m23:30:06.841  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Tables were created, checking FKs for all entities in group transactional
+?[33m23:30:06.842  WARN  Test worker               o.moqui.i.e.EntityDbMeta?[m Bulk find imported keys got no results for group transactional, getting per table (slower)
+?[32m23:30:06.885  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created 2 FKs out of 6 type one relationships for entity moqui.trade.finance.LcCharge
+?[32m23:30:06.886  INFO  Test worker               o.moqui.i.e.EntityDbMeta?[m Created 1 FKs out of 16 type one relationships for entity moqui.trade.finance.LetterOfCredit
+?[32m23:30:06.887  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Checked tables for all entities in 0.196 seconds
+?[32m23:30:06.891  INFO  Test worker           o.moqui.i.e.EntityFacadeImpl?[m Loaded 25 Entity ECA rules from 5 .eecas.xml files, 0 rules have no id, 25 EECA rules active
+?[32m23:30:06.924  INFO  Test worker          o.moqui.i.s.ServiceFacadeImpl?[m Loaded 60 Service ECA rules from 10 .secas.xml files, 0 rules have no id, 60 SECA rules active
+?[32m23:30:06.924  INFO  Test worker          o.moqui.i.s.ServiceFacadeImpl?[m No distributed-factory specified, distributed async service calls will be run local only
+?[32m23:30:06.928  INFO  Test worker          o.moqui.i.s.ServiceFacadeImpl?[m Starting Scheduled Service Job Runner, checking for jobs every 60 seconds after a 120 second initial delay
+?[32m23:30:06.937  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initializing ToolFactory: MCache
+?[32m23:30:06.937  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initializing ToolFactory: H2Server
+?[32m23:30:06.958  INFO  Test worker        o.moqui.i.t.H2ServerToolFactory?[m Started H2 remote server on port 9092 status: TCP server running at tcp://192.168.1.184:9092 (only local connections)
+?[32m23:30:06.959  INFO  Test worker        o.moqui.i.t.H2ServerToolFactory?[m H2 args: [-tcpPort, 9092, -ifExists, -baseDir, /Users/me/myprojects/moqui-antigravity-new/runtime/db/h2]
+?[32m23:30:06.959  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Initializing ToolFactory: FOP
+?[32m23:30:07.223  INFO  Test worker          o.moqui.i.c.ElasticFacadeImpl?[m Initializing ElasticFacade Client for cluster default at http://127.0.0.1:9200
+?[33m23:30:07.337  WARN  Test worker               o.eclipse.j.u.s.S.config?[m Trusting all certificates configured for oejus.SslContextFactory$Client@7682bf66[provider=null,keyStore=null,trustStore=null]
+?[33m23:30:07.338  WARN  Test worker               o.eclipse.j.u.s.S.config?[m No Client EndPointIdentificationAlgorithm configured for oejus.SslContextFactory$Client@7682bf66[provider=null,keyStore=null,trustStore=null]
+?[1;31m23:30:07.374 ERROR  Test worker          o.moqui.i.c.ElasticFacadeImpl?[m Error initializing ElasticClient for cluster default: java.util.concurrent.ExecutionException: java.net.ConnectException: Connection refused
+?[33m23:30:07.374  WARN  Test worker          o.moqui.i.c.ElasticFacadeImpl?[m No Elastic Client found with name 'logger' or 'default', not initializing ElasticSearchLogger
+?[32m23:30:07.374  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Elastic Facade initialized
+?[32m23:30:07.374  INFO  Test worker .moqui.i.c.ExecutionContextFactoryImpl?[m Execution Context Factory initialized in 2.324 seconds
+?[32m23:30:07.423  INFO  Test worker       o.moqui.i.e.EntityDataLoaderImpl?[m Loading entity data from the following locations: 
+ - component://TradeFinance/data/10_TradeFinanceData.xml
+?[32m23:30:07.425  INFO  Test worker       o.moqui.i.e.EntityDataLoaderImpl?[m Loading data types: ALL
+?[32m23:30:07.432  INFO RequireNewTx       o.moqui.i.e.EntityDataLoaderImpl?[m Loading entity data from component://TradeFinance/data/10_TradeFinanceData.xml
+?[32m23:30:07.475  INFO RequireNewTx             o.moqui.i.e.EntityDataFeed?[m Built entity.data.feed.info cache in 36ms, entries for 62 entities
+?[32m23:30:07.563  INFO RequireNewTx       o.moqui.i.e.EntityDataLoaderImpl?[m Loaded 198 records from component://TradeFinance/data/10_TradeFinanceData.xml in 0.131s
+?[32m23:30:07.875  INFO oquiWorker-1          o.moqui.i.c.MessageFacadeImpl?[m [danger] No Elastic Client found for cluster name default, not indexing documents
+?[32m23:30:08.077  INFO  Test worker           o.moqui.i.c.LoggerFacadeImpl?[m Created shadow LC Amendment Draft for LC: 100000, Seq: 01
+?[32m23:30:08.082  INFO oquiWorker-4          o.moqui.i.c.MessageFacadeImpl?[m [danger] No Elastic Client found for cluster name default, not indexing documents
+?[32m23:30:08.086  INFO  Test worker           o.moqui.i.c.LoggerFacadeImpl?[m Created shadow LC Amendment Draft for LC: 100000, Seq: 01
+?[32m23:30:08.090  INFO oquiWorker-5          o.moqui.i.c.MessageFacadeImpl?[m [danger] No Elastic Client found for cluster name default, not indexing documents
+?[32m23:30:08.349  INFO  Test worker           o.moqui.i.c.LoggerFacadeImpl?[m &gt;&gt;&gt; AMENDMENT TRANSITION VALID: 1 from LcTxDraft to LcTxSubmitted
+?[32m23:30:08.371  INFO oquiWorker-8          o.moqui.i.c.MessageFacadeImpl?[m [danger] No Elastic Client found for cluster name default, not indexing documents
+?[32m23:30:08.383  INFO  Test worker           o.moqui.i.c.LoggerFacadeImpl?[m &gt;&gt;&gt; AMENDMENT TRANSITION VALID: 1 from LcTxSubmitted to LcTxApproved
+?[32m23:30:08.390  INFO quiWorker-10          o.moqui.i.c.MessageFacadeImpl?[m [danger] No Elastic Client found for cluster name default, not indexing documents
+?[32m23:30:08.473  INFO  Test worker           o.moqui.i.c.LoggerFacadeImpl?[m &gt;&gt;&gt; AMENDMENT TRANSITION VALID: 1 from LcTxApproved to LcTxClosed
+?[32m23:30:08.559  INFO  Test worker           o.moqui.i.c.LoggerFacadeImpl?[m No un-invoiced charges found for LC 100000
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="class-stdout">Copy</button>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.2.0</a> at Mar 11, 2026, 11:30:08 PM</p>
+</div>
+</div>
+</body>
+</html>

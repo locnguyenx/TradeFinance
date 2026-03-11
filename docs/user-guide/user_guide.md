@@ -49,11 +49,32 @@ Applications follow a standard workflow:
 
 The **StatusFlow** buttons (e.g., [Submit], [Approve], [Reject]) are located at the top-right of the LC Detail screen.
 
-### 3.4 LC Issuance
-Once the application is fully approved, the IPC officer clicks **Issue LC**. This action:
-1. Transitions the LC status to `Issued`.
-2. Generates the **SWIFT MT700** message.
-3. Triggers accounting entries for provisions and commissions.
+### 3.4 LC Issuance & Finalization
+Once the application has reached the `Approved` transaction status, the IPC (International Processing Center) officer can proceed with the official issuance of the LC instrument.
+
+**Steps to Issue:**
+1. Navigate to the **LC Detail** screen of the approved application.
+2. Verify that the **Transaction Status** is `Approved` and the **LC Status** is `Applied`.
+### 3.4 LC Issuance and Finalization
+1.  **Issue LC**: On the Main LC screen, click `Issue`.
+    -   The system performs **Contingent Accounting** (posts liability entries).
+    -   Provisions are transitioned from `Funds Held` to `Active`.
+    -   **SWIFT MT700** is generated and saved in the `Documents` tab.
+2.  **Verify Accounting**: Go to the `Financials` tab to see the contingent entries and active provisions.
+3.  **Download SWIFT**: Go to the `Documents` tab to download the MT700 file.
+
+### 3.5 LC Amendment (Phase 4)
+1.  **Create Amendment**: From an `Issued` or `Advised` LC, go to the `Amendments` tab and click `Create Amendment`.
+    -   The system creates a **Shadow Record** cloning all current LC data.
+2.  **Edit Shadow Fields**: In the `Amendment Detail` screen, modify only the fields that need changing (e.g., increase Amount, extend Expiry Date).
+3.  **Submit & Approve**:
+    -   Click `Submit` to send for supervisor review.
+    -   A supervisor clicks `Approve` to internal audit the changes.
+4.  **Confirm Amendment**: Click `Confirm`.
+    -   Shadow fields are applied back to the **Master LC**.
+    -   LC `Amendment Number` is incremented.
+    -   **SWIFT MT707** is generated automatically.
+5.  **Verify History**: Check the `History` tab on the Master LC to see exactly which fields were changed during the amendment.
 
 ---
 ## 4. Post-Issuance Management

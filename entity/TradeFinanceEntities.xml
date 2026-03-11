@@ -22,7 +22,8 @@
         <field name="requestId" type="id"/>
 
         <!-- === LC Product Type === -->
-        <field name="lcProductTypeEnumId" type="id"/> <!-- Sight, Usance, Standby, etc. -->
+        <field name="productId" type="id"/> <!-- Refers to LcProduct entity -->
+        <field name="lcProductTypeEnumId" type="id"/> <!-- Sight, Usance, Standby, etc. (deprecated, use LcProduct) -->
         <field name="amendmentNumber" type="number-integer" default="0"/> <!-- Incremented on each amendment -->
 
         <!-- === SWIFT MT700 Fields === -->
@@ -86,6 +87,13 @@
         <field name="confirmationInstructions_49" type="id"/> <!-- 49: Enumeration LcConfirmation -->
 
         <field name="comments" type="text-very-long"/>
+        
+        <!-- === BRD Step 4: Collateral & Credit Agreement === -->
+        <field name="isSecured" type="text-indicator" default="'N'"/>
+        <field name="securedPercentage" type="number-decimal"/>
+        <field name="creditAgreementId" type="id"/>
+        <field name="collateralDescription" type="text-medium"/>
+        <field name="availableCreditLimit" type="currency-amount"/>
 
         <!-- === Relationships === -->
         <relationship type="one" title="LcLifecycle" related="moqui.basic.StatusItem" short-alias="lcStatus">
@@ -134,6 +142,34 @@
             <key-map field-name="lcId"/></relationship>
         <relationship type="many" related="moqui.trade.finance.LcDocument" short-alias="documents">
             <key-map field-name="lcId"/></relationship>
+        <relationship type="one" related="moqui.trade.finance.LcProduct"/>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- LC Product Configuration                                  -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcProduct" package="moqui.trade.finance">
+        <field name="productId" type="id" is-pk="true"/>
+        <field name="productName" type="text-medium"/>
+        <field name="lcProductTypeEnumId" type="id"/> <!-- Sight, Usance, etc. -->
+        <field name="description" type="text-long"/>
+        <field name="defaultProvisionRate" type="number-decimal"/>
+        <relationship type="one" title="LcProductType" related="moqui.basic.Enumeration">
+            <key-map field-name="lcProductTypeEnumId"/></relationship>
+    </entity>
+
+    <!-- Product Default Charges -->
+    <entity entity-name="LcProductCharge" package="moqui.trade.finance">
+        <field name="productId" type="id" is-pk="true"/>
+        <field name="chargeTypeEnumId" type="id" is-pk="true"/>
+        <field name="defaultAmount" type="currency-amount"/>
+        <field name="defaultCurrencyUomId" type="id"/>
+        <field name="itemTypeEnumId" type="id"/> <!-- Mantle ItemType for GL Mapping -->
+        <relationship type="one" related="moqui.trade.finance.LcProduct"/>
+        <relationship type="one" title="LcChargeType" related="moqui.basic.Enumeration">
+            <key-map field-name="chargeTypeEnumId"/></relationship>
+        <relationship type="one" title="ItemType" related="moqui.basic.Enumeration">
+            <key-map field-name="itemTypeEnumId" related="enumId"/></relationship>
     </entity>
 
     <!-- ========================================================= -->
@@ -175,6 +211,7 @@
         <field name="newValue" type="text-long"/>
         
         <!-- === Shadow fields of LetterOfCredit (Amendable) === -->
+        <field name="productId" type="id"/>
         <field name="lcProductTypeEnumId" type="id"/>
         <field name="formOfCredit_40A" type="id"/>
         <field name="applicableRules_40E" type="id"/>
@@ -191,6 +228,11 @@
         <field name="beneficiaryAddress" type="text-medium"/>
         <field name="advisingBankPartyId" type="id"/>
         <field name="advisingBankName" type="text-medium"/>
+        <field name="advisingThroughBankPartyId" type="id"/>
+        <field name="advisingThroughBank_57a" type="text-medium"/>
+        <field name="reimbursingBankPartyId" type="id"/>
+        <field name="reimbursingBank_53a" type="text-medium"/>
+        <field name="requestedConfirmationParty_58a" type="text-medium"/>
 
         <field name="partialShipment_43P" type="id"/>
         <field name="transhipment_43T" type="id"/>
@@ -213,6 +255,10 @@
         <field name="availableWithBankName" type="text-medium"/>
         <field name="draftsAt_42C" type="text-medium"/>
         <field name="confirmationInstructions_49" type="id"/>
+
+        <field name="isSecured" type="text-indicator"/>
+        <field name="securedPercentage" type="number-decimal"/>
+        <field name="collateralDescription" type="text-medium"/>
 
         <field name="remarks" type="text-medium"/>
 
@@ -312,6 +358,8 @@
         <field name="amendmentSeqId" type="id"/>
         <field name="waived" type="text-indicator" default="'N'"/>
         <field name="cbsReference" type="text-short"/> <!-- Transaction reference from CBS -->
+        <field name="invoiceId" type="id"/>
+        <field name="invoiceItemSeqId" type="id"/>
         <field name="remarks" type="text-medium"/>
 
         <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
@@ -321,6 +369,9 @@
             <key-map field-name="chargeTypeEnumId"/></relationship>
         <relationship type="one" title="Currency" related="moqui.basic.Uom">
             <key-map field-name="chargeCurrencyUomId" related="uomId"/></relationship>
+        <relationship type="one" related="mantle.account.invoice.Invoice"/>
+        <relationship type="one" related="mantle.account.invoice.InvoiceItem">
+            <key-map field-name="invoiceId"/><key-map field-name="invoiceItemSeqId"/></relationship>
     </entity>
 
     <!-- ========================================================= -->
@@ -377,11 +428,14 @@
         <member-entity entity-alias="AMND" entity-name="moqui.trade.finance.LcAmendment"/>
         <member-entity entity-alias="LC" entity-name="moqui.trade.finance.LetterOfCredit" join-from-alias="AMND">
             <key-map field-name="lcId"/></member-entity>
+        <member-entity entity-alias="PROD" entity-name="moqui.trade.finance.LcProduct" join-from-alias="AMND">
+            <key-map field-name="productId"/></member-entity>
         <member-entity entity-alias="ST" entity-name="moqui.basic.StatusItem" join-from-alias="AMND">
             <key-map field-name="amendmentStatusId" related="statusId"/></member-entity>
         <alias-all entity-alias="AMND"/>
         <alias entity-alias="LC" name="lcNumber"/>
         <alias entity-alias="LC" name="applicantPartyId"/>
+        <alias entity-alias="PROD" name="productName"/>
         <alias entity-alias="ST" name="statusDescription" field="description"/>
     </view-entity>
 

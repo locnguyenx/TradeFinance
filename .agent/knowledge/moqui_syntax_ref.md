@@ -12,6 +12,7 @@
 | `<script>` | `type="groovy"` | Multi-line logic. Wrap in `<![CDATA[ ... ]]>`. |
 | `<if>` / `<else>` | `condition` | Conditional logic. `<else>` MUST be nested inside `<if>`. |
 | `<return>` | `message`, `error` | Exit action block early. |
+15: | `<entity-find-one>` | `entity-name`, `value-field` | **Refresh Pattern:** Use after status transition services to refresh the local context from DB. |
 
 ## 2. UI Structure & Containers
 | Tag | Key Attributes | Usage |

@@ -1,3 +1,13 @@
+---
+Document ID: TSD-001
+Version: 0.1
+Related BRD Version: 0.1
+Module: Trade Finance
+Feature: Letter of Credit (LC)
+Status: DRAFT
+Last Updated: 2026-03-11
+Author: [LocNX]
+---
 # Technical Design Specification (TDS) - Trade Finance System
 
 > **Purpose**: This document is a complete technical blueprint for rebuilding the Trade Finance system from scratch on the Moqui Framework. Combined with the BRD (`docs/brd/`) and Implementation Plan (`.agents/state/implementation_plan.md`), it provides all information needed.
@@ -56,6 +66,7 @@ runtime/component/TradeFinance/
 │   ├── LifecycleServices.xml
 │   ├── SwiftServices.xml
 │   ├── CbsIntegrationServices.xml
+│   ├── AccountingServices.xml
 │   ├── NotificationServices.xml
 │   ├── ScheduledServices.xml
 │   └── DocumentServices.xml
@@ -91,6 +102,8 @@ runtime/component/TradeFinance/
 └── src/test/groovy/
     ├── TradeFinanceServicesSpec.groovy
     ├── TradeFinanceScreensSpec.groovy
+    ├── TradeFinanceDrawingFlowSpec.groovy  <!-- NEW: Exhaustive drawing tests -->
+    ├── TradeFinanceCbsSpec.groovy          <!-- NEW: CBS Integration mock tests -->
     ├── TradeFinancePhase2Spec.groovy
     ├── TradeFinancePhase3Spec.groovy
     └── TradeFinancePhase4Spec.groovy
@@ -140,9 +153,15 @@ Package: `moqui.trade.finance`
 | `lcStatusId` | id | | | FK → StatusItem (LcLifecycle). Audit-logged. |
 | `transactionStatusId` | id | | | FK → StatusItem (LcTransaction). Audit-logged. |
 | `requestId` | id | | | FK → mantle.request.Request |
-| `lcProductTypeEnumId` | id | | | Enum: LcProductType |
+| `productId` | id | | | FK → LcProduct |
+| `lcProductTypeEnumId` | id | | | **Deprecated**. Use `productId`. |
 | `amendmentNumber` | number-integer | | 0 | Incremented on each amendment |
 | `lcNumber` | text-short | | | SWIFT Tag 20 (16x max) |
+| `isSecured`| text-indicator | | 'N' | 100% secured by deposit/pledge |
+| `securedPercentage` | number-decimal | | | % of LC value secured |
+| `creditAgreementId` | id | | | FK → Credit Agreement in CBS |
+| `collateralDescription` | text-medium | | | Details of collateral (Gold, Cash, etc.) |
+| `availableCreditLimit` | currency-amount | | | Retrieved from CBS |
 | `sequenceTotal_27` | text-short | | | SWIFT Tag 27 (e.g., "1/1") |
 | `formOfCredit_40A` | id | | | Enum: LcFormOfCredit |
 | `applicableRules_40E` | id | | | Enum: LcApplicableRules |
@@ -197,6 +216,7 @@ Package: `moqui.trade.finance`
 - `one` → `mantle.request.Request`
 - `one` → `moqui.basic.Uom` as `currency` (via `amountCurrencyUomId`)
 - `one` → `mantle.party.Party` (×4: Applicant, Beneficiary, IssuingBank, AdvisingBank)
+- `one` → `moqui.trade.finance.LcProduct`
 - `one` → `moqui.basic.Enumeration` (×7: FormOfCredit, ApplicableRules, Availability, PartialShipment, Transhipment, Confirmation, ProductType)
 - `many` → LcHistory, LcAmendment, LcDrawing, LcCharge, LcProvision, LcDocument
 
@@ -231,7 +251,7 @@ Package: `moqui.trade.finance`
 | `remarks` | text-medium | | |
 
 **Shadow Fields** (complete clone of amendable LC fields):
-`lcProductTypeEnumId`, `formOfCredit_40A`, `applicableRules_40E`, `expiryDate`, `expiryPlace_31D`, `amount`, `amountCurrencyUomId`, `amountTolerance_39A`, `maxCreditAmount_39B`, `additionalAmountsCovered_39C`, `beneficiaryPartyId`, `beneficiaryName`, `beneficiaryAddress`, `advisingBankPartyId`, `advisingBankName`, `partialShipment_43P`, `transhipment_43T`, `latestShipDate_44C`, `placeOfReceipt_44A`, `portOfLoading_44E`, `portOfDischarge_44F`, `placeOfFinalDestination_44B`, `descriptionOfGoods_45A`, `shipmentPeriod_44D`, `docsRequired_46A`, `additionalConditions_47A`, `instructionsToBank_78`, `periodForPresentation_48`, `charges_71B`, `senderToReceiverInfo_72Z`, `availableWithBy_41A`, `availableWithBankName`, `draftsAt_42C`, `confirmationInstructions_49`
+`productId`, `lcProductTypeEnumId`, `formOfCredit_40A`, `applicableRules_40E`, `expiryDate`, `expiryPlace_31D`, `amount`, `amountCurrencyUomId`, `amountTolerance_39A`, `maxCreditAmount_39B`, `additionalAmountsCovered_39C`, `beneficiaryPartyId`, `beneficiaryName`, `beneficiaryAddress`, `advisingBankPartyId`, `advisingBankName`, `advisingThroughBankPartyId`, `advisingThroughBank_57a`, `reimbursingBankPartyId`, `reimbursingBank_53a`, `requestedConfirmationParty_58a`, `partialShipment_43P`, `transhipment_43T`, `latestShipDate_44C`, `placeOfReceipt_44A`, `portOfLoading_44E`, `portOfDischarge_44F`, `placeOfFinalDestination_44B`, `descriptionOfGoods_45A`, `shipmentPeriod_44D`, `docsRequired_46A`, `additionalConditions_47A`, `instructionsToBank_78`, `periodForPresentation_48`, `charges_71B`, `senderToReceiverInfo_72Z`, `availableWithBy_41A`, `availableWithBankName`, `draftsAt_42C`, `confirmationInstructions_49`, `isSecured`, `securedPercentage`, `collateralDescription`
 
 > **Design Note**: Fields NOT cloned (immutable after issuance): `lcNumber`, `applicantPartyId`, `applicantName`, `issuingBankPartyId`, `issuingBankName`, `amountCurrencyUomId`
 
@@ -340,6 +360,22 @@ Package: `moqui.trade.finance`
 - `lcNumber` from LC
 - `applicantPartyId` from LC
 
+### 2.11 LcProduct (Settings)
+| Field | Type | PK | Notes |
+| :--- | :--- | :---: | :--- |
+| `productId` | id | ✅ | |
+| `productName` | text-medium | | e.g., "Sight LC - Standard" |
+| `lcProductTypeEnumId`| id | | FK → Enumeration |
+| `defaultProvisionRate`| number-decimal| | Default % for provisions |
+
+### 2.12 LcProductCharge (Settings)
+| Field | Type | PK | Notes |
+| :--- | :--- | :---: | :--- |
+| `productId` | id | ✅ | FK → LcProduct |
+| `chargeTypeEnumId` | id | ✅ | FK → Enumeration |
+| `defaultAmount` | currency-amount | | |
+| `itemTypeEnumId` | id | | Mantle ItemType for GL Mapping |
+
 ---
 
 ## 3. Service Specification
@@ -363,7 +399,8 @@ Package: `moqui.trade.finance`
   1. Call `validate#LetterOfCredit`
   2. Create `mantle.request.Request` with type `RqtLcIssuance`, status `ReqDraft`
   3. Create `LetterOfCredit` entity with `requestId`
-  4. Create initial `LcHistory` entry (changeType=StatusChange)
+  4. **Automated Charges**: Lookup `LcProductCharge` for the selected `productId` and create `LcCharge` records.
+  5. Create initial `LcHistory` entry (changeType=StatusChange)
   5. Send notification via `send#LcNotification`
 
 #### `update#LetterOfCredit`
@@ -381,6 +418,40 @@ Package: `moqui.trade.finance`
 #### `transition#TransactionStatus`
 - **In**: `lcId`, `toStatusId`, `comments`
 - **Logic**: Same pattern using flowId=LcTransaction → send notification on Submit/Approve
+
+#### `update#LcApplicationDetail`
+- **In**: `lcId`, `isSecured`, `securedPercentage`, `creditAgreementId`, `collateralDescription`
+- **Logic**: Update LC record → automatically call `check#CustomerCreditLimit` if `creditAgreementId` supplied.
+
+#### `check#CustomerCreditLimit`
+- **In**: `lcId`, `creditAgreementId`
+- **Logic**: Call `CbsIntegrationServices.check#CreditLimit` → update `availableCreditLimit` on LC → create history entry.
+
+#### `submit#LetterOfCredit` (CR)
+- **Logic**: Refined to transition to `LcTxPendingReview` (as per BRD lifecycle).
+
+#### `approve#LcBySupervisor`
+- **Logic**: Transitions to `LcTxPendingProcessing`.
+
+#### `approve#LcByTradeOperator` (Phase 2 Enhancement)
+- **Logic**: 
+  1. Automated Calculation: Call `calculate#LcChargesAndProvisions`.
+  2. CBS Provision Hold: Iterate through `LcProvision` (status=LcPrvDraft) and call `CbsIntegrationServices.hold#Funds`.
+  3. Upfront Charge Collection: Iterate through `LcCharge` and call `CbsIntegrationServices.post#AccountingEntries`.
+  4. Guard: Halt and return error if any CBS integration call fails.
+  5. Transition transaction status → `LcTxPendingApproval`.
+
+#### `calculate#LcChargesAndProvisions` [NEW]
+- **In**: `lcId` (required)
+- **Logic**: 
+  - If no `LcProvision` exists, calculate based on `LcProduct.defaultProvisionRate` and create a `LcPrvDraft` record.
+  - (Note: Initial `LcCharge` records are created during `create#LetterOfCredit` but can be refreshed here if needed).
+
+#### `approve#LcByTradeSupervisor`
+- **Logic**: Final business approval. Transitions transaction to `LcTxApproved` AND LC lifecycle to `LcLfApplied`.
+
+#### `return#LetterOfCredit`
+- **Logic**: Transitions back to `LcTxReturned` for correction. Allows applicant/CSR to edit and re-submit.
 
 ### 3.2 AmendmentServices.xml
 
@@ -425,15 +496,19 @@ Package: `moqui.trade.finance`
 
 ### 3.4 LifecycleServices.xml
 
-#### `issue#LetterOfCredit`
+#### `issue#LetterOfCredit` (Phase 3 Enhancement)
 - **In**: `lcId`, `comments`
 - **Logic**:
   1. Guard: `transactionStatusId == LcTxApproved` AND `lcStatusId in [LcLfDraft, LcLfApplied]`
-  2. Generate SWIFT MT700
-  3. Transition transaction status → `LcTxClosed`
-  4. If `lcStatusId == LcLfDraft` → auto-transition to `LcLfApplied` first
-  5. Transition LC status → `LcLfIssued`
-  6. Send notification
+  2. **Contingent Accounting**: Call `CbsIntegrationServices.post#AccountingEntries` for the full LC Amount.
+     - Debit: `CONTINGENT_ASSET_ACC` (Contingent Asset Account)
+     - Credit: `CONTINGENT_LIAB_ACC` (Contingent Liability Account)
+  3. **Provision Activation**: Update all linked `LcProvision` records where `provisionStatusId == LcPrvHeld` to `LcPrvActive`.
+  4. Generate SWIFT MT700 via `SwiftServices.generate#SwiftMt700`.
+  5. Transition transaction status → `LcTxClosed`.
+  6. Transition LC status → `LcLfIssued`.
+  7. Post upfront charges to invoice/GL via `AccountingServices.post#LcChargesToInvoice`.
+  8. Send system notification.
 
 #### `revoke#LetterOfCredit`
 - **In**: `lcId`, `comments`
@@ -476,12 +551,31 @@ Package: `moqui.trade.finance`
 - **In**: `lcId`, `subject`, `message`
 - **Logic**: Build free-format MT799 → save as LcDocument
 
+#### `parse#SwiftMt700`
+- **In**: `swiftText` (String) | **Out**: `fieldMap` (Map)
+- **Logic**: Regex parsing of SWIFT tags (:20:, :40A:, etc.) into a flat Map.
+
+#### `parse#SwiftMt707`
+- **In**: `swiftText` (String) | **Out**: `fieldMap` (Map)
+- **Logic**: Regex parsing of amendment tags (:20:, :26E:, :79:, etc.)
+
 ### 3.7 Other Services
 
 - **CbsIntegrationServices.xml**: `hold#Funds`, `release#Funds`, `post#AccountingEntries` — Interface stubs for CBS integration
 - **NotificationServices.xml**: `send#LcNotification` — Uses Moqui `NotificationMessage` API
 - **ScheduledServices.xml**: `check#LcExpiry` — Daily cron job, finds LCs past `expiryDate` with no pending drawings → transition to `LcLfExpired`
 - **DocumentServices.xml**: `attach#LcDocument` — Creates `LcDocument` record with file upload
+
+### 3.8 AccountingServices.xml
+
+#### `post#LcChargesToInvoice`
+- **In**: `lcId`, `amendmentSeqId` (optional)
+- **Logic**:
+  1. Find all un-invoiced `LcCharge` records for the LC.
+  2. Create Mantle `Invoice` (type `InvoiceSales`) from Issuing Bank to Applicant.
+  3. Create `InvoiceItem` for each charge, mapping `chargeTypeEnumId` to `ItemType` via `LcProductCharge`.
+  4. Link `LcCharge` to `InvoiceItem`.
+  5. Call Mantle `post#Invoice` to generate GL entries (`AcctgTrans`).
 
 ---
 
@@ -524,7 +618,7 @@ Package: `moqui.trade.finance`
 | `LcTxCancelled` | Cancelled | 5 |
 | `LcTxClosed` | Closed | 6 |
 
-**Transitions**: Draft→{Submitted,Cancelled}, Submitted→{Approved,Rejected,Cancelled}, Approved→Closed, Rejected→Draft
+**Transitions**: Draft→{Submitted, Pending Review, Cancelled}, Submitted→{Approved, Rejected, Returned, Cancelled}, Pending Review→{Pending Processing, Returned}, Pending Processing→{Pending Approval, Returned}, Pending Approval→{Approved, Rejected, Returned}, Approved→Closed, Rejected→Draft, Returned→Draft
 
 ### 4.4 Drawing Status Items
 

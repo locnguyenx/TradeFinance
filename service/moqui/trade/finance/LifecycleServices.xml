@@ -38,15 +38,38 @@
                           in-map="[lcId:lcId, toStatusId:'LcTxClosed', comments:'LC Issuance finalized.']"/>
 
             <!-- 3. Transition LC Lifecycle Status -> Issued -->
-            <!-- Note: If it's still in Draft, the StatusFlow validation requires we transition to Applied first -->
+            <log level="info" message="Current LC Status before transition: ${lc.lcStatusId}"/>
             <if condition="lc.lcStatusId == 'LcLfDraft'">
                 <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
-                              in-map="[lcId:lcId, toStatusId:'LcLfApplied', comments:'Auto-advanced to Applied during Issuance.']"/>
+                               in-map="[lcId:lcId, toStatusId:'LcLfApplied', comments:'Auto-advanced to Applied during Issuance.']"/>
             </if>
             <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
                           in-map="[lcId:lcId, toStatusId:'LcLfIssued', comments:(comments ?: 'LC Issued.')]"/>
 
-            <!-- 4. Send System Notification -->
+            <!-- 4. Provision Activation: Held -> Active -->
+            <entity-find entity-name="moqui.trade.finance.LcProvision" list="provisions">
+                <econdition field-name="lcId"/><econdition field-name="provisionStatusId" value="LcPrvHeld"/></entity-find>
+            <iterate list="provisions" entry="provision">
+                <service-call name="update#moqui.trade.finance.LcProvision"
+                    in-map="[lcId:lcId, provisionSeqId:provision.provisionSeqId, 
+                             provisionStatusId:'LcPrvActive', effectiveDate:ec.user.nowTimestamp]"/>
+            </iterate>
+
+            <!-- 5. Contingent Accounting for LC Liability (Contra Entry) -->
+            <service-call name="moqui.trade.finance.CbsIntegrationServices.post#AccountingEntries"
+                in-map="[debitAccountId:'CONTINGENT_ASSET_ACC', creditAccountId:'CONTINGENT_LIAB_ACC', 
+                         amount:lc.amount, currencyUomId:lc.amountCurrencyUomId,
+                         transactionType:'LC_ISSUANCE_CONTINGENT', referenceId:lcId]"
+                out-map="postOut"/>
+            <if condition="!postOut.success">
+                <return error="true" message="Failed to post contingent accounting for LC issuance: ${postOut.message}"/>
+            </if>
+
+            <!-- 6. Post Charges to GL (Invoice and Transaction) -->
+            <service-call name="moqui.trade.finance.AccountingServices.post#LcChargesToInvoice"
+                          in-map="[lcId:lcId]"/>
+
+            <!-- 7. Send System Notification -->
             <service-call name="moqui.trade.finance.NotificationServices.send#LcNotification"
                           in-map="[lcId:lcId, eventDescription:'Letter of Credit Issued']"/>
 

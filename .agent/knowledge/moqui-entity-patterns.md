@@ -14,3 +14,8 @@
 ### 3. Data Loading Order
 - **Sequence:** Seed Data → Initial Data → Demo Data.
 - **Demo Strategy:** Explicitly define PK IDs in Demo XMLs (e.g., `lcId="DEMO_LC_01"`) for predictable testing.
+### 4. Shadow Record Pattern (Amendments)
+- **Concept:** Create a clone of a master entity (e.g., `LcAmendment` for `LetterOfCredit`) to hold proposed changes.
+- **Workflow:** Shadow record is edited and approved via its own transaction (`LcTransaction`) before being applied back to the master.
+- **Implementation:** Use a standard field list in services to automate cloning (on creation) and application (on confirmation).
+- **Benefit:** Maintains a clean audit trail and separates "Draft" versions from the "Live" system state.

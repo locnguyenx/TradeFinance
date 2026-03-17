@@ -11,28 +11,52 @@
         <description>Calculates standard charges for an LC based on its product type.</description>
         <in-parameters>
             <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId"/>
+            <parameter name="drawingSeqId"/>
         </in-parameters>
         <actions>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
             <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
 
-            <!-- Mock Charge Calculation Logic -->
-            <!-- 1. Issuance Commission: 0.1% of LC amount, min $100 -->
-            <set field="issuanceComm" from="(lc.amount ?: 0) * 0.001"/>
-            <if condition="issuanceComm &lt; 100"><set field="issuanceComm" value="100"/></if>
-            
-            <service-call name="create#moqui.trade.finance.LcCharge"
-                in-map="[lcId:lcId, chargeTypeEnumId:'LC_CHG_ISSUANCE', 
-                         chargeAmount:issuanceComm, chargeCurrencyUomId:lc.amountCurrencyUomId,
-                         chargeDate:ec.user.nowTimestamp]"/>
+            <script>
+                if (amendmentSeqId) {
+                    context.chargeTypeList = ['LC_CHG_AMENDMENT']
+                } else if (drawingSeqId) {
+                    context.chargeTypeList = ['LC_CHG_NEGOTIATION', 'LC_CHG_ACCEPTANCE']
+                } else {
+                    context.chargeTypeList = ['LC_CHG_ISSUANCE', 'LC_CHG_ADVISING', 'LC_CHG_SWIFT', 'LC_CHG_COURIER']
+                }
+            </script>
+            <log level="info" message="Calculating charges: productId=${lc.productId}, typeList=${chargeTypeList}, amendmentSeqId=${amendmentSeqId}"/>
+            <entity-find entity-name="moqui.trade.finance.LcProductCharge" list="productCharges">
+                <econdition field-name="productId" from="lc.productId"/>
+                <econdition field-name="chargeTypeEnumId" operator="in" from="chargeTypeList"/>
+            </entity-find>
+            <log level="info" message="Found productCharges count: ${productCharges.size()}"/>
 
-            <!-- 2. SWIFT Charges: Fixed $50 -->
-            <service-call name="create#moqui.trade.finance.LcCharge"
-                in-map="[lcId:lcId, chargeTypeEnumId:'LC_CHG_SWIFT', 
-                         chargeAmount:50, chargeCurrencyUomId:lc.amountCurrencyUomId,
-                         chargeDate:ec.user.nowTimestamp]"/>
+            <if condition="!productCharges"><return/></if>
 
-            <log level="info" message="Calculated initial charges for LC: ${lcId}"/>
+            <iterate list="productCharges" entry="productCharge">
+                <log level="info" message="Checking existing charges for lcId=${lcId}, type ${productCharge.chargeTypeEnumId}, amendmentSeqId=${amendmentSeqId}"/>
+                <entity-find entity-name="moqui.trade.finance.LcCharge" list="existingCharges">
+                    <econdition field-name="lcId" from="lcId"/>
+                    <econdition field-name="chargeTypeEnumId" from="productCharge.chargeTypeEnumId"/>
+                    <econdition field-name="amendmentSeqId" from="amendmentSeqId" ignore-if-empty="false"/>
+                    <econdition field-name="drawingSeqId" from="drawingSeqId" ignore-if-empty="false"/>
+                </entity-find>
+                <log level="info" message="Found existingCharges count: ${existingCharges.size()} for lcId=${lcId}, amnd=${amendmentSeqId}"/>
+                <if condition="existingCharges"><log level="info" message="Example existing charge: ${existingCharges[0]}"/></if>
+
+                <if condition="!existingCharges">
+                    <service-call name="create#moqui.trade.finance.LcCharge"
+                                  in-map="[lcId:lcId, chargeTypeEnumId:productCharge.chargeTypeEnumId,
+                                           chargeAmount:productCharge.defaultAmount,
+                                           chargeCurrencyUomId:productCharge.defaultCurrencyUomId ?: lc.amountCurrencyUomId,
+                                           chargeDate:ec.user.nowTimestamp,
+                                           amendmentSeqId:amendmentSeqId,
+                                           drawingSeqId:drawingSeqId]"/>
+                </if>
+            </iterate>
         </actions>
     </service>
 
@@ -43,33 +67,81 @@
         <description>Places a provision hold on the applicant's account via the CBS integration.</description>
         <in-parameters>
             <parameter name="lcId" required="true"/>
-            <parameter name="provisionRate" type="BigDecimal" default-value="1.0"/> <!-- 100% by default -->
+            <parameter name="provisionAmount" type="BigDecimal"/> <!-- Manual override -->
+            <parameter name="provisionRate" type="BigDecimal"/> <!-- Manual rate override -->
         </in-parameters>
         <actions>
+            <log level="warn" message="[TRACE] hold#LcProvision CALLED FOR lcId: ${lcId}"/>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
-            <set field="provisionAmount" from="(lc.amount ?: 0) * provisionRate"/>
+            <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
 
-            <!-- 1. Call the CBS Integration to physically hold the funds -->
-            <service-call name="moqui.trade.finance.CbsIntegrationServices.hold#Funds" 
-                          in-map="[partyId:lc.applicantPartyId, 
-                                   amount:provisionAmount, 
-                                   currencyUomId:lc.amountCurrencyUomId, 
-                                   referenceId:lc.lcNumber]" 
-                          out-map="holdOut"/>
+            <entity-find-one entity-name="moqui.trade.finance.LcProduct" value-field="product"/>
+            
+            <set field="provisionRate" from="provisionRate ?: product?.defaultProvisionRate ?: 100"/>
+            <set field="holdAmount" from="provisionAmount ?: (lc.amount * (provisionRate / 100))"/>
 
-            <if condition="!holdOut.success">
-                <return error="true" message="Failed to hold funds via CBS: ${holdOut.message}"/>
+            <!-- 1. CBS Integration: Hold Funds -->
+            <service-call name="moqui.trade.finance.CbsIntegrationServices.hold#Funds"
+                in-map="[partyId:lc.applicantPartyId, amount:holdAmount, currencyUomId:lc.amountCurrencyUomId, referenceId:lcId]"
+                out-map="holdOut" ignore-error="true"/>
+
+            <if condition="ec.message.hasError() || (holdOut &amp;&amp; !holdOut.success)">
+                <!-- R8.11-UC2: Determine if error is fatal or transient (timeout) -->
+                <set field="errorMessage" from="ec.message.getErrorsString() ?: holdOut?.message ?: 'CBS Hold Funds Failed'"/>
+                <set field="isTimeout" from="errorMessage.contains('timed out') || errorMessage.contains('Timeout')"/>
+                <script>ec.message.clearErrors()</script>
+                
+                <!-- If fatal (not timeout), move back to Pending Review for manual correction -->
+                <if condition="!isTimeout">
+                    <script>
+                        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus")
+                            .parameters([lcId:lcId, toStatusId:'LcTxPendingReview', 
+                                         comments:('CBS Error during Provision Hold: ' + errorMessage)])
+                            .requireNewTransaction(true).call()
+                    </script>
+                </if>
+                
+                <return error="true" message="Provision hold failed. ${isTimeout ? 'Transient error (timeout), staying in Pending Processing.' : 'Fatal error, LC transitioned to Pending Review.'} Error: ${errorMessage}"/>
             </if>
 
-            <!-- 2. Record the provision and save the CBS hold reference ID -->
-            <service-call name="create#moqui.trade.finance.LcProvision"
-                in-map="[lcId:lcId, provisionAmount:provisionAmount, 
-                         provisionCurrencyUomId:lc.amountCurrencyUomId,
-                         provisionRate:provisionRate, effectiveDate:ec.user.nowTimestamp,
-                         provisionStatusId: 'LcPrvActive', 
-                         cbsHoldReference: holdOut.holdReference]"/>
+            <!-- 2. Create Provision Record -->
+            <service-call name="create#moqui.trade.finance.LcProvision" 
+                in-map="[lcId:lcId, provisionAmount:holdAmount, provisionRate:provisionRate, 
+                         provisionStatusId:'LcPrvHeld', entryDate:ec.user.nowTimestamp,
+                         cbsHoldReference:holdOut.holdReference]"/>
 
-            <log level="info" message="Placed provision hold of ${provisionAmount} ${lc.amountCurrencyUomId} for LC: ${lcId}. CBS Hold Ref: ${holdOut.holdReference}"/>
+            <log level="info" message="Placed provision hold of ${holdAmount} ${lc.amountCurrencyUomId} for LC: ${lcId}. CBS Hold Ref: ${holdOut.holdReference}"/>
+        </actions>
+    </service>
+
+    <service verb="calculate" noun="LcChargesAndProvisions">
+        <description>Calculates charges and provisions based on product defaults.</description>
+        <in-parameters><parameter name="lcId" required="true"/></in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="LC not found"/></if>
+            
+            <!-- Automated assessment of Charges (Scenario 3) -->
+            <service-call name="moqui.trade.finance.FinancialServices.calculate#LcCharges" in-map="[lcId:lcId]"/>
+
+            <!-- Logic: If provision doesn't exist, create it based on product default rate -->
+            <entity-find entity-name="moqui.trade.finance.LcProvision" list="existingProvisions">
+                <econdition field-name="lcId" from="lcId"/>
+            </entity-find>
+            
+            <if condition="!existingProvisions">
+                <entity-find-one entity-name="moqui.trade.finance.LcProduct" value-field="product">
+                    <field-map field-name="productId" from="lc.productId"/>
+                </entity-find-one>
+                
+                <if condition="product?.defaultProvisionRate &amp;&amp; lc.amount">
+                    <set field="provisionAmount" from="lc.amount * product.defaultProvisionRate / 100"/>
+                    <service-call name="create#moqui.trade.finance.LcProvision"
+                        in-map="[lcId:lcId, provisionAmount:provisionAmount, provisionRate:product.defaultProvisionRate,
+                                 provisionCurrencyUomId:lc.amountCurrencyUomId,
+                                 effectiveDate:ec.user.nowTimestamp, provisionStatusId:'LcPrvDraft']"/>
+                </if>
+            </if>
         </actions>
     </service>
 
@@ -83,7 +155,7 @@
             
             <entity-find entity-name="moqui.trade.finance.LcProvision" list="provisions">
                 <econdition field-name="lcId"/>
-                <econdition field-name="provisionStatusId" value="LcPrvActive"/>
+                <econdition field-name="provisionStatusId" operator="in" value="LcPrvHeld,LcPrvActive"/>
             </entity-find>
             
             <iterate list="provisions" entry="provision">
@@ -103,6 +175,11 @@
                 <set field="provision.provisionStatusId" value="LcPrvReleased"/>
                 <set field="provision.releaseDate" from="ec.user.nowTimestamp"/>
                 <entity-update value-field="provision"/>
+
+                <!-- R8.11: Log history for provision release -->
+                <service-call name="create#moqui.trade.finance.LcHistory"
+                              in-map="[lcId:lcId, changeType:'ProvisionRelease', 
+                                       comments:('Provision released: ' + provision.provisionAmount + ' ' + (provision.provisionCurrencyUomId ?: ''))]"/>
             </iterate>
 
             <log level="info" message="Released active provisions for LC: ${lcId}"/>

@@ -10,6 +10,8 @@
                          parameter-map="[amendmentSeqId:null]"/>
         <subscreens-item name="Drawing" menu-title="Drawings" location="component://TradeFinance/screen/TradeFinance/ImportLc/Drawing.xml"
                          parameter-map="[drawingId:null]"/>
+        <subscreens-item name="ProductConfig" menu-title="Product Config" location="component://TradeFinance/screen/TradeFinance/ImportLc/ProductConfig.xml"
+                         menu-index="10"/>
     </subscreens>
     
     <widgets>

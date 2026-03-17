@@ -165,6 +165,7 @@
         <field name="defaultAmount" type="currency-amount"/>
         <field name="defaultCurrencyUomId" type="id"/>
         <field name="itemTypeEnumId" type="id"/> <!-- Mantle ItemType for GL Mapping -->
+        <field name="isMandatory" type="text-indicator" default="'Y'"/>
         <relationship type="one" related="moqui.trade.finance.LcProduct"/>
         <relationship type="one" title="LcChargeType" related="moqui.basic.Enumeration">
             <key-map field-name="chargeTypeEnumId"/></relationship>
@@ -271,7 +272,10 @@
     </entity>
 
     <!-- ========================================================= -->
-    <!-- Detail Entity: LC Drawing (Document Presentation)         -->
+    <!-- DrawingServices.xml
+     Services for managing LC document presentations (Drawings).
+     Supports automated examination, discrepancy recording, and
+     MT734 Notice of Refusal generation. -->
     <!-- ========================================================= -->
     <entity entity-name="LcDrawing" package="moqui.trade.finance" primary-key-sequence="true">
         <field name="lcId" type="id" is-pk="true"/>
@@ -356,6 +360,7 @@
         <field name="chargeCurrencyUomId" type="id"/>
         <field name="chargeDate" type="date"/>
         <field name="amendmentSeqId" type="id"/>
+        <field name="drawingSeqId" type="id"/>
         <field name="waived" type="text-indicator" default="'N'"/>
         <field name="cbsReference" type="text-short"/> <!-- Transaction reference from CBS -->
         <field name="invoiceId" type="id"/>
@@ -365,6 +370,8 @@
         <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
         <relationship type="one" related="moqui.trade.finance.LcAmendment">
             <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/></relationship>
+        <relationship type="one" related="moqui.trade.finance.LcDrawing">
+            <key-map field-name="lcId"/><key-map field-name="drawingSeqId"/></relationship>
         <relationship type="one" title="LcChargeType" related="moqui.basic.Enumeration">
             <key-map field-name="chargeTypeEnumId"/></relationship>
         <relationship type="one" title="Currency" related="moqui.basic.Uom">
@@ -447,5 +454,74 @@
         <alias entity-alias="LC" name="lcNumber"/>
         <alias entity-alias="LC" name="applicantPartyId"/>
     </view-entity>
+
+    <!-- ========================================================= -->
+    <!-- CBS Simulator Entities                                    -->
+    <!-- ========================================================= -->
+    <!-- CBS Simulator State: Tracks virtual balances and holds   -->
+    <!-- for stateful simulation of CBS interactions (Phase 5).   -->
+    <!-- Default balance of 10M is provided for new parties.      -->
+    <!-- ========================================================= -->
+    <entity entity-name="CbsSimulatorState" package="moqui.trade.finance">
+        <description>Tracks virtual account state for the CBS Simulator.</description>
+        <field name="partyId" type="id" is-pk="true"/>
+        <field name="accountId" type="id" is-pk="true"/>
+        <field name="balanceAmount" type="currency-amount" default="10000000.00"/>
+        <field name="holdAmount" type="currency-amount" default="0.00"/>
+        <field name="currencyUomId" type="id" default="'USD'"/>
+        <field name="lastUpdated" type="date-time" default="ec.user.nowTimestamp"/>
+        <relationship type="one" related="mantle.party.Party"/>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- LC Provision Collection: Multi-account provision collection -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcProvisionCollection" package="moqui.trade.finance">
+        <field name="collectionId" type="id" is-pk="true"/>
+        <field name="lcId" type="id"/>
+        <field name="targetProvisionAmount" type="currency-amount"/>
+        <field name="targetCurrencyUomId" type="id" default="'USD'"/>
+        <field name="collectedAmount" type="currency-amount" default="0.00"/>
+        <field name="collectionStatusId" type="id"/>
+        <field name="collectionDate" type="date-time"/>
+        <field name="collectedByUserId" type="id"/>
+        <field name="remarks" type="text-medium"/>
+        
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" title="CollectionStatus" related="moqui.basic.StatusItem">
+            <key-map field-name="collectionStatusId" related="statusId"/>
+        </relationship>
+        <relationship type="one" related="moqui.security.UserAccount">
+            <key-map field-name="collectedByUserId" related="userId"/>
+        </relationship>
+        <relationship type="many" related="moqui.trade.finance.LcProvisionCollectionEntry">
+            <key-map field-name="collectionId"/>
+        </relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- LC Provision Collection Entry: Individual account entry -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcProvisionCollectionEntry" package="moqui.trade.finance">
+        <field name="collectionId" type="id" is-pk="true"/>
+        <field name="entrySeqId" type="id" is-pk="true"/>
+        <field name="partyId" type="id"/>
+        <field name="accountId" type="text-short"/>
+        <field name="sourceCurrencyUomId" type="id"/>
+        <field name="sourceAmount" type="currency-amount"/>
+        <field name="exchangeRate" type="number-decimal" precision="6"/>
+        <field name="convertedAmount" type="currency-amount"/>
+        <field name="convertedCurrencyUomId" type="id" default="'USD'"/>
+        <field name="rateFetchedDate" type="date-time"/>
+        <field name="entryStatusId" type="id"/>
+        <field name="cbsHoldReference" type="text-short"/>
+        <field name="cbsHoldDate" type="date-time"/>
+        <field name="remarks" type="text-medium"/>
+        
+        <relationship type="one" related="moqui.trade.finance.LcProvisionCollection"/>
+        <relationship type="one" title="EntryStatus" related="moqui.basic.StatusItem">
+            <key-map field-name="entryStatusId" related="statusId"/>
+        </relationship>
+    </entity>
 
 </entities>

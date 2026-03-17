@@ -24,35 +24,14 @@
         <section name="LcFoundSection" condition="lc">
             <widgets>
                 <container style="q-pa-md">
+                    <label text="Letter of Credit Detail" type="h4" style="text-primary text-weight-bold q-mb-md"/>
                     <form-single name="LcGeneralForm" map="lc" transition="UpdateLc" reload-save="true">
                         <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="pk"/>
                         <field name="lcId"><default-field><hidden/></default-field></field>
 
-                        <field name="SubmitLcField">
-                            <default-field title="">
-                                <section name="SubmitLcSection" condition="lc.transactionStatusId == 'LcTxDraft' && lc.lcStatusId == 'LcLfDraft'">
-                                    <widgets>
-                                        <link url="SubmitLc" text="Submit Application" parameter-map="[lcId:lc.lcId]"
-                                              style="q-btn bg-blue text-white q-px-md shadow-2"
-                                              confirmation="Are you sure you want to submit this LC for bank review? You will not be able to edit it once submitted."/>
-                                    </widgets>
-                                </section>
-                            </default-field>
-                        </field>
-
-                        <field name="IssueLcField">
-                            <default-field title="">
-                                <section name="IssueLcSection" condition="!isReadOnly &amp;&amp; lc.transactionStatusId == 'LcTxApproved' &amp;&amp; (lc.lcStatusId == 'LcLfDraft' || lc.lcStatusId == 'LcLfApplied')">
-                                    <widgets>
-                                        <link url="IssueLc" text="Issue LC" parameter-map="[lcId:lc.lcId]"
-                                              style="q-btn bg-teal text-white q-px-md shadow-2"
-                                              confirmation="Are you sure you want to finalize and issue this LC? This will generate an MT700 message."/>
-                                    </widgets>
-                                </section>
-                            </default-field>
-                        </field>
+                        <!-- Removed redundant buttons: now in Lc.xml header -->
                         
-                        <!-- 1. Reference & Basic Info -->
+                        <!-- 1. Reference &amp; Basic Info -->
                         <field name="lcNumber">
                             <conditional-field condition="isReadOnly" title="LC Number (20)"><display/></conditional-field>
                             <default-field title="LC Number (20)"><text-line size="20"/></default-field>
@@ -60,6 +39,9 @@
                         <field name="sequenceTotal_27">
                             <conditional-field condition="isReadOnly" title="Seq of Total (27)"><display/></conditional-field>
                             <default-field title="Seq of Total (27)"><text-line size="10" default-value="1/1"/></default-field>
+                        </field>
+                        <field name="cbsReference">
+                            <default-field title="CBS Ref"><display/></default-field>
                         </field>
                         <field name="productId">
                             <conditional-field condition="isReadOnly" title="LC Product">
@@ -107,7 +89,7 @@
                             <default-field title="Place of Expiry (31D)"><text-line size="30"/></default-field>
                         </field>
 
-                        <!-- 2. Amount & Tolerance -->
+                        <!-- 2. Amount &amp; Tolerance -->
                         <field name="amount">
                             <conditional-field condition="isReadOnly" title="LC Amount (32B)"><display/></conditional-field>
                             <default-field title="LC Amount (32B)"><text-line size="15"/></default-field>
@@ -242,7 +224,7 @@
                             <default-field title="Shipment Period (44D)"><text-area rows="2"/></default-field>
                         </field>
 
-                        <!-- 5. Goods & Documents -->
+                        <!-- 5. Goods &amp; Documents -->
                         <field name="descriptionOfGoods_45A">
                             <conditional-field condition="isReadOnly" title="Goods (45A)"><display/></conditional-field>
                             <default-field title="Goods (45A)"><text-area rows="5"/></default-field>
@@ -256,7 +238,7 @@
                             <default-field title="Addl Conditions (47A)"><text-area rows="5"/></default-field>
                         </field>
 
-                        <!-- 6. Payment & Instructions -->
+                        <!-- 6. Payment &amp; Instructions -->
                         <field name="availableWithBy_41A">
                             <conditional-field condition="isReadOnly" title="Available With/By (41A)"><display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/></conditional-field>
                             <default-field title="Available With/By (41A)">
@@ -294,7 +276,7 @@
                             <default-field title="Sender Info (72Z)"><text-area rows="2"/></default-field>
                         </field>
 
-                        <!-- Credit & Collateral -->
+                        <!-- Credit &amp; Collateral -->
                         <field name="isSecured">
                             <conditional-field condition="isReadOnly" title="Is Secured?"><display/></conditional-field>
                             <default-field title="Is Secured?"><drop-down allow-empty="true">
@@ -316,12 +298,7 @@
                         </field>
                         
                         <field-layout>
-                            <container style="row justify-end items-center q-mb-md">
-                                <container style="row items-center q-gutter-sm">
-                                    <field-ref name="SubmitLcField"/>
-                                    <field-ref name="IssueLcField"/>
-                                </container>
-                            </container>
+                            <!-- Buttons moved to header -->
 
                             <field-ref name="lcId"/>
 
@@ -330,7 +307,8 @@
                                 <container style="q-pa-sm bg-blue-grey-1 text-weight-bold">1. REFERENCE &amp; BASIC INFO</container>
                                 <container style="q-pa-md">
                                     <container style="row q-col-gutter-sm">
-                                        <container style="col-12 col-md-12"><field-ref name="lcNumber"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="lcNumber"/></container>
+                                        <container style="col-12 col-md-6"><field-ref name="cbsReference"/></container>
                                     </container>
                                     <container style="row q-col-gutter-sm">
                                         <container style="col-12 col-md-4"><field-ref name="sequenceTotal_27"/></container>

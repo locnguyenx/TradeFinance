@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ProvisionCollectionServices.xml
+     Services for managing LC Provision Collection.
+     Supports multi-account provision collection with currency conversion. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- ========================================================= -->
+    <!-- Create LC Provision Collection                            -->
+    <!-- ========================================================= -->
+    <service verb="create" noun="LcProvisionCollection" authenticate="false">
+        <description>Initialize a new provision collection for an LC.</description>
+        <in-parameters>
+            <parameter name="lcId" type="String" required="true"/>
+            <parameter name="targetProvisionAmount" type="BigDecimal"/>
+            <parameter name="targetCurrencyUomId" type="String" default-value="USD"/>
+            <parameter name="remarks" type="String"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="collectionId" type="String"/>
+            <parameter name="success" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <log level="warn" message="[TRACE] create#LcProvisionCollection CALLED FOR lcId: ${lcId}"/>
+            
+            <!-- Validate LC exists -->
+            <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="lcList">
+                <econdition field-name="lcId"/>
+            </entity-find>
+            <if condition="!lcList">
+                <return error="true" message="LC not found: ${lcId}"/>
+            </if>
+            
+            <!-- Check for existing active collections -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollection" list="existingCollections">
+                <econdition field-name="lcId"/>
+                <econdition field-name="collectionStatusId" operator="in" value="LcPrvColDraft,LcPrvColComplete,LcPrvColCollected"/>
+            </entity-find>
+            <if condition="existingCollections">
+                <return error="true" message="An active collection already exists for this LC. Please use the existing collection or wait for it to be completed."/>
+            </if>
+            
+            <!-- Use LC amount if target not provided -->
+            <set field="lc" from="lcList.first"/>
+            <set field="finalTargetAmount" from="targetProvisionAmount ?: lc.amount"/>
+            <set field="finalCurrency" from="targetCurrencyUomId ?: lc.amountCurrencyUomId ?: 'USD'"/>
+            
+            <!-- Generate collection ID -->
+            <script>
+                collectionId = "LCPC_" + UUID.randomUUID().toString().replace('-', '').substring(0, 16)
+            </script>
+            
+            <!-- Create collection -->
+            <service-call name="create#moqui.trade.finance.LcProvisionCollection"
+                in-map="[collectionId:collectionId, lcId:lcId, targetProvisionAmount:finalTargetAmount,
+                         targetCurrencyUomId:finalCurrency, collectedAmount:0.00,
+                         collectionStatusId:'LcPrvColDraft', collectionDate:ec.user.nowTimestamp,
+                         collectedByUserId:ec.user.userId, remarks:remarks]"/>
+            
+            <log level="info" message="Created provision collection ${collectionId} for LC ${lcId} with target ${finalTargetAmount} ${finalCurrency}"/>
+            
+            <set field="success" value="true"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Add Collection Entry                                      -->
+    <!-- ========================================================= -->
+    <service verb="add" noun="CollectionEntry" authenticate="false">
+        <description>Add an account entry to the provision collection with currency conversion.</description>
+        <in-parameters>
+            <parameter name="collectionId" type="String" required="true"/>
+            <parameter name="accountId" type="String" required="true"/>
+            <parameter name="partyId" type="String" required="true"/>
+            <parameter name="sourceAmount" type="BigDecimal" required="true"/>
+            <parameter name="sourceCurrencyUomId" type="String" required="true"/>
+            <parameter name="remarks" type="String"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="entrySeqId" type="String"/>
+            <parameter name="convertedAmount" type="BigDecimal"/>
+            <parameter name="exchangeRate" type="BigDecimal"/>
+            <parameter name="success" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <log level="warn" message="[TRACE] add#CollectionEntry CALLED FOR collectionId: ${collectionId}"/>
+            
+            <!-- Validate collection exists and is in Draft status -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollection" list="collectionList">
+                <econdition field-name="collectionId"/>
+            </entity-find>
+            <if condition="!collectionList">
+                <return error="true" message="Collection not found: ${collectionId}"/>
+            </if>
+            
+            <set field="collection" from="collectionList.first"/>
+            <if condition="collection.collectionStatusId != 'LcPrvColDraft'">
+                <return error="true" message="Cannot add entries to collection in status: ${collection.collectionStatusId}"/>
+            </if>
+            
+            <!-- Validate amount is positive -->
+            <if condition="sourceAmount &lt;= 0">
+                <return error="true" message="Amount must be positive"/>
+            </if>
+            
+            <!-- Check for supported currencies -->
+            <if condition="sourceCurrencyUomId != 'USD' &amp;&amp; sourceCurrencyUomId != 'EUR' &amp;&amp; sourceCurrencyUomId != 'GBP'">
+                <return error="true" message="Currency not supported: ${sourceCurrencyUomId}"/>
+            </if>
+            
+            <!-- Fetch exchange rate from CBS -->
+            <set field="exchangeRate" type="BigDecimal"/>
+            <service-call name="moqui.trade.finance.CbsIntegrationServices.get#ExchangeRate"
+                in-map="[fromCurrencyUomId:sourceCurrencyUomId, toCurrencyUomId:'USD']"
+                out-map="exchangeResult"/>
+            
+            <if condition="exchangeResult.errorMessage">
+                <return error="true" message="Exchange rate service unavailable: ${exchangeResult.errorMessage}"/>
+            </if>
+            
+            <set field="exchangeRate" from="exchangeResult.exchangeRate ? new BigDecimal(exchangeResult.exchangeRate.toString()) : new BigDecimal('1.0')"/>
+            
+            <!-- Calculate converted amount -->
+            <script>
+                convertedAmount = new BigDecimal(sourceAmount.toString()).multiply(exchangeRate)
+            </script>
+            
+            <!-- Generate entry sequence ID -->
+            <script>
+                entrySeqId = "LCE_" + UUID.randomUUID().toString().replace('-', '').substring(0, 16)
+            </script>
+            
+            <!-- Create entry -->
+            <service-call name="create#moqui.trade.finance.LcProvisionCollectionEntry"
+                in-map="[collectionId:collectionId, entrySeqId:entrySeqId, partyId:partyId,
+                         accountId:accountId, sourceCurrencyUomId:sourceCurrencyUomId,
+                         sourceAmount:sourceAmount, exchangeRate:exchangeRate,
+                         convertedAmount:convertedAmount, convertedCurrencyUomId:'USD',
+                         rateFetchedDate:ec.user.nowTimestamp, entryStatusId:'LcPrvEntryPending',
+                         remarks:remarks]"/>
+            
+            <!-- Update collection total -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollectionEntry" list="entries">
+                <econdition field-name="collectionId"/>
+            </entity-find>
+            
+            <set field="newTotal" type="BigDecimal" value="0"/>
+            <iterate list="entries" entry="entry">
+                <set field="newTotal" from="newTotal + (entry.convertedAmount ?: BigDecimal.ZERO)"/>
+            </iterate>
+            
+            <set field="collection.collectedAmount" from="newTotal"/>
+            <entity-update value-field="collection"/>
+            
+            <log level="info" message="Added collection entry ${entrySeqId}: ${sourceAmount} ${sourceCurrencyUomId} = ${convertedAmount} USD (rate: ${exchangeRate})"/>
+            
+            <set field="success" value="true"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Validate Collection Total                                 -->
+    <!-- ========================================================= -->
+    <service verb="validate" noun="CollectionTotal" authenticate="false">
+        <description>Validate the total collected amount against the target provision amount.</description>
+        <in-parameters>
+            <parameter name="collectionId" type="String" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isValid" type="Boolean"/>
+            <parameter name="status" type="String"/>
+            <parameter name="message" type="String"/>
+            <parameter name="collectedAmount" type="BigDecimal"/>
+            <parameter name="targetAmount" type="BigDecimal"/>
+        </out-parameters>
+        <actions>
+            <log level="warn" message="[TRACE] validate#CollectionTotal CALLED FOR collectionId: ${collectionId}"/>
+            
+            <!-- Find collection -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollection" list="collectionList">
+                <econdition field-name="collectionId"/>
+            </entity-find>
+            <if condition="!collectionList">
+                <return error="true" message="Collection not found: ${collectionId}"/>
+            </if>
+            
+            <set field="collection" from="collectionList.first"/>
+            <set field="collectedAmount" from="collection.collectedAmount ?: BigDecimal.ZERO"/>
+            <set field="targetAmount" from="collection.targetProvisionAmount ?: BigDecimal.ZERO"/>
+            
+            <!-- Tolerance: +/- 0.01 USD -->
+            <script>
+                def tolerance = new BigDecimal("0.01")
+                def diff = new BigDecimal(targetAmount.toString()).subtract(new BigDecimal(collectedAmount.toString()))
+                def absDiff = diff.abs()
+                
+                def cmpTol = absDiff.compareTo(tolerance)
+                if (cmpTol == 0 || cmpTol == -1) {
+                    isValid = true
+                    status = "Complete"
+                    message = "Collection total is within tolerance of target"
+                } else if (diff.compareTo(BigDecimal.ZERO) == -1) {
+                    isValid = false
+                    status = "Exceeds"
+                    message = "Total exceeds provision requirement by " + absDiff.setScale(2, BigDecimal.ROUND_HALF_UP) + " USD"
+                } else if (diff.compareTo(tolerance) == 1) {
+                    isValid = false
+                    status = "Incomplete"
+                    message = "Collection is incomplete. Need " + diff.setScale(2, BigDecimal.ROUND_HALF_UP) + " USD more"
+                }
+            </script>
+            
+            <!-- Update collection status if complete -->
+            <if condition="isValid == true">
+                <set field="collection.collectionStatusId" value="LcPrvColComplete"/>
+                <entity-update value-field="collection"/>
+            </if>
+            
+            <log level="info" message="Collection ${collectionId} validation: ${status} (${collectedAmount} / ${targetAmount})"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Collect Provision Funds                                   -->
+    <!-- ========================================================= -->
+    <service verb="collect" noun="ProvisionFunds" authenticate="false">
+        <description>Execute CBS holds for all collection entries.</description>
+        <in-parameters>
+            <parameter name="collectionId" type="String" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="success" type="Boolean"/>
+            <parameter name="holdReferences" type="String"/>
+            <parameter name="message" type="String"/>
+        </out-parameters>
+        <actions>
+            <log level="warn" message="[TRACE] collect#ProvisionFunds CALLED FOR collectionId: ${collectionId}"/>
+            
+            <!-- Find collection -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollection" list="collectionList">
+                <econdition field-name="collectionId"/>
+            </entity-find>
+            <if condition="!collectionList">
+                <return error="true" message="Collection not found: ${collectionId}"/>
+            </if>
+            
+            <set field="collection" from="collectionList.first"/>
+            
+            <!-- Validate collection is in Complete status -->
+            <if condition="collection.collectionStatusId != 'LcPrvColComplete'">
+                <return error="true" message="Collection must be in Complete status to collect funds. Current status: ${collection.collectionStatusId}"/>
+            </if>
+            
+            <!-- Get all pending entries -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollectionEntry" list="entries">
+                <econdition field-name="collectionId"/>
+                <econdition field-name="entryStatusId" value="LcPrvEntryPending"/>
+            </entity-find>
+            
+            <if condition="!entries">
+                <return error="true" message="No pending entries to collect"/>
+            </if>
+            
+            <!-- Hold funds for each entry -->
+            <set field="holdRefs" value=""/>
+            <set field="failedEntries" value=""/>
+            
+            <iterate list="entries" entry="entry">
+                <service-call name="moqui.trade.finance.CbsIntegrationServices.hold#Funds"
+                    in-map="[partyId:entry.partyId, amount:entry.sourceAmount,
+                             currencyUomId:entry.sourceCurrencyUomId,
+                             referenceId:entry.entrySeqId]"
+                    out-map="holdResult"/>
+                
+                <if condition="holdResult.success == true || holdResult.success == 'true'">
+                    <!-- Update entry with hold reference -->
+                    <set field="entry.entryStatusId" value="LcPrvEntryCollected"/>
+                    <set field="entry.cbsHoldReference" from="holdResult.holdReference"/>
+                    <set field="entry.cbsHoldDate" from="ec.user.nowTimestamp"/>
+                    <entity-update value-field="entry"/>
+                    
+                    <set field="holdRefs" from="holdRefs + (holdRefs ? ', ' : '') + holdResult.holdReference"/>
+                </if>
+                <if condition="holdResult.success != true &amp;&amp; holdResult.success != 'true'">
+                    <!-- Mark entry as failed -->
+                    <set field="entry.entryStatusId" value="LcPrvEntryFailed"/>
+                    <entity-update value-field="entry"/>
+                    
+                    <set field="failedEntries" from="failedEntries + (failedEntries ? ', ' : '') + entry.entrySeqId"/>
+                    
+                    <log level="error" message="Failed to hold funds for entry ${entry.entrySeqId}: ${holdResult.message}"/>
+                </if>
+            </iterate>
+            
+            <!-- Check if any entries failed -->
+            <if condition="failedEntries">
+                <!-- Rollback: release holds for successful entries -->
+                <iterate list="entries" entry="entry">
+                    <if condition="entry.entryStatusId == 'LcPrvEntryCollected' &amp;&amp; entry.cbsHoldReference">
+                        <service-call name="moqui.trade.finance.CbsIntegrationServices.release#Funds"
+                            in-map="[holdReference:entry.cbsHoldReference]"/>
+                        
+                        <set field="entry.entryStatusId" value="LcPrvEntryPending"/>
+                        <set field="entry.cbsHoldReference" from="null"/>
+                        <entity-update value-field="entry"/>
+                    </if>
+                </iterate>
+                
+                <set field="collection.collectionStatusId" value="LcPrvColFailed"/>
+                <entity-update value-field="collection"/>
+                
+                <return error="true" message="Failed to collect funds for entries: ${failedEntries}. All holds have been rolled back."/>
+            </if>
+            
+            <!-- All entries collected successfully -->
+            <set field="collection.collectionStatusId" value="LcPrvColCollected"/>
+            <entity-update value-field="collection"/>
+            
+            <log level="info" message="Successfully collected funds for collection ${collectionId}. Hold references: ${holdRefs}"/>
+            
+            <set field="success" value="true"/>
+            <set field="holdReferences" from="holdRefs"/>
+            <set field="message" value="Funds collected successfully"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Release Provision Collection                              -->
+    <!-- ========================================================= -->
+    <service verb="release" noun="ProvisionCollection" authenticate="false">
+        <description>Release all CBS holds for a collected provision collection.</description>
+        <in-parameters>
+            <parameter name="collectionId" type="String" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="success" type="Boolean"/>
+            <parameter name="message" type="String"/>
+        </out-parameters>
+        <actions>
+            <log level="warn" message="[TRACE] release#ProvisionCollection CALLED FOR collectionId: ${collectionId}"/>
+            
+            <!-- Find collection -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollection" list="collectionList">
+                <econdition field-name="collectionId"/>
+            </entity-find>
+            <if condition="!collectionList">
+                <return error="true" message="Collection not found: ${collectionId}"/>
+            </if>
+            
+            <set field="collection" from="collectionList.first"/>
+            
+            <!-- Validate collection is in Collected status -->
+            <if condition="collection.collectionStatusId != 'LcPrvColCollected'">
+                <return error="true" message="Collection must be in Collected status to release funds. Current status: ${collection.collectionStatusId}"/>
+            </if>
+            
+            <!-- Get all collected entries -->
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollectionEntry" list="entries">
+                <econdition field-name="collectionId"/>
+                <econdition field-name="entryStatusId" value="LcPrvEntryCollected"/>
+            </entity-find>
+            
+            <!-- Release each hold -->
+            <iterate list="entries" entry="entry">
+                <if condition="entry.cbsHoldReference">
+                    <service-call name="moqui.trade.finance.CbsIntegrationServices.release#Funds"
+                        in-map="[holdReference:entry.cbsHoldReference]"
+                        out-map="releaseResult"/>
+                    
+                    <if condition="releaseResult.success == true || releaseResult.success == 'true'">
+                        <set field="entry.entryStatusId" value="LcPrvEntryReleased"/>
+                        <entity-update value-field="entry"/>
+                    </if>
+                    <if condition="releaseResult.success != true &amp;&amp; releaseResult.success != 'true'">
+                        <log level="error" message="Failed to release hold ${entry.cbsHoldReference}: ${releaseResult.message}"/>
+                    </if>
+                </if>
+            </iterate>
+            
+            <!-- Update collection status -->
+            <set field="collection.collectionStatusId" value="LcPrvColReleased"/>
+            <entity-update value-field="collection"/>
+            
+            <log level="info" message="Released provision collection ${collectionId}"/>
+            
+            <set field="success" value="true"/>
+            <set field="message" value="Funds released successfully"/>
+        </actions>
+    </service>
+
+</services>

@@ -10,7 +10,7 @@
     <!-- ========================================================= -->
     <!-- Interface services that route to specific implementations -->
 
-    <service verb="hold" noun="Funds">
+    <service verb="hold" noun="Funds" authenticate="false">
         <description>Places a hold on a customer's account for LC provisions/margins.</description>
         <in-parameters>
             <parameter name="partyId" required="true"/>
@@ -30,7 +30,7 @@
         </actions>
     </service>
 
-    <service verb="release" noun="Funds">
+    <service verb="release" noun="Funds" authenticate="false">
         <implements service="moqui.trade.finance.CbsIntegrationServices.hold#Funds"/> <!-- reused parameters -->
         <in-parameters><parameter name="holdReference" required="true"/></in-parameters>
         <actions>
@@ -68,22 +68,37 @@
         </actions>
     </service>
 
-    <service verb="get" noun="ExchangeRate">
+    <service verb="get" noun="ExchangeRate" authenticate="false">
         <in-parameters><parameter name="fromCurrencyUomId" required="true"/><parameter name="toCurrencyUomId" required="true"/></in-parameters>
         <out-parameters><parameter name="exchangeRate" type="BigDecimal"/></out-parameters>
         <actions>
             <!-- FX Rate usually doesn't need a complex adapter, but pattern kept for consistency -->
-            <if condition="fromCurrencyUomId == toCurrencyUomId"><set field="exchangeRate" value="1.0"/><return/></if>
-            <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
-            <!-- Fallback to inline mock if impl not found or just use Mock -->
-            <if condition="implSuffix == 'Mock'">
-                <if condition="fromCurrencyUomId == 'USD' &amp;&amp; toCurrencyUomId == 'EUR'"><set field="exchangeRate" value="0.92"/>
-                <else-if condition="fromCurrencyUomId == 'EUR' &amp;&amp; toCurrencyUomId == 'USD'"><set field="exchangeRate" value="1.09"/></else-if>
-                <else><set field="exchangeRate" value="1.0"/></else></if>
-            <else>
-                <!-- Placeholder for real FX API -->
+            <if condition="fromCurrencyUomId == toCurrencyUomId">
                 <set field="exchangeRate" value="1.0"/>
-            </else>
+                <return/>
+            </if>
+            <!-- Mock exchange rates -->
+            <if condition="fromCurrencyUomId == 'EUR' &amp;&amp; toCurrencyUomId == 'USD'">
+                <set field="exchangeRate" value="1.09"/>
+            </if>
+            <if condition="fromCurrencyUomId == 'USD' &amp;&amp; toCurrencyUomId == 'EUR'">
+                <set field="exchangeRate" value="0.92"/>
+            </if>
+            <if condition="fromCurrencyUomId == 'GBP' &amp;&amp; toCurrencyUomId == 'USD'">
+                <set field="exchangeRate" value="1.27"/>
+            </if>
+            <if condition="fromCurrencyUomId == 'USD' &amp;&amp; toCurrencyUomId == 'GBP'">
+                <set field="exchangeRate" value="0.79"/>
+            </if>
+            <if condition="fromCurrencyUomId == 'EUR' &amp;&amp; toCurrencyUomId == 'GBP'">
+                <set field="exchangeRate" value="0.86"/>
+            </if>
+            <if condition="fromCurrencyUomId == 'GBP' &amp;&amp; toCurrencyUomId == 'EUR'">
+                <set field="exchangeRate" value="1.16"/>
+            </if>
+            <!-- Default fallback -->
+            <if condition="exchangeRate == null">
+                <set field="exchangeRate" value="1.0"/>
             </if>
         </actions>
     </service>

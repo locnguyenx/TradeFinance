@@ -59,16 +59,26 @@ class TradeFinanceServicesSpec extends Specification {
     @Shared long totalFieldsChecked = 0
 
     def setupSpec() {
-        // Init the framework, get the ec
+        logger.warn("[TRACE] TradeFinanceServicesSpec STARTING setupSpec")
         ec = Moqui.getExecutionContext()
-        ec.user.setEffectiveTime(new Timestamp(effectiveTime))
-        // Login as Trade Finance Admin user (defined in TradeFinanceSecurityData.xml)
+        ec.artifactExecution.disableAuthz()
         ec.user.loginUser("tf-admin", "moqui")
 
-        // Set predictable sequenced IDs for records created in tests
-        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LetterOfCredit", 991000, 10)
-        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LcHistory", 991000, 50)
-        ec.entity.tempSetSequencedIdPrimary("mantle.request.Request", 991000, 10)
+        // Find current max numeric IDs to avoid collisions in suite runs
+        def numericLcs = ec.entity.find("moqui.trade.finance.LetterOfCredit").list().findAll { it.lcId.isNumber() }.collect { it.lcId.toLong() }
+        def maxLc = numericLcs ? (long) numericLcs.max() : 0L
+        def numericReqs = ec.entity.find("mantle.request.Request").list().findAll { it.requestId.isNumber() }.collect { it.requestId.toLong() }
+        def maxReq = numericReqs ? (long) numericReqs.max() : 0L
+        def numericHistory = ec.entity.find("moqui.trade.finance.LcHistory").list().findAll { it.lcHistoryId.isNumber() }.collect { it.lcHistoryId.toLong() }
+        def maxHistory = numericHistory ? (long) numericHistory.max() : 0L
+
+        long startId = [maxLc, maxReq, maxHistory].max() + 10000L
+        logger.info("Setting ServicesSpec sequencer startId to ${startId} (Max LC: ${maxLc}, Max Req: ${maxReq}, Max History: ${maxHistory})")
+
+        // Set temporary sequenced IDs for predictable IDs in this spec
+        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LetterOfCredit", startId, 10)
+        ec.entity.tempSetSequencedIdPrimary("moqui.trade.finance.LcHistory", startId, 50)
+        ec.entity.tempSetSequencedIdPrimary("mantle.request.Request", startId, 10)
     }
 
     def cleanupSpec() {
@@ -769,5 +779,35 @@ class TradeFinanceServicesSpec extends Specification {
 
         then:
         allDemoLcs.size() == 10
+    }
+
+    def "block issuance if mandatory charge is missing (BR3)"() {
+        setup: "Setup an LC with a missing mandatory charge"
+        // 1. Create a new LC for a product that has mandatory charges (e.g. PROD_ILC_SIGHT has ISSUANCE as mandatory in demo data/10_TradeFinanceData.xml)
+        Map createOut = ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
+                .parameters([lcNumber: "MAND-CHG-TEST", productId: "PROD_ILC_SIGHT", amount: 10000.00]).call()
+        String mandLcId = createOut.lcId
+        
+        // 2. Automated charges should be created. Delete the mandatory one.
+        ec.entity.find("moqui.trade.finance.LcCharge").condition("lcId", mandLcId).condition("chargeTypeEnumId", "LC_CHG_ISSUANCE").list().each { it.delete() }
+        
+        // 3. Move to Approved transaction status so we can attempt issuance
+        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus")
+                .parameters([lcId: mandLcId, toStatusId: "LcTxSubmitted"]).call()
+        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus")
+                .parameters([lcId: mandLcId, toStatusId: "LcTxApproved"]).call()
+
+        when: "Attempt to issue the LC"
+        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#LcStatus")
+                .parameters([lcId: mandLcId, toStatusId: "LcLfApplied"]).call()
+        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#LcStatus")
+                .parameters([lcId: mandLcId, toStatusId: "LcLfIssued"]).call()
+
+        then: "The service should fail"
+        ec.message.hasError()
+        ec.message.errors.any { it.contains("Mandatory charge") || it.contains("missing") }
+        
+        cleanup:
+        ec.message.clearErrors()
     }
 }

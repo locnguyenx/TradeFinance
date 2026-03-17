@@ -65,6 +65,10 @@
                 in-map="context + amendmentMap + [requestId:requestId, confirmationStatusId:'LcAmndPending']" out-map="newAmOut"/>
             <set field="amendmentSeqId" from="newAmOut.amendmentSeqId"/>
 
+            <!-- R8.11: Automatically calculate charges for this amendment -->
+            <service-call name="moqui.trade.finance.FinancialServices.calculate#LcCharges"
+                          in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
+
             <log level="info" message="Created shadow LC Amendment Draft for LC: ${lcId}, Seq: ${amendmentSeqId}"/>
         </actions>
     </service>

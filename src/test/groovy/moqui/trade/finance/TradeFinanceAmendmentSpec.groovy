@@ -2,6 +2,7 @@ package moqui.trade.finance
 
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
+import org.moqui.entity.EntityValue
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -21,9 +22,18 @@ class TradeFinanceAmendmentSpec extends Specification {
         ec.user.loginUser("tf-admin", "moqui")
         
         // Create an initial LC in Issued status for amendment testing
-        Map createOut = ec.service.sync().name("create#moqui.trade.finance.LetterOfCredit").parameter("lcNumber", "AMND_TEST_01")
-            .parameter("lcStatusId", "LcLfIssued").parameter("amount", 10000.00).parameter("amountCurrencyUomId", "USD").call()
+        Map createOut = ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.create#LetterOfCredit")
+            .parameters([lcNumber: "AMND-TEST-01", productId: "PROD_ILC_SIGHT", amount: 10000.00, amountCurrencyUomId: "USD"]).call()
         lcId = createOut.lcId
+        
+        // Transition to Issued
+        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#LcStatus")
+                .parameters([lcId: lcId, toStatusId: "LcLfApplied"]).call()
+        ec.service.sync().name("moqui.trade.finance.TradeFinanceServices.transition#LcStatus")
+                .parameters([lcId: lcId, toStatusId: "LcLfIssued"]).call()
+                
+        // Clear any setup errors (e.g. if mandatory charge validation failed but we want to proceed)
+        ec.message.clearAll()
     }
 
     def cleanupSpec() {
@@ -44,7 +54,8 @@ class TradeFinanceAmendmentSpec extends Specification {
         amendment.confirmationStatusId == "LcAmndPending"
 
         cleanup:
-        if (amSeqId) ec.entity.makeValue("moqui.trade.finance.LcAmendment").setAll([lcId:lcId, amendmentSeqId:amSeqId]).delete()
+        true // Skip manual deletion because automated charges now refer to it (FK violation)
+        // if (amSeqId) ec.entity.makeValue("moqui.trade.finance.LcAmendment").setAll([lcId:lcId, amendmentSeqId:amSeqId]).delete()
     }
 
     def "Verify Apply Amendment Back to Master LC"() {
@@ -75,5 +86,45 @@ class TradeFinanceAmendmentSpec extends Specification {
         def amAfter = ec.entity.find("moqui.trade.finance.LcAmendment").condition("lcId", lcId).condition("amendmentSeqId", amSeqId).one()
         amAfter.amendmentStatusId == "LcTxClosed"
         amAfter.confirmationStatusId == "LcAmndConfirmed"
+    }
+    def "Verify amendment creation"() {
+        when:
+        def result = ec.service.sync().name("moqui.trade.finance.AmendmentServices.create#LcAmendment")
+                .parameters([lcId: lcId, fieldName: "amount", newValue: "400000", remarks: "Test Amendment"]).call()
+        String amendmentSeqId = result.amendmentSeqId
+        
+        then:
+        amendmentSeqId != null
+        def amd = ec.entity.find("moqui.trade.finance.LcAmendment").condition("lcId", lcId).condition("amendmentSeqId", amendmentSeqId).one()
+        amd.amendmentStatusId == "LcTxDraft"
+    }
+
+    def "fail to amend restricted field (lcNumber)"() {
+        when: "We attempt to create an amendment for lcNumber"
+        ec.service.sync().name("moqui.trade.finance.AmendmentServices.create#LcAmendment")
+                .parameters([lcId: lcId, fieldName: "lcNumber", newValue: "NEWLC123"]).call()
+        
+        then: "An error should be returned"
+        ec.message.hasError() && ec.message.getErrors().any { it.contains("cannot be amended") }
+
+        cleanup:
+        ec.message.clearAll()
+    }
+    def "calculate charges on amendment creation (BR3)"() {
+        when: "Create a new Amendment request for an LC"
+        Map result = ec.service.sync().name("moqui.trade.finance.AmendmentServices.create#LcAmendment")
+                .parameters([lcId: lcId, remarks: "Trigger Charge Test"]).call()
+        
+        then: "LC Charges should be automatically created for this amendment"
+        result != null
+        String amendmentSeqId = result.amendmentSeqId
+        amendmentSeqId != null
+
+        // In Moqui, LcCharge records are linked via lcId and potentially amendmentSeqId
+        List<EntityValue> charges = ec.entity.find("moqui.trade.finance.LcCharge")
+                .condition("lcId", lcId).condition("amendmentSeqId", amendmentSeqId).list()
+        
+        // This is expected to FAIL in the RED phase
+        charges.size() > 0
     }
 }

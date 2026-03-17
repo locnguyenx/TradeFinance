@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
     <widgets>
-        <container-dialog id="CreateLcDialog" button-text="New LC Application" button-style="q-btn bg-primary text-white">
+        <container-dialog id="CreateLcDialog" button-text="Create New LC" button-style="q-btn bg-primary text-white">
             <form-single name="CreateLcForm" transition="CreateLc">
                 <auto-parameters entity-name="moqui.trade.finance.LetterOfCredit" include="nonpk"/>
                 <field name="productId">

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-title="Product Configuration" default-menu-index="10">
+
+    <actions>
+        <entity-find entity-name="moqui.trade.finance.LcProduct" list="productList">
+            <order-by field-name="productName"/>
+        </entity-find>
+    </actions>
+
+    <widgets>
+        <container style="q-pa-md">
+            <label text="LC Product Configuration" type="h4" style="text-primary text-weight-bold q-mb-md"/>
+            <label text="Reference for allowed charge types and default provision rates by product." style="text-subtitle1 text-grey-7 q-mb-lg"/>
+
+            <section-iterate name="ProductListSection" list="productList" entry="product">
+                <actions>
+                    <entity-find entity-name="moqui.trade.finance.LcProductCharge" list="productChargeList">
+                        <econdition field-name="productId" from="product.productId"/>
+                    </entity-find>
+                </actions>
+                <widgets>
+                    <container style="q-card q-mb-lg shadow-2 border">
+                        <container style="q-pa-md bg-indigo-7 text-white">
+                            <container style="row justify-between items-center">
+                                <container>
+                                    <label text="${product.productName}" type="h5" style="text-weight-bold"/>
+                                    <label text="ID: ${product.productId} | ${product.description ?: ''}" style="text-caption"/>
+                                </container>
+                                <container style="text-right">
+                                    <label text="Default Provision" style="text-caption block"/>
+                                    <label text="${product.defaultProvisionRate ?: 0}%" type="h6" style="text-weight-bold"/>
+                                </container>
+                            </container>
+                        </container>
+                        
+                        <container style="q-pa-md">
+                            <label text="CHARGE TEMPLATE" style="text-overline text-grey-7 q-mb-sm block"/>
+                            <form-list name="ProductChargeList_${product.productId}" list="productChargeList" skip-form="true">
+                                <field name="chargeTypeEnumId">
+                                    <header-field title="Charge Type"/>
+                                    <default-field>
+                                        <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
+                                    </default-field>
+                                </field>
+                                <field name="defaultAmount">
+                                    <header-field title="Default Amount"/>
+                                    <default-field><display format="#,##0.00"/></default-field>
+                                </field>
+                                <field name="defaultCurrencyUomId">
+                                    <header-field title="Currency"/>
+                                    <default-field><display/></default-field>
+                                </field>
+                                <field name="itemTypeEnumId">
+                                    <header-field title="GL Mapping (Item Type)"/>
+                                    <default-field>
+                                        <display-entity entity-name="moqui.basic.Enumeration" key-field-name="enumId" text="${description}"/>
+                                    </default-field>
+                                </field>
+                            </form-list>
+                            <section name="NoChargesSection" condition="!productChargeList">
+                                <widgets><label text="No default charges configured for this product." style="italic text-grey-6 q-pa-sm"/></widgets>
+                            </section>
+                        </container>
+                    </container>
+                </widgets>
+            </section-iterate>
+        </container>
+    </widgets>
+</screen>

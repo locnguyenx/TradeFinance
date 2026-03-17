@@ -9,7 +9,7 @@
 | Business Requirements (BRD) | [name of BRD file in `docs/brd/`] | ✅ 100% |
 | Import LC BRD | [name of Import LC BRD file in `docs/brd/`] | ✅ 100% |
 | MT700 Field Spec | [name of MT700 Field Spec file in `docs/brd/MT/`] | ✅ 100% |
-| Implementation Plan | `.agents/state/implementation_plan.md` | ✅ 95% |
+| Implementation Plan | `.opencode/state/implementation_plan.md` | ✅ 95% |
 | Consistency Report | [name of Consistency Report file in `docs/tds/`] | ✅ 100% |
 
 ### ❌ Missing / Insufficient for From-Scratch Rebuild
@@ -50,5 +50,5 @@ docs/
 ├── tds/
 │   └── technical_design_spec.md    (How to build - technical spec)
 ├── consistency_report.md           (Verification cross-reference)
-└── (implementation_plan is in .agents/state/)
+└── (implementation_plan is in .opencode/state/)
 ```

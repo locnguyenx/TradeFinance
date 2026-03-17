@@ -1,0 +1,96 @@
+<!-- CbsSimulatorServices.xml
+     Implements the stateful "Simulator" pattern for CBS integration.
+     Maintains virtual balances in CbsSimulatorState entity to allow
+     realistic end-to-end testing of accounting and credit limit flows. -->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
+          package="moqui.trade.finance">
+
+    <!-- State-based Simulator for CBS Integration -->
+
+    <service verb="hold" noun="FundsSimulator" authenticate="false">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.hold#Funds"/>
+        <actions>
+            <if condition="System.getProperty('cbs.simulate.timeout') == 'true'">
+                <log level="warn" message="[CBS SIMULATOR] Simulating Connection Timeout..."/>
+                <return error="true" message="Connection timed out (Simulated)"/>
+            </if>
+            <log level="info" message="[CBS SIMULATOR] Holding funds for party ${partyId}, amount ${amount}"/>
+            
+            <script>
+                if ("true".equals(System.getProperty("cbs.simulate.timeout"))) {
+                    ec.message.addError("CBS Connection Timeout (Simulated)")
+                }
+            </script>
+            <if condition="ec.message.hasError()"><return/></if>
+            
+            <entity-find entity-name="moqui.trade.finance.CbsSimulatorState" list="stateList" for-update="true"/>
+            <if condition="stateList.empty">
+                <entity-make-value entity-name="moqui.trade.finance.CbsSimulatorState" value-field="state" map="[partyId:partyId]"/>
+                <entity-create value-field="state"/>
+            <else>
+                <set field="state" from="stateList[0]"/>
+            </else></if>
+
+            <if condition="state.balanceAmount &lt; amount">
+                <set field="success" from="false"/>
+                <set field="message" value="Insufficient funds in Simulator for party ${partyId}"/>
+            <else>
+                <set field="state.balanceAmount" from="state.balanceAmount - amount"/>
+                <set field="state.holdAmount" from="state.holdAmount + amount"/>
+                <set field="state.lastUpdated" from="ec.user.nowTimestamp"/>
+                <entity-update value-field="state"/>
+
+                <set field="holdReference" value="SIM-HLD-${ec.user.nowTimestamp.time}"/>
+                <set field="success" from="true"/>
+                <set field="message" value="Funds held in Simulator (Ref: ${holdReference})"/>
+            </else></if>
+        </actions>
+    </service>
+
+    <service verb="release" noun="FundsSimulator" authenticate="false">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.release#Funds"/>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.CbsSimulatorState" value-field="state" for-update="true"/>
+            <if condition="state">
+                <set field="state.balanceAmount" from="state.balanceAmount + amount"/>
+                <set field="state.holdAmount" from="state.holdAmount - amount"/>
+                <set field="state.lastUpdated" from="ec.user.nowTimestamp"/>
+                <entity-update value-field="state"/>
+            </if>
+            <set field="success" from="true"/>
+            <set field="message" value="Funds released in Simulator."/>
+        </actions>
+    </service>
+
+    <service verb="post" noun="AccountingEntriesSimulator">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.post#AccountingEntries"/>
+        <actions>
+            <!-- In simulator, we just log and return success unless it's a specific amount -->
+            <log level="info" message="[CBS SIMULATOR] Posting entry: Dr ${debitAccountId}, Cr ${creditAccountId}, Amount ${amount}"/>
+            
+            <!-- Simulate specific party balance update if it's a charge collection -->
+            <if condition="transactionType == 'CHARGE_COLLECTION' &amp;&amp; referenceId">
+                <!-- We'd need to know the partyId, which isn't in this interface directly 
+                     but we can infer from context if needed or just simulate success -->
+            </if>
+
+            <set field="transactionReference" value="SIM-TXN-${ec.user.nowTimestamp.time}"/>
+            <set field="success" from="true"/>
+        </actions>
+    </service>
+
+    <service verb="check" noun="CreditLimitSimulator">
+        <implements service="moqui.trade.finance.CbsIntegrationServices.check#CreditLimit"/>
+        <actions>
+            <log level="info" message="[CBS SIMULATOR] Checking credit limit for party ${partyId}"/>
+            <entity-find-one entity-name="moqui.trade.finance.CbsSimulatorState" value-field="state"/>
+            <if condition="!state">
+                <set field="availableLimit" from="1000000.00"/> <!-- Default for simulator -->
+            <else>
+                <set field="availableLimit" from="state.balanceAmount"/>
+            </else></if>
+            <set field="currencyUomId" value="USD"/>
+        </actions>
+    </service>
+
+</services>

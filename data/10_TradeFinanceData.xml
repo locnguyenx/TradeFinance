@@ -4,9 +4,12 @@
     <!-- ========================================================= -->
     <!-- Pre-requisite Seed Data (Fallback)                        -->
     <!-- ========================================================= -->
-    <mantle.party.RoleType roleTypeId="Internal" description="Internal Organization"/>
+    <mantle.party.RoleType roleTypeId="InternalOrganization" description="Internal Organization"/>
     <mantle.party.RoleType roleTypeId="Issuer" description="Issuer"/>
     <mantle.party.RoleType roleTypeId="Customer" description="Customer"/>
+    <mantle.party.RoleType roleTypeId="Bank" description="Bank"/>
+    <mantle.party.RoleType roleTypeId="Vendor" description="Vendor"/>
+
 
     <!-- ========================================================= -->
     <!-- Status Types                                              -->
@@ -22,6 +25,10 @@
     <moqui.basic.StatusType statusTypeId="LcProvisionStatus" description="LC Provision Status"/>
     <!-- LC Amendment Confirmation Status Type -->
     <moqui.basic.StatusType statusTypeId="LcAmendmentConfirmation" description="LC Amendment Confirmation Status"/>
+    <!-- LC Provision Collection Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcProvisionCollection" description="LC Provision Collection Status"/>
+    <!-- LC Provision Collection Entry Status Type -->
+    <moqui.basic.StatusType statusTypeId="LcProvisionCollectionEntry" description="LC Provision Collection Entry Status"/>
 
 
     <!-- ========================================================= -->
@@ -108,12 +115,15 @@
     <!-- Valid Transitions: Draft -> Pending Review -> Pending Processing -> Pending Approval -> Approved -->
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxPendingReview" transitionName="Submit for Review"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingReview" toStatusId="LcTxPendingProcessing" transitionName="Submit for Processing"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingReview" toStatusId="LcTxApproved" transitionName="Approve Directly" transitionId="LcTxPendingReviewApproved"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingReview" toStatusId="LcTxReturned" transitionName="Return"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingProcessing" toStatusId="LcTxPendingApproval" transitionName="Submit for Approval"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingProcessing" toStatusId="LcTxReturned" transitionName="Return"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingProcessing" toStatusId="LcTxPendingReview" transitionName="Return to Review"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxApproved" transitionName="Approve"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxRejected" transitionName="Reject"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxReturned" transitionName="Return"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxPendingApproval" toStatusId="LcTxPendingReview" transitionName="Return to Review"/>
     
     <!-- Backward compatibility and fallback -->
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxCancelled" transitionName="Cancel"/>
@@ -176,6 +186,56 @@
 
     <moqui.basic.StatusFlowTransition statusFlowId="LcAmendmentConfirmation" statusId="LcAmndPending" toStatusId="LcAmndConfirmed" transitionName="Confirm Amendment"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcAmendmentConfirmation" statusId="LcAmndPending" toStatusId="LcAmndRejected" transitionName="Reject Amendment"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Provision Collection Status Items                       -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusFlow statusFlowId="LcProvisionCollection" description="LC Provision Collection Flow"/>
+
+    <moqui.basic.StatusItem statusId="LcPrvColDraft" statusTypeId="LcProvisionCollection" description="Draft" sequenceNum="0"/>
+    <moqui.basic.StatusItem statusId="LcPrvColComplete" statusTypeId="LcProvisionCollection" description="Complete" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcPrvColCollected" statusTypeId="LcProvisionCollection" description="Collected" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcPrvColReleased" statusTypeId="LcProvisionCollection" description="Released" sequenceNum="3"/>
+    <moqui.basic.StatusItem statusId="LcPrvColFailed" statusTypeId="LcProvisionCollection" description="Failed" sequenceNum="4"/>
+
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollection" statusId="LcPrvColDraft"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollection" statusId="LcPrvColComplete"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollection" statusId="LcPrvColCollected"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollection" statusId="LcPrvColReleased"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollection" statusId="LcPrvColFailed"/>
+
+    <!-- LC Provision Collection Entry Status Items -->
+    <moqui.basic.StatusItem statusId="LcPrvColEntPending" statusTypeId="LcProvisionCollectionEntry" description="Pending" sequenceNum="0"/>
+    <moqui.basic.StatusItem statusId="LcPrvColEntApplied" statusTypeId="LcProvisionCollectionEntry" description="Applied" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcPrvColEntFailed" statusTypeId="LcProvisionCollectionEntry" description="Failed" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcPrvColEntReversed" statusTypeId="LcProvisionCollectionEntry" description="Reversed" sequenceNum="3"/>
+
+    <!-- Collection StatusFlow Transitions -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollection" statusId="LcPrvColDraft" toStatusId="LcPrvColComplete" transitionName="Complete Collection"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollection" statusId="LcPrvColDraft" toStatusId="LcPrvColFailed" transitionName="Fail Collection"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollection" statusId="LcPrvColComplete" toStatusId="LcPrvColCollected" transitionName="Collect Funds"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollection" statusId="LcPrvColCollected" toStatusId="LcPrvColReleased" transitionName="Release Funds"/>
+
+    <!-- ========================================================= -->
+    <!-- LC Provision Collection Entry Status Items                -->
+    <!-- ========================================================= -->
+    <moqui.basic.StatusFlow statusFlowId="LcProvisionCollectionEntry" description="LC Provision Collection Entry Flow"/>
+
+    <moqui.basic.StatusItem statusId="LcPrvEntryPending" statusTypeId="LcProvisionCollectionEntry" description="Pending" sequenceNum="0"/>
+    <moqui.basic.StatusItem statusId="LcPrvEntryCollected" statusTypeId="LcProvisionCollectionEntry" description="Collected" sequenceNum="1"/>
+    <moqui.basic.StatusItem statusId="LcPrvEntryReleased" statusTypeId="LcProvisionCollectionEntry" description="Released" sequenceNum="2"/>
+    <moqui.basic.StatusItem statusId="LcPrvEntryFailed" statusTypeId="LcProvisionCollectionEntry" description="Failed" sequenceNum="3"/>
+
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryPending"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryCollected"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryReleased"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryFailed"/>
+
+    <!-- Entry StatusFlow Transitions -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryPending" toStatusId="LcPrvEntryCollected" transitionName="Collect Entry"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryPending" toStatusId="LcPrvEntryFailed" transitionName="Fail Entry"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryCollected" toStatusId="LcPrvEntryReleased" transitionName="Release Entry"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcProvisionCollectionEntry" statusId="LcPrvEntryFailed" toStatusId="LcPrvEntryPending" transitionName="Retry Entry"/>
 
     <!-- ========================================================= -->
     <!-- Role Types                                                -->
@@ -298,10 +358,12 @@
     <moqui.trade.finance.LcProduct productId="PROD_ILC_NEGOTIATION" productName="Import LC Negotiation" lcProductTypeEnumId="LC_PROD_NEGOTIATION" defaultProvisionRate="15" description="Negotiation Import LC"/>
     <moqui.trade.finance.LcProduct productId="PROD_ILC_STANDBY" productName="Import Standby LC" lcProductTypeEnumId="LC_PROD_STANDBY" defaultProvisionRate="100" description="Standby LC (Financial/Performance)"/>
 
-    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="100" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission"/>
-    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_SWIFT" defaultAmount="25" defaultCurrencyUomId="USD" itemTypeEnumId="ItemMiscCharge"/>
-    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_USANCE" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="150" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission"/>
-    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_STANDBY" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="500" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="150" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission" isMandatory="Y"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_SWIFT" defaultAmount="75" defaultCurrencyUomId="USD" itemTypeEnumId="ItemMiscCharge" isMandatory="Y"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_AMENDMENT" defaultAmount="50" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission" isMandatory="Y"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_SIGHT" chargeTypeEnumId="LC_CHG_NEGOTIATION" defaultAmount="150" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission" isMandatory="Y"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_USANCE" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="150" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission" isMandatory="Y"/>
+    <moqui.trade.finance.LcProductCharge productId="PROD_ILC_STANDBY" chargeTypeEnumId="LC_CHG_ISSUANCE" defaultAmount="500" defaultCurrencyUomId="USD" itemTypeEnumId="ItemCommission" isMandatory="Y"/>
 
     <!-- ========================================================= -->
     <!-- Scheduled Jobs                                            -->
@@ -318,7 +380,7 @@
     <!-- ========================================================= -->
     <mantle.party.Party partyId="ORG_Z_BANK" partyTypeEnumId="PtyOrganization"/>
     <mantle.party.Organization partyId="ORG_Z_BANK" organizationName="Global Finance Bank"/>
-    <mantle.party.PartyRole partyId="ORG_Z_BANK" roleTypeId="Internal"/>
+    <mantle.party.PartyRole partyId="ORG_Z_BANK" roleTypeId="InternalOrganization"/>
     <mantle.party.PartyRole partyId="ORG_Z_BANK" roleTypeId="Issuer"/>
 
 </entity-facade-xml>

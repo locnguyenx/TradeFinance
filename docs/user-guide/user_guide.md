@@ -105,11 +105,20 @@ If presented documents do not match the LC terms:
 - **Sight Payment**: For LCs payable at sight, the system generates an **MT756** and triggers accounting once the documents are accepted.
 - **Usance LC**: For LCs with credit terms, the system calculates the **Maturity Date**. Payment is scheduled for that date, and the bank enters an "Acceptance" phase.
 
-## 5. Static Data & Configuration
+## 5. Accounting & CBS Integration (Finalized)
+The system is fully integrated with **Mantle General Ledger** and simulates bank host (CBS) interactions.
+
+### 5.1 Financial Impact
+- **Automated Charges**: Commissions and fees are automatically calculated based on the Product configuration (`LcProduct`).
+- **Mantle GL Auto-Posting**: Upon issuance or amendment, the system automatically generates **Accounting Transactions** (AcctgTrans) for charges. It maps `InvoiceSales` to `AttSalesInvoice` for consistent double-entry bookkeeping.
+- **CBS Simulator**: For provision-covered LCs, the system integrates with the **Stateful CBS Simulator** to **Hold** and **Release** funds. Virtual balances are tracked in the `CbsSimulatorState` entity.
+- **Verification**: All accounting flows are 100% verified via automated tests, ensuring accuracy in Accounts Receivable and Revenue entries.
+
+## 6. Static Data & Configuration
 The system automatically handles complex logic based on predefined templates:
-- **Charges**: Issuance, amendment, and discrepancy fees are calculated based on the product template.
-- **Provisions**: A percentage of the LC amount is automatically held as collateral upon issuance.
-- **LC Clauses**: Standard clauses for document requirements can be managed and selected during application.
+- **Product Templates**: Define default charges, provision percentages, and validation rules.
+- **SWIFT Charset**: Automatic enforcement of SWIFT Character Set X for all outbound messages.
+- **Audit History**: Every single status change and field modification is captured in an immutable `LcHistory` trail.
 
 ## 6. Common Scenarios & Troubleshooting
 - **Missing Required Fields**: SWIFT validation rules will prevent submission if critical fields (like Beneficiary or Expiry) are empty.

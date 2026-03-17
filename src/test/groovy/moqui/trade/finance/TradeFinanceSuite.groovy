@@ -7,13 +7,12 @@ import org.moqui.Moqui
 
 @Suite
 @SelectClasses([
+        TradeFinanceApplicationSpec.class,
         TradeFinanceServicesSpec.class,
-        TradeFinancePhase2Spec.class,
-        TradeFinancePhase3Spec.class,
-        TradeFinancePhase4Spec.class,
-        TradeFinanceDrawingFlowSpec.class,
-        TradeFinanceCbsSpec.class,
-        TradeFinanceScreensSpec.class
+        TradeFinanceIssuanceSpec.class,
+        TradeFinanceWorkflowSpec.class,
+        TradeFinanceNotificationSpec.class,
+        TradeFinanceProvisionChargeSpec.class
 ])
 class TradeFinanceSuite {
     @AfterAll

@@ -276,6 +276,7 @@
 
     <!-- ========================================================= -->
     <!-- Generate SWIFT MT734 Service (Advice of Refusal)          -->
+    <!-- Triggered when a drawing is found to be discrepant.       -->
     <!-- ========================================================= -->
     <service verb="generate" noun="SwiftMt734">
         <description>Generates a SWIFT MT734 message for Drawing Refusal.</description>

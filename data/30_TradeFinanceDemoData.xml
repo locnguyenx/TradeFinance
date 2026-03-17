@@ -148,6 +148,13 @@
     <mantle.party.Organization partyId="DEMO_ORG_AU_STEEL" organizationName="Australian Steel Export"/>
     <mantle.party.PartyRole partyId="DEMO_ORG_AU_STEEL" roleTypeId="Vendor"/>
 
+    <!-- CBS Simulator Accounts for Provision Collection -->
+    <moqui.trade.finance.CbsSimulatorState partyId="DEMO_ORG_ABC" accountId="ACC_EUR_001" currencyUomId="EUR" balanceAmount="50000.00"/>
+    <moqui.trade.finance.CbsSimulatorState partyId="DEMO_ORG_ABC" accountId="ACC_GBP_001" currencyUomId="GBP" balanceAmount="40000.00"/>
+    <moqui.trade.finance.CbsSimulatorState partyId="DEMO_ORG_ABC" accountId="ACC_USD_001" currencyUomId="USD" balanceAmount="30000.00"/>
+    <moqui.trade.finance.CbsSimulatorState partyId="DEMO_ORG_CHEM" accountId="ACC_EUR_002" currencyUomId="EUR" balanceAmount="25000.00"/>
+    <moqui.trade.finance.CbsSimulatorState partyId="DEMO_ORG_KR_CHEM" accountId="ACC_USD_002" currencyUomId="USD" balanceAmount="75000.00"/>
+
     <!-- Banks -->
     <mantle.party.Party partyId="DEMO_ORG_VIETCOMBANK" partyTypeEnumId="PtyOrganization"/>
     <mantle.party.Organization partyId="DEMO_ORG_VIETCOMBANK" organizationName="Vietcombank"/>

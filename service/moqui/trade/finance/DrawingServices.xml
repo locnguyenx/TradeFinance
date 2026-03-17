@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- DrawingServices.xml
-     Services for managing LC document presentations (Drawings). -->
+     Services for managing LC document presentations (Drawings).
+     Supports automated examination, discrepancy recording, and
+     MT734 Notice of Refusal generation (Phase 5). -->
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd"
           package="moqui.trade.finance">
 
@@ -37,7 +39,9 @@
             <service-call name="create#moqui.trade.finance.LcDrawing" in-map="[lcId:lcId, drawingAmount:drawingAmount, presentationDate:presentationDate, requestId:requestId, drawingStatusId:drawingStatusId]" out-map="newDrOut"/>
             <set field="drawingSeqId" from="newDrOut.drawingSeqId"/>
 
-
+            <!-- R8.11: Automatically calculate charges for this drawing -->
+            <service-call name="moqui.trade.finance.FinancialServices.calculate#LcCharges"
+                          in-map="[lcId:lcId, drawingSeqId:drawingSeqId]"/>
 
             <log level="info" message="Registered LC Drawing for LC: ${lcId}, Seq: ${drawingSeqId}"/>
         </actions>
@@ -64,6 +68,10 @@
                 
                 <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"
                     in-map="[lcId:lcId, drawingSeqId:drawingSeqId, toStatusId:'LcDrDiscrepant']"/>
+                
+                <!-- NEW: Trigger SWIFT MT734 (Advice of Refusal) -->
+                <service-call name="moqui.trade.finance.SwiftServices.generate#SwiftMt734"
+                    in-map="[lcId:lcId, drawingSeqId:drawingSeqId]"/>
             <else>
                  <service-call name="moqui.trade.finance.DrawingServices.transition#DrawingStatus"
                     in-map="[lcId:lcId, drawingSeqId:drawingSeqId, toStatusId:'LcDrCompliant']"/>

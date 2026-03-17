@@ -62,6 +62,7 @@ Refer to brd_import_lc.md for detailed requirements.
 
 ### 4.5. Provision Management
 - Management of provisions with their details, status, and items.
+- **R8.12**: Multi-account provision collection with currency conversion (see brd_import_lc.md section 8.12)
 
 ### 4.6. Request Management
 - Management of requests raised by branch and the processing of requests by central operations team.
@@ -92,3 +93,7 @@ Refer to brd_import_lc.md for detailed requirements.
 
 ## 6. Out of Scope
 Explicitly list related business requirements that are NOT part of this specific delivery.
+
+---
+
+**Last Updated:** 2026-03-16

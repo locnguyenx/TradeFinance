@@ -13,7 +13,7 @@ Overall alignment is **High**. The tech stack, entities, services, status flows,
 | Aspect | Plan / BRD Requirement | Actual Codebase | Status |
 | :--- | :--- | :--- | :---: |
 | Framework | Moqui Framework | `runtime/component/TradeFinance/` component | ✅ |
-| JVM | Java 21 | `.agents/knowledge/env_java_21.md` confirms | ✅ |
+| JVM | Java 21 | `.opencode/knowledge/env_java_21.md` confirms | ✅ |
 | UI | Quasar (Vue.js) via XML Macros | Screens use `form-single`, `form-list`, `q-chip` via `<text type="html">` | ✅ |
 | Testing | Spock Framework (Groovy) | 5 Spec files in `src/test/groovy/` | ✅ |
 | Build | `./gradlew` (never `java -jar`) | All plans/workflows use `./gradlew` | ✅ |

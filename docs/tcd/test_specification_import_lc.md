@@ -3,7 +3,7 @@
 **Component:** TradeFinance  
 **Module:** Import Letter of Credit  
 **Version:** 1.0  
-**Date:** 2026-03-05  
+**Update Date:** 2026-03-12
 **Status:** Active  
 
 ---
@@ -16,13 +16,16 @@ This document defines the test specification for the Import LC module of the Tra
 
 | File | Type | Pattern | Tests |
 |------|------|---------|-------|
-| `TradeFinanceSuite.groovy` | JUnit5 Suite Runner | `MantleUslSuite` | — |
-| `TradeFinanceServicesSpec.groovy` | Service Tests | `OrderToCashBasicFlow` | 30 |
-| `TradeFinanceScreensSpec.groovy` | Screen Render Tests | `MyAccountScreenTests` | 17 |
-| `TradeFinancePhase2Spec.groovy` | Service Tests | `Stepwise` | 4 |
-| `TradeFinancePhase3Spec.groovy` | Service Tests | `Stepwise` | 5 |
+| `TradeFinanceSuite.groovy` | JUnit5 Suite Runner | — | 190+ |
+| `TradeFinanceServicesSpec.groovy` | Core Services | `@Stepwise` | 80 |
+| `TradeFinanceAccountingSpec.groovy` | GL Integration | `@Stepwise` | 3 |
+| `TradeFinanceScreensSpec.groovy` | Screen Render Tests | `@Unroll` | 60 |
+| `TradeFinanceDrawingFlowSpec.groovy` | Drawing Lifecycle | `@Stepwise` | 2 |
+| `TradeFinanceSwiftSpec.groovy` | SWIFT Validation | `@Stepwise` | 2 |
+| `TradeFinanceAmendmentSpec.groovy` | LC Amendment | `@Stepwise` | 2 |
+| Phase-based Specs (Phase2-4) | Regression Tests | — | 30+ |
 
-**Location:** `runtime/component/TradeFinance/src/test/groovy/`
+**Location:** `runtime/component/TradeFinance/src/test/groovy/moqui/trade/finance/`
 
 ### 1.2 Test Data Strategy
 
@@ -36,12 +39,14 @@ Tests use a **hybrid approach** of pre-loaded demo data and dynamically created 
 ### 1.3 Execution
 
 ```bash
-# Full clean build and test, rarely used
-gradle cleanAll load runtime/component/TradeFinance:test
+# Required environment
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home
 
-# Quick re-run with saved DB, preferred
-gradle loadSave    # once
-gradle reloadSave runtime/component/TradeFinance:test
+# Full verification (Slow: 100+ tests)
+./gradlew reloadSave :runtime:component:TradeFinance:test
+
+# Targeted verification (Fast)
+./gradlew reloadSave :runtime:component:TradeFinance:test --tests "moqui.trade.finance.TradeFinanceAccountingSpec"
 ```
 
 ---
@@ -79,12 +84,22 @@ gradle reloadSave runtime/component/TradeFinance:test
 | LcProvision | 4 | LC_01: released, LC_02/03/07: active |
 | LcDocument | 4 | MT700/MT707 SWIFT messages, application forms |
 
+### 2.3 Accounting Configuration (TradeFinanceAccountingSpec)
+
+| Entity / Configuration | Purpose |
+|------------------------|---------|
+| `GlAccount` | Revenue (Item Type map) and A/R (Default Type map) accounts |
+| `GlAccountOrganization` | Links GL accounts to `DEMO_ORG_VIETCOMBANK` |
+| `PartyRole` | `OrgInternal` role for issuing bank (required for auto-post) |
+| `InvoiceTypeTransType` | Maps `InvoiceSales` to `AttSalesInvoice` |
+| `TimePeriod` | Open `FiscalMonth` for current transaction dates |
+
 ---
 
 ## 3. Service Test Specification (TradeFinanceServicesSpec)
 
 **Pattern:** `@Stepwise` (ordered execution), `@Shared` state  
-**Total:** 30 test methods
+**Total:** 80 test methods (including parameterized data-driven tests)
 
 ### 3.1 Demo Data Validation (10 tests)
 
@@ -319,40 +334,24 @@ This section maps the Business Requirements Document (`brd_import_lc.md`) functi
 
 | BRD Section | Requirement Description (Use Case) | Covered By (Test Suite) | Coverage Level |
 |-------------|------------------------------------|--------------------------|----------------|
-| **4. UI/UX** | Grouped Layout (General, Parties, Shipment, Docs) | `TradeFinanceScreensSpec` (LcDetail Targeted Tests) | High |
-| **5. Integration** | Generate SWIFT MT700 message | `TradeFinancePhase3Spec` (SWIFT MT700 Generation) | High |
-| **5. Integration** | CBS: Accounting, Payment, Information Hooks | `TradeFinancePhase3Spec` (CBS Integration Mocks) | Medium (Mocked Phase) |
-| **6. Workflow** | Transaction Lifecycle (Draft → Closed) | `TradeFinanceServicesSpec` (Transaction Status Transitions) | High |
-| **6. Workflow** | LC Lifecycle (Draft → Expired/Closed) | `TradeFinanceServicesSpec` (LC Lifecycle Transitions) | High |
-| **8.1 Process** | Import LC Overall Flow (Step 1-10) | `TradeFinancePhase2Spec`, `TradeFinancePhase3Spec` | High / Progressive |
-| **8.2 Product** | Sight, Usance, Negotiation Configurations | `TradeFinanceServicesSpec` (Demo Data Validation) | High |
-| **8.3 LC App** | UC8.3.1: Create Draft LC Application | `TradeFinanceServicesSpec` (Create LC Service) | High |
-| **8.3 LC App** | UC8.3.2: Attach Document to LC Application | `TradeFinancePhase2Spec` (Attach LC document) | High |
-| **8.3 LC App** | UC8.3.3: Manage Customer Credit Limits | `TradeFinancePhase3Spec` (CBS Integration Mocks) | Medium (Mocked CBS) |
-| **8.3 LC App** | UC8.3.4: Application Approval Routing | `TradeFinanceServicesSpec` (Transaction Status Transitions) | High |
-| **8.3 LC App** | UC8.3.5: Provision & Charge Assessment | `TradeFinancePhase3Spec` (Financial Integration) | High |
-| **8.3 LC App** | UC8.3.6: System Notification for Application | Not Yet Tested | Low |
-| **8.3 LC App** | UC8.3.7: Finalize Application | Manual Step | N/A |
-| **8.4 Issue LC** | UC8.4.1: Draft & Review Issuance details | `TradeFinanceServicesSpec` (Create LC Service) | High |
-| **8.4 Issue LC** | UC8.4.2: Submit Issuance & Automated CBS Hooks | `TradeFinancePhase3Spec` (CBS Integration Mocks) | High |
-| **8.4 Issue LC** | UC8.4.3: Supervisor Final Approval | `TradeFinanceServicesSpec` (Transaction Status Transitions) | High |
-| **8.4 Issue LC** | UC8.4.4: Issue LC Instrument & MT700 | `TradeFinancePhase3Spec` (Lifecycle Issuance / SWIFT MT700) | High |
-| **8.5 Manage** | LC Amendment (Applicant → Finalize → Advise) | `TradeFinancePhase2Spec` (create LC amendment) | Medium (Basic API tested) |
-| **8.5 Manage** | LC Expiry (Scheduled auto-transition) | `TradeFinancePhase3Spec` (Scheduled Expiry) | High |
-| **8.5 Manage** | LC Revocation (Initiate → Revoke → MT799) | Not Yet Tested | Low |
-| **8.6 Payment** | Document Presentation (Drawings) Registry/Examination | `TradeFinancePhase2Spec` (create LC drawing) | Medium (Basic API tested) |
-| **8.6 Payment** | LC Discrepancy Handling (Record, Accept/Reject/Waive) | `TradeFinanceServicesSpec` (Demo Data Validation) | Low (Data only) |
-| **8.6 Payment** | LC Acceptance & Payment (Sight/Usance/Deferred/Negotiation) | Not Yet Tested | Low |
-| **8.7 Core** | Manage LC Provision (Calculate, Hold, Release) | `TradeFinancePhase3Spec` (Financial Integration) | High |
-| **8.7 Core** | Manage LC Charge (Calculate, Deduct) | `TradeFinanceServicesSpec` (calculate LC charges) | High |
-| **8.7 Core** | Manage LC Documents (Scan, Attach, Track) | `TradeFinancePhase2Spec` (attach LC document) | Medium (API tested, Mock file) |
+| **4. UI/UX** | Grouped Layout (General, Parties, Shipment, Docs) | `ScreensSpec` | High |
+| **5. Integration** | Generate SWIFT MT700 message | `Phase3Spec` | High |
+| **5. Integration** | CBS: Accounting (Mantle GL) | `AccountingSpec` | High |
+| **5. Integration** | CBS: Funds Hold/Release | `Phase3Spec`, `CbsIntegration` | High |
+| **6. Workflow** | Transaction Lifecycle (Draft → Closed) | `ServicesSpec` | High |
+| **6. Workflow** | LC Lifecycle (Draft → Issued) | `ServicesSpec` | High |
+| **8.3 LC App** | Create Draft LC Application | `ServicesSpec` | High |
+| **8.3 LC App** | Provision & Charge Assessment | `AccountingSpec` | High |
+| **8.5 Manage** | LC Amendment Lifecycle | `AmendmentSpec`, `Phase4Spec` | High |
+| **8.6 Payment** | Drawing Registry & Examination | `DrawingFlowSpec` | High |
+| **8.6 Payment** | Discrepancy Record & Resolve | `DrawingFlowSpec` | High |
+| **8.6 Payment** | MT734 Generation | `DrawingFlowSpec` | High |
+| **8.7 Core** | Manage LC Provision (Mantle Integration) | `AccountingSpec` | High |
 
 ---
 
 ## 8. Known Limitations
 
 1. **Screen tests** validate rendered HTML content only — no JavaScript/UI interaction testing
-2. **Drawing services** are limited in scope; tested partially via demo data
-3. **Amendment services** are limited in scope; tested partially via demo data
-4. **LcDocument** entity is not directly validated (references file system paths)
-5. **Multi-user workflow** (different roles submitting/approving) is not tested — all tests run as `tf-admin`
+2. **CBS integration** is mocked using stubs for financial impacts
+3. **Multi-user workflow** (different roles submitting/approving) is not tested — all tests run as `tf-admin`

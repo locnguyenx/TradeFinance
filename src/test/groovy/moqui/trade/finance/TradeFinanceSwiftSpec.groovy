@@ -80,4 +80,14 @@ class TradeFinanceSwiftSpec extends Specification {
         fieldMap.lcNumber == "ILC-2026-0003"
         fieldMap.amendmentNumber == "1"
     }
+    def "generate SWIFT MT700 for an LC manually"() {
+        when: "We invoke the MT700 generator service"
+        def result = ec.service.sync().name("moqui.trade.finance.SwiftServices.generate#SwiftMt700")
+                .parameters([lcId: "DEMO_LC_08"]).call()
+        
+        then: "The raw text look like an MT700 message"
+        result.swiftMessageText != null
+        result.swiftMessageText.contains("{1:F01BANKXXXXAXXX0000000000}")
+        result.swiftMessageText.contains(":20:") 
+    }
 }

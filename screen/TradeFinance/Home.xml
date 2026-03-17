@@ -23,7 +23,7 @@
     </actions>
     <widgets>
         <container style="q-pa-md">
-            <!-- Header & Global KPIs -->
+            <!-- Header &amp; Global KPIs -->
             <container style="q-mb-xl text-center">
                 <label text="Trade Finance System" type="h3" style="text-primary text-weight-bold q-mb-xs"/>
                 <label text="Global Letter of Credit &amp; Collections Management" style="text-subtitle2 text-grey-7 q-mb-lg"/>

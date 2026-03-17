@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://moqui.org/xsd/xml-screen-3.0.xsd"
-        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
     <parameter name="lcId" required="true"/>
     <parameter name="amendmentSeqId" required="true"/>
     
@@ -70,7 +69,7 @@
                         <field name="expiryDate"><default-field title="Amended Expiry Date (31D)"><date-time type="date"/></default-field></field>
                         <field name="expiryPlace_31D"><default-field title="Amended Expiry Place (31D)"><text-line size="30"/></default-field></field>
 
-                        <!-- Amount & Tolerance -->
+                        <!-- Amount &amp; Tolerance -->
                         <field name="amount"><default-field title="Amended LC Amount (32B)"><text-line size="15"/></default-field></field>
                         <field name="amountCurrencyUomId"><default-field title="Currency">
                             <display-entity entity-name="moqui.basic.Uom" key-field-name="uomId" text="${description}"/>
@@ -104,7 +103,7 @@
                         <field name="advisingThroughBank_57a"><default-field title="Advise Through Bank Name (57a)"><text-line size="30"/></default-field></field>
                         <field name="reimbursingBank_53a"><default-field title="Reimbursing Bank Name (53a)"><text-line size="30"/></default-field></field>
 
-                        <!-- Collateral & Security -->
+                        <!-- Collateral &amp; Security -->
                         <field name="isSecured"><default-field title="Is Secured?"><drop-down allow-empty="true">
                             <option key="Y" text="Yes"/><option key="N" text="No"/>
                         </drop-down></default-field></field>
@@ -128,12 +127,12 @@
                         <field name="placeOfFinalDestination_44B"><default-field title="Amended Final Dest (44B)"><text-line size="30"/></default-field></field>
                         <field name="shipmentPeriod_44D"><default-field title="Amended Ship Period (44D)"><text-area rows="2"/></default-field></field>
 
-                        <!-- Goods & Docs -->
+                        <!-- Goods &amp; Docs -->
                         <field name="descriptionOfGoods_45A"><default-field title="Amended Goods (45A)"><text-area rows="5"/></default-field></field>
                         <field name="docsRequired_46A"><default-field title="Amended Docs (46A)"><text-area rows="5"/></default-field></field>
                         <field name="additionalConditions_47A"><default-field title="Amended Conditions (47A)"><text-area rows="5"/></default-field></field>
 
-                        <!-- Payment & Instructions -->
+                        <!-- Payment &amp; Instructions -->
                         <field name="availableWithBy_41A"><default-field title="Amended Available With/By (41A)">
                             <drop-down allow-empty="true"><entity-options key="${enumId}" text="${description}">
                                 <entity-find entity-name="moqui.basic.Enumeration"><econdition field-name="enumTypeId" value="LcAvailability"/><order-by field-name="description"/></entity-find>

@@ -10,7 +10,7 @@ Author: [LocNX]
 ---
 # Technical Design Specification (TDS) - Trade Finance System
 
-> **Purpose**: This document is a complete technical blueprint for rebuilding the Trade Finance system from scratch on the Moqui Framework. Combined with the BRD (`docs/brd/`) and Implementation Plan (`.agents/state/implementation_plan.md`), it provides all information needed.
+> **Purpose**: This document is a complete technical blueprint for rebuilding the Trade Finance system from scratch on the Moqui Framework. Combined with the BRD (`docs/brd/`) and Implementation Plan (`.opencode/state/implementation_plan.md`), it provides all information needed.
 
 ---
 
@@ -103,7 +103,7 @@ runtime/component/TradeFinance/
     ├── TradeFinanceServicesSpec.groovy
     ├── TradeFinanceScreensSpec.groovy
     ├── TradeFinanceDrawingFlowSpec.groovy  <!-- NEW: Exhaustive drawing tests -->
-    ├── TradeFinanceCbsSpec.groovy          <!-- NEW: CBS Integration mock tests -->
+    ├── TradeFinanceCbsSpec.groovy          <!-- NEW: CBS Integration simulator tests -->
     ├── TradeFinancePhase2Spec.groovy
     ├── TradeFinancePhase3Spec.groovy
     └── TradeFinancePhase4Spec.groovy
@@ -376,6 +376,15 @@ Package: `moqui.trade.finance`
 | `defaultAmount` | currency-amount | | |
 | `itemTypeEnumId` | id | | Mantle ItemType for GL Mapping |
 
+### 2.13 CbsSimulatorState [NEW]
+| Field | Type | PK | Default | Notes |
+| :--- | :--- | :---: | :--- | :--- |
+| `partyId` | id | ✅ | | FK → mantle.party.Party |
+| `balanceAmount` | currency-amount | | 10000000.00 | Virtual balance |
+| `holdAmount` | currency-amount | | 0.00 | Total funds currently on hold |
+| `currencyUomId` | id | | 'USD' | |
+| `lastUpdated` | date-time | | now | |
+
 ---
 
 ## 3. Service Specification
@@ -458,7 +467,7 @@ Package: `moqui.trade.finance`
 #### `create#LcAmendment`
 - **In**: `lcId` (required)
 - **Out**: `amendmentSeqId`
-- **Logic** (Shadow Record):
+- **Logic` (Shadow Record):
   1. Find the original `LetterOfCredit`
   2. Generate next `amendmentSeqId`
   3. **Clone all amendable fields** from LC into a new `LcAmendment` record
@@ -468,7 +477,7 @@ Package: `moqui.trade.finance`
 
 #### `confirm#LcAmendment`
 - **In**: `lcId`, `amendmentSeqId`
-- **Logic** (Apply Shadow → Master):
+- **Logic` (Apply Shadow → Master):
   1. Find the `LcAmendment` record
   2. **Write all shadow fields back** to primary `LetterOfCredit`
   3. Increment `LetterOfCredit.amendmentNumber`
@@ -480,19 +489,19 @@ Package: `moqui.trade.finance`
 
 #### `register#LcDrawing`
 - **In**: `lcId`, drawing fields
-- **Logic**: Create `LcDrawing` with status `LcDrReceived` + linked Request
+- **Logic`: Create `LcDrawing` with status `LcDrReceived` + linked Request
 
 #### `examine#LcDrawing`
 - **In**: `lcId`, `drawingSeqId`, `isCompliant` (boolean)
-- **Logic**: Transition to `LcDrCompliant` or `LcDrDiscrepant` based on exam result
+- **Logic`: Transition to `LcDrCompliant` or `LcDrDiscrepant` based on exam result
 
 #### `record#LcDiscrepancy`
 - **In**: `lcId`, `drawingSeqId`, discrepancy fields
-- **Logic**: Create `LcDiscrepancy` record
+- **Logic`: Create `LcDiscrepancy` record
 
 #### `resolve#LcDiscrepancy`
 - **In**: `lcId`, `drawingSeqId`, `discrepancySeqId`, `resolutionEnumId`
-- **Logic**: Update resolution on LcDiscrepancy + transition drawing status accordingly
+- **Logic`: Update resolution on LcDiscrepancy + transition drawing status accordingly
 
 ### 3.4 LifecycleServices.xml
 
@@ -523,45 +532,46 @@ Package: `moqui.trade.finance`
 
 #### `calculate#LcCharge`
 - **In**: `lcId`, charge fields
-- **Logic**: Create `LcCharge` record
+- **Logic`: Create `LcCharge` record
 
 #### `calculate#LcProvision`
 - **In**: `lcId`, `provisionRate`
-- **Logic**: Calculate `provisionAmount = LC.amount × rate/100` → create `LcProvision` with status `LcPrvActive` → call CBS `hold#Funds`
+- **Logic`: Calculate `provisionAmount = LC.amount × rate/100` → create `LcProvision` with status `LcPrvActive` → call CBS `hold#Funds`
 
 #### `release#LcProvision`
 - **In**: `lcId`, `provisionSeqId`
-- **Logic**: Set `provisionStatusId = LcPrvReleased`, `releaseDate = now` → call CBS `release#Funds`
+- **Logic`: Set `provisionStatusId = LcPrvReleased`, `releaseDate = now` → call CBS `release#Funds`
 
 ### 3.6 SwiftServices.xml
 
 #### `generate#SwiftMt700`
 - **In**: `lcId` | **Out**: `swiftMessageText`, `documentContentId`
-- **Logic**: Build MT700 string from all 24 LC entity fields → save as `LcDocument` → store content at `dbresource://trade-finance/lc/swift/{lcId}_MT700.txt`
+- **Logic`: Build MT700 string from all 24 LC entity fields → save as `LcDocument` → store content at `dbresource://trade-finance/lc/swift/{lcId}_MT700.txt`
 
 #### `generate#SwiftMt707`
 - **In**: `lcId`, `amendmentSeqId`
-- **Logic**: Build MT707 with amendment diff → save as LcDocument
+- **Logic`: Build MT707 with amendment diff → save as LcDocument
 
 #### `generate#SwiftMt734`
 - **In**: `lcId`, `drawingSeqId`
-- **Logic**: Build MT734 listing all discrepancies → save as LcDocument
+- **Logic`: Build MT734 listing all discrepancies from `LcDiscrepancy` entity → save as LcDocument.
 
 #### `generate#SwiftMt799`
 - **In**: `lcId`, `subject`, `message`
-- **Logic**: Build free-format MT799 → save as LcDocument
+- **Logic`: Build free-format MT799 → save as LcDocument
 
 #### `parse#SwiftMt700`
 - **In**: `swiftText` (String) | **Out**: `fieldMap` (Map)
-- **Logic**: Regex parsing of SWIFT tags (:20:, :40A:, etc.) into a flat Map.
+- **Logic`: Regex parsing of SWIFT tags (:20:, :40A:, etc.) into a flat Map.
 
 #### `parse#SwiftMt707`
 - **In**: `swiftText` (String) | **Out**: `fieldMap` (Map)
-- **Logic**: Regex parsing of amendment tags (:20:, :26E:, :79:, etc.)
+- **Logic`: Regex parsing of amendment tags (:20:, :26E:, :79:, etc.)
 
 ### 3.7 Other Services
 
-- **CbsIntegrationServices.xml**: `hold#Funds`, `release#Funds`, `post#AccountingEntries` — Interface stubs for CBS integration
+- **CbsIntegrationServices.xml**: `hold#Funds`, `release#Funds`, `post#AccountingEntries` — Interface stubs for CBS integration. Dynamic routing to `Simulator` via `cbs.integration.impl` system property.
+- **CbsSimulatorServices.xml**: `hold#FundsSimulator`, `release#FundsSimulator`, `check#CreditLimitSimulator` — State-persisting services using `CbsSimulatorState`.
 - **NotificationServices.xml**: `send#LcNotification` — Uses Moqui `NotificationMessage` API
 - **ScheduledServices.xml**: `check#LcExpiry` — Daily cron job, finds LCs past `expiryDate` with no pending drawings → transition to `LcLfExpired`
 - **DocumentServices.xml**: `attach#LcDocument` — Creates `LcDocument` record with file upload

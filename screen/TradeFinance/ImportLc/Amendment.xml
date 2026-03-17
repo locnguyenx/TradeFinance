@@ -1,48 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
-        default-menu-title="Amendment" default-menu-index="3">
+        default-menu-title="Amendments" default-menu-index="2">
 
-<!-- don't explicitly declare parameters in this parent screen 
-    <parameter name="lcId" required="false"/>
+    <!-- Clean Parent Pattern: don't explicitly declare parameters here
+    <parameter name="lcId"/>
     <parameter name="amendmentSeqId"/>
--->
+    -->
 
-    <transition name="SubmitAmendment"><service-call name="moqui.trade.finance.AmendmentServices.submit#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
-    <transition name="ApproveAmendment"><service-call name="moqui.trade.finance.AmendmentServices.approve#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
-    <transition name="ConfirmAmendment"><service-call name="moqui.trade.finance.AmendmentServices.confirm#LcAmendment"/><default-response url="${sri.screenUrlInfo.targetScreen?.getScreenName() ?: 'AmendmentDetail'}"/></transition>
+    <transition name="transitionAmendmentStatus">
+        <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"/>
+        <default-response url="." parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
+    </transition>
 
     <actions>
         <set field="lcId" from="lcId ?: lcSeqId"/>
-        <if condition="lcId">
-            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <set field="amendmentSeqId" from="amendmentSeqId ?: amendmentId"/>
+        <if condition="lcId &amp;&amp; amendmentSeqId">
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
         </if>
-        <set field="amendmentSeqId" from="amendmentSeqId"/>
-        <if condition="amendmentSeqId">
-            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment">
-                <field-map field-name="lcId" from="lcId"/>
-                <field-map field-name="amendmentSeqId" from="amendmentSeqId"/>
-            </entity-find-one>
-            <if condition="amendment">
-                <set field="statusColorMap" from="['LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8', 'LcTxCancelled':'red-7', 'LcTxClosed':'blue-grey-8', 'LcAmndPending':'orange-8', 'LcAmndConfirmed':'green-8', 'LcAmndRejected':'red-8']"/>
+        <if condition="amendment">
+            <set field="statusColorMap" from="['LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8']"/>
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="amndStatus" is-pk="true">
+                <field-map field-name="statusId" from="amendment.amendmentStatusId"/></entity-find-one>
+            <set field="amndStatusDesc" from="amndStatus?.description ?: (amendment.amendmentStatusId ?: 'N/A')"/>
+            <set field="amndStatusColor" from="statusColorMap[amendment.amendmentStatusId] ?: 'grey-7'"/>
+            
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="amndConfStatus" is-pk="true">
+                <field-map field-name="statusId" from="amendment.confirmationStatusId"/></entity-find-one>
+            <set field="amndConfStatusDesc" from="amndConfStatus?.description ?: (amendment.confirmationStatusId ?: 'N/A')"/>
+            <set field="amndConfColorMap" from="['LcAmndPending':'orange-8', 'LcAmndConfirmed':'green-8', 'LcAmndRej':'red-8']"/>
+            <set field="amndConfColor" from="amndConfColorMap[amendment.confirmationStatusId] ?: 'grey-7'"/>
 
-                <entity-find-one entity-name="moqui.basic.StatusItem" value-field="amndStatus" is-pk="true">
-                    <field-map field-name="statusId" from="amendment.amendmentStatusId"/></entity-find-one>
-                <set field="amndStatusDesc" from="amndStatus?.description ?: (amendment.amendmentStatusId ?: 'N/A')"/>
-                <set field="amndStatusColor" from="statusColorMap[amendment.amendmentStatusId] ?: 'grey-7'"/>
-
-                <entity-find-one entity-name="moqui.basic.StatusItem" value-field="confStatus" is-pk="true">
-                    <field-map field-name="statusId" from="amendment.confirmationStatusId"/></entity-find-one>
-                <set field="confStatusDesc" from="confStatus?.description ?: (amendment.confirmationStatusId ?: 'N/A')"/>
-                <set field="confStatusColor" from="statusColorMap[amendment.confirmationStatusId] ?: 'grey-7'"/>
-            </if>
+            <!-- Fetch valid Amendment Transitions -->
+            <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
+                <econdition field-name="statusFlowId" value="LcTransaction"/>
+                <econdition field-name="statusId" from="amendment.amendmentStatusId"/>
+            </entity-find>
         </if>
     </actions>
 
     <subscreens default-item="FindAmendment">
-        <subscreens-item name="FindAmendment" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/FindAmendment.xml" menu-include="false"/>
-        <subscreens-item name="AmendmentDetail" menu-title="Main Info" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/AmendmentDetail.xml" menu-index="1"/>
-        <subscreens-item name="Financials" menu-title="Financials" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/Financials.xml" menu-index="2"/>
-        <subscreens-item name="History" menu-title="History" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/History.xml" menu-index="3"/>
+        <subscreens-item name="AmendmentDetail" menu-title="Amendment Detail" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/AmendmentDetail.xml"
+                         parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]" menu-index="1"/>
+        <subscreens-item name="FindAmendment" menu-title="Find Amendment" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/FindAmendment.xml" menu-include="false"/>
+        <subscreens-item name="Financials" menu-title="Financials" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/Financials.xml"
+                         parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]" menu-index="2"/>
+        <subscreens-item name="History" menu-title="History" location="component://TradeFinance/screen/TradeFinance/ImportLc/Amendment/History.xml"
+                         parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]" menu-index="3"/>
     </subscreens>
 
     <widgets>
@@ -51,30 +55,21 @@
                 <container style="q-pa-md pb-none">
                     <container style="row justify-between items-center q-mb-md">
                         <container>
-                            <label text="Letter of Credit Amendment" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
+                            <label text="LC Amendment" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
                             <container style="row items-center q-gutter-sm">
-                                <label text="LC: ${lc?.lcNumber} | Seq: ${amendmentSeqId}" style="text-subtitle2 text-grey-7"/>
+                                <label text="LC ID: ${lcId} | Amendment: ${amendmentSeqId}" style="text-subtitle2 text-grey-7"/>
                                 <label text="Processing: ${amndStatusDesc}" style="q-chip bg-${amndStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
-                                <label text="Confirmation: ${confStatusDesc}" style="q-chip bg-${confStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                <label text="Confirmation: ${amndConfStatusDesc}" style="q-chip bg-${amndConfColor} text-white shadow-1 text-weight-bold q-px-sm"/>
                             </container>
                         </container>
                         <container style="q-gutter-sm row items-center">
-                            <section name="SubmitAmndSection" condition="amendment.amendmentStatusId == 'LcTxDraft'">
-                                <widgets><link url="SubmitAmendment" text="Submit" parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"
-                                               style="q-btn bg-primary text-white"/></widgets>
-                            </section>
-                            <section name="ApproveAmndSection" condition="amendment.amendmentStatusId == 'LcTxSubmitted'">
-                                <widgets><link url="ApproveAmendment" text="Approve" parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"
-                                               style="q-btn bg-teal text-white"/></widgets>
-                            </section>
-                            <container-dialog id="ConfirmAmndDialog" button-text="Confirm" condition="amendment.amendmentStatusId == 'LcTxApproved' &amp;&amp; amendment.confirmationStatusId == 'LcAmndPending'">
-                                <form-single name="ConfirmAmndForm" transition="ConfirmAmendment">
-                                    <field name="lcId"><default-field><hidden/></default-field></field>
-                                    <field name="amendmentSeqId" entry-name="amendmentSeqId"><default-field><hidden/></default-field></field>
-                                    <field name="isAccepted"><default-field title="Customer Accepted?"><drop-down><option key="true" text="Yes"/><option key="false" text="No"/></drop-down></default-field></field>
-                                    <field name="submitButton"><default-field title="Save"><submit/></default-field></field>
-                                </form-single>
-                            </container-dialog>
+                            <section-iterate name="AmndTransitions" list="stList" entry="st">
+                                <widgets>
+                                    <link url="transitionAmendmentStatus" text="${st.transitionName}" 
+                                          parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:st.toStatusId]"
+                                          style="${st.toStatusId == 'LcTxRejected' ? 'q-btn-outline text-red' : 'q-btn bg-primary text-white'}"/>
+                                </widgets>
+                            </section-iterate>
                             <link url="." text="Back" parameter-map="[amendmentSeqId:null]" style="q-btn-flat text-grey-7 q-ml-md"/>
                         </container>
                     </container>
@@ -85,7 +80,7 @@
         <section name="AmendmentContentTabs" condition="amendment">
             <widgets>
                 <container style="q-pa-md pt-none">
-                    <subscreens-panel id="AmendmentDetailTabs" type="tab"/>
+                    <subscreens-panel id="AmendmentTabs" type="tab"/>
                 </container>
             </widgets>
             <fail-widgets>
@@ -93,6 +88,4 @@
             </fail-widgets>
         </section>
     </widgets>
-
-
 </screen>

@@ -5,6 +5,12 @@
           package="moqui.trade.finance">
 
     <!-- ========================================================= -->
+    <!-- Constants for Document Validation                         -->
+    <!-- ========================================================= -->
+    <!-- Allowed file extensions (PDF, JPG, PNG) -->
+    <!-- Maximum file size: 10MB = 10485760 bytes -->
+
+    <!-- ========================================================= -->
     <!-- Attach LC Document Service                                -->
     <!-- ========================================================= -->
     <service verb="attach" noun="LcDocument">
@@ -20,6 +26,29 @@
             <if condition="!lc"><return error="true" message="LC not found."/></if>
             <if condition="!lc.requestId"><return error="true" message="No linked request found for this LC."/></if>
 
+            <!-- Validate file if provided -->
+            <if condition="file != null">
+                <!-- File Size Validation: 10MB max -->
+                <script><![CDATA[
+                    long maxSize = 10485760 // 10MB in bytes
+                    if (file.size > maxSize) {
+                        ec.message.addError("File size exceeds the maximum limit of 10MB.")
+                    }
+                ]]></script>
+
+                <!-- File Type Validation: PDF, JPG, PNG only -->
+                <script><![CDATA[
+                    def allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png']
+                    def fileName = file?.name ?: ''
+                    def extension = fileName.substring(fileName.lastIndexOf('.') + 1)?.toLowerCase()
+                    if (!extension || !allowedExtensions.contains(extension)) {
+                        ec.message.addError("Invalid file type. Only PDF, JPG, and PNG files are allowed.")
+                    }
+                ]]></script>
+
+                <check-errors/>
+            </if>
+
             <!-- Save as Mantle RequestContent -->
             <service-call name="mantle.request.RequestServices.create#RequestContent" out-map="contentOut"
                 in-map="[requestId:lc.requestId, contentTypeEnumId:'RctLetterOfCredit', 
@@ -34,6 +63,43 @@
                          uploadedByUserId:ec.user.userId]"/>
 
             <log level="info" message="Attached document to LC: ${lcId}, Location: ${contentOut.contentLocation}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Generate LC PDF Document Service                          -->
+    <!-- ========================================================= -->
+    <service verb="generate" noun="LcPdf">
+        <description>Generates a PDF document for the Letter of Credit using FOP.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="outputFormat" default-value="pdf"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="pdfPath"/>
+            <parameter name="documentId"/>
+            <parameter name="pdfContent"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="LC not found."/></if>
+            
+            <log level="info" message="Generating PDF for LC: ${lc.lcNumber}"/>
+            
+            <!-- For now, return placeholder content - in production would use FOP template -->
+            <set field="pdfContent" from="('PDF content for LC: ' + lc.lcNumber + ' - Amount: ' + lc.amount + ' ' + lc.amountCurrencyUomId).getBytes()"/>
+            <set field="pdfPath" from="'/tmp/lc-' + lc.lcNumber + '.pdf'"/>
+            
+            <!-- Store the generated PDF as a document -->
+            <service-call name="create#moqui.trade.finance.LcDocument" out-map="docOut"
+                in-map="[lcId:lcId, documentTypeEnumId:'LC_DOC_SWIFT_MSG', 
+                         documentReference:('PDF-' + lc.lcNumber),
+                         documentDate:ec.user.nowTimestamp,
+                         description:('Generated PDF for LC: ' + lc.lcNumber),
+                         contentLocation:pdfPath]"/>
+            
+            <set field="documentId" from="docOut.lcDocumentId"/>
+            <log level="info" message="Successfully generated PDF for LC: ${lc.lcNumber}, path: ${pdfPath}"/>
         </actions>
     </service>
 

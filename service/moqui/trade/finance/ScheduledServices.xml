@@ -27,6 +27,11 @@
                 <service-call name="moqui.trade.finance.TradeFinanceServices.transition#LcStatus"
                               in-map="[lcId:lc.lcId, toStatusId:'LcLfExpired', comments:'System Auto-Expiry']"
                               ignore-error="true"/>
+                
+                <!-- R8.11: Release Provisions on Expiry -->
+                <service-call name="moqui.trade.finance.FinancialServices.release#LcProvision"
+                              in-map="[lcId:lc.lcId]"/>
+                
                 <set field="processedCount" from="processedCount + 1"/>
             </iterate>
 

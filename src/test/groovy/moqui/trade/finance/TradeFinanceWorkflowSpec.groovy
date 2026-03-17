@@ -8,6 +8,19 @@ import spock.lang.Stepwise
 import org.moqui.Moqui
 import org.moqui.context.ExecutionContext
 
+/**
+ * BDD R8.3 Coverage:
+ * - R8.3-UC1-SC1: Create Draft LC Application (Happy Path) - Lines 34-52
+ * - R8.3-UC3-SC1: Manage Credit Limits - Happy Path (CBS integration) - Lines 54-70
+ * - R8.3-UC4: Application Approval Routing - Full workflow - Lines 72-117
+ * 
+ * @Scenario(BDD-R8.3-UC1-SC1) - COVERED
+ * @Scenario(BDD-R8.3-UC3-SC1) - COVERED
+ * @Scenario(BDD-R8.3-UC4-SC1) - COVERED
+ * @Scenario(BDD-R8.3-UC4-SC3) - COVERED
+ * @Scenario(BDD-R8.3-UC4-SC4) - COVERED
+ */
+
 @Stepwise
 class TradeFinanceWorkflowSpec extends Specification {
     protected final static Logger logger = LoggerFactory.getLogger(TradeFinanceWorkflowSpec.class)

@@ -270,4 +270,39 @@ class TradeFinanceScreensSpec extends Specification {
         // Verify it does NOT contain the detail header
         !str.output.contains("Letter of Credit Detail")
     }
+    def "verify financial data visibility across phases (R8.11)"() {
+        when: "Render Financials for Draft LC (DEMO_LC_05)"
+        ScreenTestRender draftStr = screenTest.render("ImportLc/Lc/Financials", [lcId: "DEMO_LC_05"], null)
+        
+        then: "Should see calculated charges and provision rate"
+        draftStr.assertContains("Charges")
+        draftStr.assertContains("ISSUANCE")
+        // Check for 10% in a more robust way if possible, or just trust the functional test
+        // Let's look for "provisionRate" in the output if it's rendered as an attribute or specific text
+        draftStr.assertContains("10") && draftStr.assertContains("Provisions")
+
+        when: "Render Financials for Active LC with Provision (DEMO_LC_07)"
+        // DEMO_LC_07 is Issued. Ensure it has a provision for test.
+        ec.service.sync().name("moqui.trade.finance.FinancialServices.hold#LcProvision").parameters([lcId: "DEMO_LC_07", provisionRate: 0.1]).call()
+        ScreenTestRender activeStr = screenTest.render("ImportLc/Lc/Financials", [lcId: "DEMO_LC_07"], null)
+        
+        then: "Should see Active provision and CBS reference"
+        activeStr.assertContains("Provisions")
+        activeStr.assertContains("Active")
+        // This might fail if cbsHoldReference is not rendered - RED phase
+        activeStr.assertContains("CBS Ref")
+
+        when: "Render Financials for Expired LC (DEMO_LC_06)"
+        // DEMO_LC_06 is Expired. Ensure it has a released provision for test.
+        def prvValue = [lcId: "DEMO_LC_06", provisionSeqId: "01", provisionStatusId: "LcPrvReleased"]
+        if (ec.entity.find("moqui.trade.finance.LcProvision").condition([lcId: "DEMO_LC_06", provisionSeqId: "01"]).one()) {
+            ec.entity.makeValue("moqui.trade.finance.LcProvision").setAll(prvValue).update()
+        } else {
+            ec.entity.makeValue("moqui.trade.finance.LcProvision").setAll(prvValue).create()
+        }
+        ScreenTestRender expiredStr = screenTest.render("ImportLc/Lc/Financials", [lcId: "DEMO_LC_06"], null)
+        
+        then: "Should see Released provision status"
+        expiredStr.assertContains("Released")
+    }
 }

@@ -1,7 +1,8 @@
 # Ignore Moqui-generated artifacts within the component
-/build/
-/classes/
-/lib/
+build/
+classes/
+lib/
+bin/
 .DS_Store
 
 # Compiled class file

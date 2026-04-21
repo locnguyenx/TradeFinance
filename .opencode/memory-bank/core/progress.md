@@ -1,0 +1,61 @@
+# Progress
+
+## Milestones Achieved
+
+- [x] **Phase 1: Entity Infrastructure** (2026-03-01)
+    - LetterOfCredit, LcHistory, LcDrawing, initial LcAmendment.
+- [x] **Phase 2: Workflow & Basic UI** (2026-03-03)
+    - StatusFlow for LC Lifecycle & Transaction.
+    - Dashboard, FindLC, LCDetail screens.
+- [x] **Phase 3: Amendment Redesign & Stability** (2026-03-06)
+    - Redesigned Amendment architecture using the Shadow model.
+    - **Stability Fix**: Resolved "Template Error" and "Empty Screen" issues.
+- [x] **Phase 4: LC Amendment & UI Consistency** (2026-03-11)
+    - Full field parity between Master LC and Amendment records.
+    - Verified `Draft -> Approve -> Confirm` flow for Amendments.
+- [x] **Phase 5: CBS Integration & Drawing Rework** (2026-03-12)
+    - Implemented stateful CBS Simulator and persistent virtual balances.
+    - Harmonized Drawing module UI with Master LC and Amendment screens.
+    - Verified end-to-end Drawing lifecycle and MT734 generation.
+- [x] **Phase 6: R8.11 Verification & Screen Hardening** (2026-03-13)
+    - Verified LC Provision & Charge triggers and financial visibility.
+    - Resolved all remaining `TradeFinanceScreensSpec` rendering and template errors.
+    - Fixed `TradeFinanceAmendmentSpec` syntax and stability.
+- [x] **Phase 7: R8.3 BDD Test Implementation** (2026-03-14)
+    - Implemented 14 tests in TradeFinanceApplicationSpec (UC1-UC7)
+    - Implemented DocumentServices.generate#LcPdf for PDF generation
+    - Fixed validation service for mandatory fields
+    - Generated test report at docs/reports/BDD_TestReport_R8.3_2026-03-14.md
+    - Updated Suite to run key specs only
+- [x] **Phase 8: R8.12 LC Provision Collection** (2026-03-16)
+    - Created TDD plan in .opencode/plans/import-lc-provision/
+    - Implemented entities: LcProvisionCollection, LcProvisionCollectionEntry
+    - Added status enumerations for Collection and Entry statuses
+    - Implemented services: create#LcProvisionCollection, add#CollectionEntry, validate#CollectionTotal, collect#ProvisionFunds
+    - Extended CBS Integration with EUR, GBP exchange rates
+    - Implemented 10 tests in TradeFinanceLcProvisionCollectionSpec (all PASSED)
+    - Added cleanup methods for parent-child entity relationships
+- [x] **Phase 9: LC Amendment 4-Phase Planning** (2026-03-17)
+    - Completed 4-phase planning workflow for LC Amendment (BRD Section 8.5)
+    - Phase 1: Business Requirements analysis - 12 business rules, 6 stakeholder roles
+    - Phase 2: Current State Analysis - Found existing LcAmendment, AmendmentServices, screens
+    - Phase 3: Future State Definition - Process flow, feature prioritization
+    - Phase 4: Technical Discovery - Entity/service/screen designs, 6-week implementation roadmap
+- [x] **Phase 10: LC Status Display & Transition Fixes** (2026-03-17)
+    - Fixed LC Status not showing in Detail header - added both lifecycle and transaction status chips
+    - Fixed Status transition not working - changed from generic update#LetterOfCredit to dedicated transition#TransactionStatus service
+    - Implemented auto-status transition when only 1 valid next status exists
+    - Added new pattern to moqui-service-patterns.md for status transition best practices
+    - Added error case to moqui-errors.json for status bypass issue
+- [x] **Phase 11: LC Amendment Lock Management (R8.5 UC11)** (2026-03-17)
+    - Implemented UC11: Amendment Lock Management Screen
+    - Created test spec: TradeFinanceAmendmentLockScreenSpec.groovy (5 tests)
+    - Implemented services: get#AllActiveLocks, expire#Locks, forceRelease#AmendmentLock
+    - Fixed lock release bug: transition#AmendmentStatus releases lock on reject/cancel
+    - Fixed create#LcAmendment: added lock check to prevent creation when LC is locked
+    - Fixed get#AllActiveLocks: proper lcNumber to lcId resolution with Groovy script
+    - Fixed expire#Locks: use lock.delete() instead of ec.entity.delete()
+    - All 5 tests PASSED
+    - Key learnings: Service auth in tests needs enableAuthz() after disableAuthz()
+
+**Last Updated:** 2026-03-17

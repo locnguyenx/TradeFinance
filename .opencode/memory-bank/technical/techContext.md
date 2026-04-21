@@ -1,0 +1,22 @@
+# Technical Context
+
+## Technology Stack
+- **Framework:** Moqui Framework 4.0.0+
+- **Database:** H2 Database (Dev/Test)
+- **UI:** Quasar/VueJS, Moqui Screens (XML-based)
+- **Languages:** Groovy (Services/Logic), Java (Utils), XML (Entities/Screens/Data)
+- **Environment:** MacOS, Gradle for build and dependency management.
+
+## Configuration
+- **Component:** `runtime/component/TradeFinance`
+- **Skills:** Custom skills in `.opencode/skills/` (e.g., `moqui-diagnostics`, `moqui-screen-validator`).
+- **Knowledge Base:** Curated lessons in `.opencode/knowledge/moqui-errors.json` and categorized `moqui-*-patterns.md`.
+- **Entities:** Defined in `TradeFinanceEntities.xml`.
+- **Services:** Organized in `AmendmentServices.xml`, `DrawingServices.xml`.
+- **Demo Data:** `30_TradeFinanceDemoData.xml` (Schema updated 2026-03-06).
+
+- Build and Test: `./gradlew load` for data, `./gradlew test` for suite.
+- Specific Specs: `TradeFinanceAmendmentSpec.groovy` (Phase 4), `TradeFinanceDrawingFlowSpec.groovy` (Phase 5 plan).
+- XSD compliance: Validate against Moqui schemas in `framework/xsd/`.
+
+**Last Updated:** 2026-03-11

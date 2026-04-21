@@ -177,7 +177,7 @@ Each product has its own configuration, such as:
 - **R8.4-UC1: Draft & Review Issuance details**: (Step 1) IPC user reviews the approved application and saves LC record as draft.
 - **R8.4-UC2: Submit Issuance & Automated CBS Hooks**: (Step 2) IPC user submits. System runs SWIFT rules, holds CBS provision accounts, and calculates upfront charges.
 - **R8.4-UC3: Supervisor Final Approval**: (Step 3) Final review by IPC supervisor.
-- **R8.4-UC4: Issue LC Instrument & MT700**: (Step 4) System transitions status to `Issued`/`Closed`, generates MT700, and posts internal ledger (accounting) entries in CBS.
+- **R8.4-UC4: Issue LC Instrument & MT700**: (Step 4) System transitions status to `Closed`, LC Status to `Issued`, generates MT700, and posts internal ledger (accounting) entries in CBS.
 
 #### Automated System Processes
 Define the chain of background processing the system must perform without direct human intervention:

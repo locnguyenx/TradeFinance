@@ -417,17 +417,43 @@
     <!-- ========================================================= -->
     <!-- Transition Transaction Status Service                     -->
     <!-- Validates and transitions the processing status.          -->
+    <!-- If toStatusId is not provided, auto-detects when only 1 valid transition exists. -->
     <!-- ========================================================= -->
     <service verb="transition" noun="TransactionStatus">
-        <description>Transitions the LC transaction processing status using StatusFlow validation.</description>
+        <description>Transitions the LC transaction processing status using StatusFlow validation. If toStatusId is not provided, auto-detects when only 1 valid transition exists.</description>
         <in-parameters>
             <parameter name="lcId" required="true"/>
-            <parameter name="toStatusId" required="true"/>
+            <parameter name="toStatusId" required="false"/>
             <parameter name="comments"/>
         </in-parameters>
         <actions>
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc" for-update="true"/>
             <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
+
+            <!-- Auto-detect toStatusId if not provided -->
+            <if condition="!toStatusId">
+                <entity-find entity-name="moqui.basic.StatusFlowTransition" list="possibleTransitions">
+                    <econdition field-name="statusFlowId" value="LcTransaction"/>
+                    <econdition field-name="statusId" from="lc.transactionStatusId"/>
+                </entity-find>
+                <if condition="possibleTransitions">
+                    <if condition="possibleTransitions.size() == 1">
+                        <set field="toStatusId" from="possibleTransitions[0].toStatusId"/>
+                        <log level="info" message="Auto-detected transition for LC ${lcId}: ${lc.transactionStatusId} -> ${toStatusId}"/>
+                    </if>
+                </if>
+            </if>
+
+            <if condition="!toStatusId">
+                <entity-find entity-name="moqui.basic.StatusFlowTransition" list="possibleTransitions">
+                    <econdition field-name="statusFlowId" value="LcTransaction"/>
+                    <econdition field-name="statusId" from="lc.transactionStatusId"/>
+                </entity-find>
+                <if condition="!possibleTransitions || possibleTransitions.size() == 0">
+                    <return error="true" message="No valid status transitions found for current status ${lc.transactionStatusId}."/>
+                </if>
+                <return error="true" message="Multiple status transitions available (${possibleTransitions.size()}). Please specify toStatusId."/>
+            </if>
 
             <log level="info" message="Attempting transition for LC ${lcId} from ${lc.transactionStatusId} to ${toStatusId}"/>
             <!-- Validate the transition is allowed by the StatusFlow -->

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd"
+        default-menu-include="false" default-menu-title="Amendment Lock Management">
+
+    <sec-require user-group-id="TF_ADMIN"/>
+
+    <transition name="forceRelease">
+        <service-call name="moqui.trade.finance.AmendmentServices.forceRelease#AmendmentLock"/>
+        <default-response url="."/>
+    </transition>
+    
+    <transition name="expireLocks">
+        <service-call name="moqui.trade.finance.AmendmentServices.expire#Locks"/>
+        <default-response url="."/>
+    </transition>
+
+    <actions>
+        <service-call name="moqui.trade.finance.AmendmentServices.get#AllActiveLocks"
+            in-map="[filterLcNumber:filterLcNumber, filterUserId:filterUserId]"
+            out-map="lockResult"/>
+        <set field="lockList" from="lockResult.lockList ?: []"/>
+        <set field="lastScreenUrl" from="lastScreenUrl ?: 'FindAmendment'"/>
+    </actions>
+
+    <widgets>
+        <container style="q-pa-md">
+            <container style="row justify-between items-center q-mb-md">
+                <label text="Amendment Lock Management" type="h4" style="text-weight-bold text-primary"/>
+                <container style="q-gutter-sm row items-center">
+                    <link url="expireLocks" text="Expire Old Locks" style="q-btn q-btn-outline"/>
+                    <link url="${lastScreenUrl}" text="Back" style="q-btn-flat"/>
+                </container>
+            </container>
+
+            <form-single name="FilterForm" transition="." style="q-mb-md">
+                <field name="filterLcNumber"><default-field title="LC Number">
+                    <text-line size="15"/>
+                </default-field></field>
+                <field name="filterUserId"><default-field title="User ID">
+                    <drop-down allow-empty="true">
+                        <entity-options key="${lockedByUserId}" text="${lockedByUserId}">
+                            <entity-find entity-name="moqui.trade.finance.LcAmendmentLock" distinct="true">
+                                <select-field field-name="lockedByUserId"/>
+                                <order-by field-name="lockedByUserId"/>
+                            </entity-find>
+                        </entity-options>
+                    </drop-down>
+                </default-field></field>
+                <field name="submitButton"><default-field title="">
+                    <submit button-style="q-btn bg-primary text-white" text="Filter"/>
+                </default-field></field>
+            </form-single>
+
+            <form-list name="LockList" list="lockList" skip-form="true">
+                <field name="lcNumber">
+                    <default-field title="LC Number"><display/></default-field>
+                </field>
+                <field name="userId">
+                    <default-field title="User ID"><display/></default-field>
+                </field>
+                <field name="acquiredTime">
+                    <default-field title="Acquired"><display/></default-field>
+                </field>
+                <field name="expireTime">
+                    <default-field title="Expires"><display/></default-field>
+                </field>
+                <field name="actions"><default-field title="">
+                    <link url="forceRelease" text="Release" parameter-map="[lcId:lcId, reason:'Admin release']" style="q-btn q-btn-outline"/>
+                </default-field></field>
+            </form-list>
+        </container>
+    </widgets>
+</screen>

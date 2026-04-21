@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.xsd">
+    <parameter name="lcId" required="true"/>
+    <parameter name="collectionId"/>
+    
+    <!-- Transitions for Provision Collection -->
+    <transition name="createProvisionCollection">
+        <service-call name="moqui.trade.finance.ProvisionCollectionServices.create#LcProvisionCollection" in-map="context"/>
+        <default-response url="." reload="true"/>
+    </transition>
+    
+    <transition name="addCollectionEntry">
+        <service-call name="moqui.trade.finance.ProvisionCollectionServices.add#CollectionEntry" in-map="context"/>
+        <default-response url="."/>
+    </transition>
+    
+    <transition name="validateCollection">
+        <service-call name="moqui.trade.finance.ProvisionCollectionServices.validate#CollectionTotal" in-map="context"/>
+        <default-response url="."/>
+    </transition>
+    
+    <transition name="collectProvisionFunds">
+        <service-call name="moqui.trade.finance.ProvisionCollectionServices.collect#ProvisionFunds" in-map="context"/>
+        <default-response url="."/>
+    </transition>
+    
+    <transition name="releaseProvisionCollection">
+        <service-call name="moqui.trade.finance.ProvisionCollectionServices.release#ProvisionCollection" in-map="context"/>
+        <default-response url="."/>
+    </transition>
+    
+    <transition name="deleteCollectionEntry">
+        <service-call name="moqui.trade.finance.ProvisionCollectionServices.delete#CollectionEntry" in-map="context"/>
+        <default-response url="."/>
+    </transition>
+
+    <actions>
+        <!-- Get LC Details -->
+        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        
+        <!-- Get or create collection -->
+        <if condition="collectionId">
+            <entity-find-one entity-name="moqui.trade.finance.LcProvisionCollection" value-field="provisionCollection">
+                <field-map field-name="collectionId"/>
+            </entity-find-one>
+        </if>
+        <if condition="!collectionId &amp;&amp; lc">
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollection" list="existingCollections">
+                <econdition field-name="lcId"/>
+                <econdition field-name="collectionStatusId" operator="in" value="LcPrvColDraft,LcPrvColComplete,LcPrvColCollected"/>
+                <order-by field-name="-collectionDate"/>
+            </entity-find-one>
+            <set field="provisionCollection" from="existingCollections ? existingCollections.first() : null"/>
+            <set field="collectionId" from="provisionCollection?.collectionId"/>
+        </if>
+        
+        <!-- Get collection entries -->
+        <if condition="collectionId">
+            <entity-find entity-name="moqui.trade.finance.LcProvisionCollectionEntry" list="collectionEntries">
+                <econdition field-name="collectionId"/>
+                <order-by field-name="entrySeqId"/>
+            </entity-find>
+        </if>
+        
+        <!-- Get CBS accounts for the applicant -->
+        <if condition="lc?.applicantPartyId">
+            <entity-find entity-name="moqui.trade.finance.CbsSimulatorState" list="cbsAccounts">
+                <econdition field-name="partyId" from="lc.applicantPartyId"/>
+            </entity-find>
+        </if>
+        
+        <!-- Get available currencies -->
+        <entity-find entity-name="moqui.basic.Uom" list="currencies">
+            <econdition field-name="uomTypeEnumId" value="UT_CURRENCY_MEASURE"/>
+            <order-by field-name="uomId"/>
+        </entity-find>
+        
+        <!-- Calculate running totals -->
+        <set field="totalCollected" type="BigDecimal" value="0"/>
+        <iterate list="collectionEntries" entry="entry">
+            <set field="totalCollected" from="totalCollected + (entry.convertedAmount ?: BigDecimal.ZERO)"/>
+        </iterate>
+        
+        <set field="remainingAmount" from="(provisionCollection?.targetProvisionAmount ?: BigDecimal.ZERO) - totalCollected"/>
+        <set field="isComplete" from="remainingAmount &lt;= new BigDecimal('0.01')"/>
+        <set field="lastScreenUrl" value="/trade-finance/ImportLc/Lc/ProvisionCollection?lcId=${lcId}&amp;collectionId=${collectionId}"/>
+    </actions>
+    
+    <widgets>
+        <container style="q-pa-md">
+            <!-- Header -->
+            <container style="row justify-between items-center q-mb-lg">
+                <container>
+                    <label text="Provision Collection" type="h4" style="text-weight-bold"/>
+                    <label text="LC: ${lc?.lcNumber ?: lcId}" style="q-ml-md text-grey-7"/>
+                </container>
+                <link url="${lastScreenUrl ?: '/trade-finance/ImportLc/Lc/MainLC'}" text="Back to LC" icon="fa fa-arrow-left"/>
+            </container>
+            
+            <!-- Collection Summary Card -->
+            <container style="q-card q-mb-lg shadow-2">
+                <container style="q-pa-md">
+                    <container style="row q-col-gutter-md">
+                        <!-- Target Amount -->
+                        <container style="col-12 col-md-3">
+                            <container style="q-pa-md bg-grey-2 rounded-borders">
+                                <label text="Target Provision" style="text-caption text-grey-7"/>
+                                <label text="${provisionCollection?.targetProvisionAmount ?: '0.00'} ${provisionCollection?.targetCurrencyUomId ?: 'USD'}" 
+                                       type="h5" style="text-weight-bold text-primary"/>
+                            </container>
+                        </container>
+                        
+                        <!-- Collected Amount -->
+                        <container style="col-12 col-md-3">
+                            <container style="q-pa-md bg-grey-2 rounded-borders">
+                                <label text="Collected Amount" style="text-caption text-grey-7"/>
+                                <label text="${totalCollected ?: '0.00'} USD" type="h5" style="text-weight-bold text-positive"/>
+                            </container>
+                        </container>
+                        
+                        <!-- Remaining -->
+                        <container style="col-12 col-md-3">
+                            <container style="q-pa-md rounded-borders ${isComplete ? 'bg-green-2' : 'bg-orange-2'}">
+                                <label text="Remaining" style="text-caption"/>
+                                <label text="${isComplete ? 'COMPLETE' : (remainingAmount ?: '0.00') + ' USD'}" 
+                                       type="h5" style="text-weight-bold ${isComplete ? 'text-positive' : 'text-negative'}"/>
+                            </container>
+                        </container>
+                        
+                        <!-- Status -->
+                        <container style="col-12 col-md-3">
+                            <container style="q-pa-md rounded-borders ${provisionCollection?.collectionStatusId == 'LcPrvColCollected' ? 'bg-green-2' : (provisionCollection?.collectionStatusId == 'LcPrvColComplete' ? 'bg-yellow-2' : 'bg-grey-2')}">
+                                <label text="Status" style="text-caption text-grey-7"/>
+                                <label text="${provisionCollection?.collectionStatusId == 'LcPrvColDraft' ? 'Draft' : (provisionCollection?.collectionStatusId == 'LcPrvColComplete' ? 'Ready to Collect' : (provisionCollection?.collectionStatusId == 'LcPrvColCollected' ? 'Collected' : (provisionCollection?.collectionStatusId == 'LcPrvColReleased' ? 'Released' : 'New')))}" 
+                                       type="h5" style="text-weight-bold"/>
+                            </container>
+                        </container>
+                    </container>
+                </container>
+            </container>
+            
+            <!-- No Collection State -->
+            <section name="NoCollectionSection" condition="!provisionCollection">
+                <widgets>
+                    <container style="q-card q-pa-xl text-center shadow-2">
+                        <label text="No Provision Collection" type="h5" style="text-grey-7"/>
+                        <label text="Create a new provision collection to start collecting funds from multiple accounts." 
+                               type="body2" style="text-grey-5 q-my-md"/>
+                        <form-single name="CreateCollectionForm" transition="createProvisionCollection">
+                            <field name="lcId"><default-field><hidden/></default-field></field>
+                            <field name="targetProvisionAmount"><default-field title="Target Amount">
+                                <text-line size="15" value="${lc?.amount ?: '10000.00'}"/>
+                            </default-field></field>
+                            <field name="targetCurrencyUomId"><default-field title="Currency">
+                                <drop-down allow-empty="false">
+                                    <entity-options key="${uomId}" text="${uomId} - ${description}">
+                                        <entity-find entity-name="moqui.basic.Uom">
+                                            <econdition field-name="uomTypeEnumId" value="UT_CURRENCY_MEASURE"/>
+                                        </entity-find>
+                                    </entity-options>
+                                </drop-down>
+                            </default-field></field>
+                            <field name="submitBtn"><default-field title="Create Collection">
+                                <submit/>
+                            </default-field></field>
+                        </form-single>
+                    </container>
+                </widgets>
+            </section>
+            
+            <!-- Collection Exists State -->
+            <section name="CollectionExistsSection" condition="provisionCollection">
+                <widgets>
+                    <!-- Action Buttons -->
+                    <container style="row q-gutter-sm q-mb-lg">
+                        <!-- Validate Button -->
+                        <section name="ValidateSection" condition="provisionCollection?.collectionStatusId == 'LcPrvColDraft'">
+                            <widgets>
+                                <link url="validateCollection" text="Validate Collection" icon="fa fa-check-circle"
+                                      style="q-btn bg-blue-7 text-white"
+                                      parameter-map="[collectionId:collectionId]"/>
+                            </widgets>
+                        </section>
+                        
+                        <!-- Collect Funds Button -->
+                        <section name="CollectSection" condition="provisionCollection?.collectionStatusId == 'LcPrvColComplete'">
+                            <widgets>
+                                <link url="collectProvisionFunds" text="Collect Funds" icon="fa fa-hand-holding-usd"
+                                      style="q-btn bg-green-8 text-white"
+                                      parameter-map="[collectionId:collectionId]"/>
+                            </widgets>
+                        </section>
+                        
+                        <!-- Release Funds Button -->
+                        <section name="ReleaseSection" condition="provisionCollection?.collectionStatusId == 'LcPrvColCollected'">
+                            <widgets>
+                                <link url="releaseProvisionCollection" text="Release Funds" icon="fa fa-unlock"
+                                      style="q-btn bg-orange-8 text-white"
+                                      parameter-map="[collectionId:collectionId]"/>
+                            </widgets>
+                        </section>
+                    </container>
+                    
+                    <!-- Add Entry Section -->
+                    <section name="AddEntrySection" condition="provisionCollection?.collectionStatusId == 'LcPrvColDraft'">
+                        <widgets>
+                            <container style="q-card q-mb-lg shadow-1">
+                                <container style="q-pa-sm bg-primary text-white">
+                                    <label text="Add Collection Entry" style="text-weight-bold"/>
+                                </container>
+                                <container style="q-pa-md">
+                                    <form-single name="AddCollectionEntryForm" transition="addCollectionEntry">
+                                        <field name="lcId"><default-field><hidden/></default-field></field>
+                                        <field name="collectionId"><default-field><hidden/></default-field></field>
+                                        <field name="partyId"><default-field><hidden value="${lc?.applicantPartyId}"/></default-field></field>
+                                        
+                                        <field name="accountId"><default-field title="Source Account">
+                                            <drop-down allow-empty="false">
+                                                <option-group>
+                                                    <entity-options key="${accountId}" text="${accountId} - Balance: ${balanceAmount} ${currencyUomId}">
+                                                        <entity-find entity-name="moqui.trade.finance.CbsSimulatorState">
+                                                            <econdition field-name="partyId" from="lc.applicantPartyId"/>
+                                                            <order-by field-name="currencyUomId"/>
+                                                        </entity-find>
+                                                    </entity-options>
+                                                </option-group>
+                                            </drop-down>
+                                        </default-field></field>
+                                        
+                                        <field name="sourceCurrencyUomId"><default-field title="Currency">
+                                            <drop-down allow-empty="false">
+                                                <entity-options key="${uomId}" text="${uomId}">
+                                                    <entity-find entity-name="moqui.basic.Uom">
+                                                        <econdition field-name="uomTypeEnumId" value="UT_CURRENCY_MEASURE"/>
+                                                        <econdition field-name="uomId" operator="in" value="USD,EUR,GBP"/>
+                                                    </entity-find>
+                                                </entity-options>
+                                            </drop-down>
+                                        </default-field></field>
+                                        
+                                        <field name="sourceAmount"><default-field title="Amount">
+                                            <text-line size="15" required="true"/>
+                                        </default-field></field>
+                                        
+                                        <field name="remarks"><default-field title="Remarks (Optional)">
+                                            <text-line size="30"/>
+                                        </default-field></field>
+                                        
+                                        <field name="submitBtn"><default-field title="Add Entry">
+                                            <submit/>
+                                        </default-field></field>
+                                    </form-single>
+                                </container>
+                            </container>
+                        </widgets>
+                    </section>
+                    
+                    <!-- Collection Entries Table -->
+                    <container style="q-card shadow-1">
+                        <container style="q-pa-sm bg-grey-3">
+                            <label text="Collection Entries" style="text-weight-bold"/>
+                        </container>
+                        <container style="q-pa-md">
+                            <section name="HasEntriesSection" condition="collectionEntries">
+                                <widgets>
+                                    <form-list name="CollectionEntriesList" list="collectionEntries" transition="updateCollectionEntry">
+                                        <field name="entrySeqId"><default-field><hidden/></default-field></field>
+                                        <field name="accountId"><default-field title="Account">
+                                            <display/>
+                                        </default-field></field>
+                                        <field name="sourceCurrencyUomId"><default-field title="Currency">
+                                            <display/>
+                                        </default-field></field>
+                                        <field name="sourceAmount"><default-field title="Amount">
+                                            <display/>
+                                        </default-field></field>
+                                        <field name="exchangeRate"><default-field title="Exchange Rate">
+                                            <display text="${entry?.exchangeRate ?: '1.000000'}"/>
+                                        </default-field></field>
+                                        <field name="convertedAmount"><default-field title="USD Equivalent">
+                                            <display text="${entry?.convertedAmount ?: '0.00'}"/>
+                                        </default-field></field>
+                                        <field name="entryStatusId"><default-field title="Status">
+                                            <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                                        </default-field></field>
+                                        <field name="cbsHoldReference"><default-field title="CBS Ref">
+                                            <display/>
+                                        </default-field></field>
+                                        <field name="deleteBtn"><default-field title=" ">
+                                            <link url="deleteCollectionEntry" icon="fa fa-trash" confirmation="Delete this entry?"
+                                                  parameter-map="[collectionId:collectionId, entrySeqId:entrySeqId]"
+                                                  condition="provisionCollection?.collectionStatusId == 'LcPrvColDraft'"/>
+                                        </default-field></field>
+                                    </form-list>
+                                </widgets>
+                            </section>
+                            
+                            <section name="NoEntriesSection" condition="!collectionEntries">
+                                <widgets>
+                                    <label text="No entries yet. Add collection entries above." style="text-grey-7 italic"/>
+                                </widgets>
+                            </section>
+                        </container>
+                    </container>
+                </widgets>
+            </section>
+        </container>
+    </widgets>
+</screen>

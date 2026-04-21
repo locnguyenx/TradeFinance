@@ -31,8 +31,13 @@
     </service>
 
     <service verb="release" noun="Funds" authenticate="false">
-        <implements service="moqui.trade.finance.CbsIntegrationServices.hold#Funds"/> <!-- reused parameters -->
-        <in-parameters><parameter name="holdReference" required="true"/></in-parameters>
+        <in-parameters>
+            <parameter name="holdReference" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="success" type="Boolean"/>
+            <parameter name="message"/>
+        </out-parameters>
         <actions>
             <set field="implSuffix" value="${System.getProperty('cbs.integration.impl') ?: 'Mock'}"/>
             <service-call name="moqui.trade.finance.Cbs${implSuffix}Services.release#Funds${implSuffix}" 

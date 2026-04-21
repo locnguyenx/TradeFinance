@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/xml-screen-3.0.xsd">
     <parameter name="lcId" required="true"/>
-    <parameter name="readOnly"/>
     <transition-include name="CreateAmendment" location="component://TradeFinance/template/lc/AmendmentTransitions.xml"/>
     
     <actions>
-        <set field="isReadOnly" from="readOnly == 'true' || readOnly == true"/>
         <entity-find entity-name="moqui.trade.finance.LcAmendmentDetailView" list="amendmentList">
             <econdition field-name="lcId"/>
             <order-by field-name="-amendmentNumber"/>
         </entity-find>
+        <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+        <set field="canCreateAmendment" from="lc?.lcStatusId in ['LcLfIssued', 'LcLfAmended']"/>
     </actions>
     
     <widgets>
         <container style="q-pa-md">
             <container style="row justify-between items-center q-mb-md">
                 <label text="LC Amendments" type="h5" style="text-primary text-weight-bold"/>
-                <section name="CreateAmendmentSection" condition="!isReadOnly">
+                <section name="CreateAmendmentSection" condition="canCreateAmendment">
                     <widgets><include-screen name="CreateAmendment" location="component://TradeFinance/template/lc/CreateAmendment.xml"/></widgets>
                 </section>
             </container>

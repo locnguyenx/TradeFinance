@@ -23,6 +23,26 @@
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
             <if condition="!lc"><return error="true" message="Letter of Credit not found."/></if>
 
+            <!-- Validate LC is in Issued status for amendment -->
+            <if condition="lc.lcStatusId != 'LcLfIssued'">
+                <return error="true" message="Amendment cannot be created. LC must be in Issued status. Current status: ${lc.lcStatusId}"/>
+            </if>
+
+            <!-- Check for existing lock on this LC -->
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendmentLock" value-field="existingLock"/>
+            <if condition="existingLock">
+                <return error="true" message="LC is locked for amendment by ${existingLock.lockedByUserId}. Please try again later."/>
+            </if>
+
+            <!-- Check for existing pending amendment -->
+            <entity-find entity-name="moqui.trade.finance.LcAmendment" list="existingAmendments">
+                <econdition field-name="lcId"/>
+                <econdition field-name="amendmentStatusId" value="LcTxDraft"/>
+            </entity-find>
+            <if condition="existingAmendments">
+                <return error="true" message="A pending amendment already exists for this LC. Please complete or cancel the existing amendment first."/>
+            </if>
+
             <!-- Create a Mantle Request for the amendment workflow -->
             <service-call name="create#mantle.request.Request" out-map="reqOut"
                 in-map="[requestTypeEnumId:'RqtLcAmendment', statusId:'ReqDraft',
@@ -69,6 +89,9 @@
             <service-call name="moqui.trade.finance.FinancialServices.calculate#LcCharges"
                           in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
 
+            <!-- Acquire amendment lock -->
+            <service-call name="moqui.trade.finance.AmendmentServices.acquire#AmendmentLock" in-map="[lcId:lcId]"/>
+
             <log level="info" message="Created shadow LC Amendment Draft for LC: ${lcId}, Seq: ${amendmentSeqId}"/>
         </actions>
     </service>
@@ -83,8 +106,17 @@
             <parameter name="amendmentSeqId" required="true"/>
         </in-parameters>
         <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found."/></if>
+            
+            <!-- Validate all mandatory fields are present -->
+            <if condition="!amendment.amount"><return error="true" message="Amount is required for amendment submission."/></if>
+            
             <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
                 in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxSubmitted']"/>
+            
+            <!-- Release lock on submission -->
+            <service-call name="moqui.trade.finance.AmendmentServices.release#AmendmentLock" in-map="[lcId:lcId]"/>
         </actions>
     </service>
 
@@ -197,12 +229,25 @@
             
             <script>ec.logger.info(">>> AMENDMENT TRANSITION VALID: " + validTransitions?.size() + " from " + amendment.amendmentStatusId + " to " + toStatusId)</script>
             
+            <!-- Allow transition if valid or if status matches the expected workflow -->
             <if condition="!validTransitions">
-                <return error="true" message="Invalid amendment status transition from ${amendment.amendmentStatusId} to ${toStatusId}."/>
+                <!-- For amendment workflow, allow transitions if they follow the expected pattern -->
+                <set field="allowed" value="false"/>
+                <if condition="amendment.amendmentStatusId == 'LcTxDraft' &amp;&amp; toStatusId == 'LcTxSubmitted'"><set field="allowed" value="true"/></if>
+                <if condition="amendment.amendmentStatusId == 'LcTxSubmitted' &amp;&amp; (toStatusId == 'LcTxApproved' || toStatusId == 'LcTxRejected')"><set field="allowed" value="true"/></if>
+                <if condition="amendment.amendmentStatusId == 'LcTxApproved' &amp;&amp; toStatusId == 'LcTxClosed'"><set field="allowed" value="true"/></if>
+                <if condition="allowed == 'false'">
+                    <return error="true" message="Invalid amendment status transition from ${amendment.amendmentStatusId} to ${toStatusId}."/>
+                </if>
             </if>
 
             <set field="amendment.amendmentStatusId" from="toStatusId"/>
             <entity-update value-field="amendment"/>
+            
+            <!-- Release lock when amendment is rejected, cancelled, or closed -->
+            <if condition="toStatusId == 'LcTxRejected' || toStatusId == 'LcTxCancelled' || toStatusId == 'LcTxClosed'">
+                <service-call name="moqui.trade.finance.AmendmentServices.release#AmendmentLock" in-map="[lcId:lcId]"/>
+            </if>
             
 
             <!-- Update linked Mantle Request status -->
@@ -219,6 +264,396 @@
                     <service-call name="update#mantle.request.Request" in-map="[requestId:amendment.requestId, statusId:reqStatusId]"/>
                 </if>
             </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Review Amendment by Supervisor Service                      -->
+    <!-- ========================================================= -->
+    <service verb="review" noun="LcAmendmentBySupervisor">
+        <description>Supervisor reviews and approves/rejects amendment request.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+            <parameter name="approvalDecision" required="true"/>
+            <parameter name="reviewComments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found."/></if>
+            
+            <if condition="approvalDecision == 'approve'">
+                <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxSupervisorApproved']"/>
+                <log level="info" message="Amendment ${amendmentSeqId} approved by supervisor: ${reviewComments}"/>
+            </if>
+            <if condition="approvalDecision != 'approve'">
+                <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxRejected']"/>
+                <log level="info" message="Amendment ${amendmentSeqId} rejected by supervisor: ${reviewComments}"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Approve Amendment by IPC Service                          -->
+    <!-- ========================================================= -->
+    <service verb="approve" noun="LcAmendmentByIpc">
+        <description>IPC approves or rejects amendment at final level.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+            <parameter name="approvalDecision" required="true"/>
+            <parameter name="ipcComments"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found."/></if>
+            
+            <if condition="approvalDecision == 'approve'">
+                <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxIpcApproved']"/>
+                <log level="info" message="Amendment ${amendmentSeqId} approved by IPC: ${ipcComments}"/>
+            </if>
+            <if condition="approvalDecision != 'approve'">
+                <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"
+                    in-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxRejected']"/>
+                <log level="info" message="Amendment ${amendmentSeqId} rejected by IPC: ${ipcComments}"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Record Beneficiary Response Service                        -->
+    <!-- ========================================================= -->
+    <service verb="record" noun="BeneficiaryResponse">
+        <description>Records beneficiary acceptance or rejection of amendment.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+            <parameter name="responseTypeEnumId" required="true"/>
+            <parameter name="beneficiaryPartyId"/>
+            <parameter name="contactName"/>
+            <parameter name="contactMethod"/>
+            <parameter name="responseReference"/>
+            <parameter name="reason"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="responseId"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+            <if condition="!amendment"><return error="true" message="Amendment not found."/></if>
+            
+            <service-call name="create#moqui.trade.finance.LcAmendmentBeneficiaryResponse" out-map="context" in-map="[
+                responseDate:ec.user.nowTimestamp,
+                receivedByUserId:ec.user.userId
+            ]"/>
+            <set field="responseId" from="responseId"/>
+            
+            <if condition="responseTypeEnumId == 'LcAmndAccept'">
+                <set field="amendment.confirmationStatusId" value="LcAmndConfirmed"/>
+            </if>
+            <if condition="responseTypeEnumId != 'LcAmndAccept'">
+                <set field="amendment.confirmationStatusId" value="LcAmndReject"/>
+            </if>
+            <entity-update value-field="amendment"/>
+            
+            <log level="info" message="Recorded beneficiary ${responseTypeEnumId} for amendment ${amendmentSeqId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Get Amendment History Service                              -->
+    <!-- ========================================================= -->
+    <service verb="get" noun="AmendmentHistory">
+        <description>Retrieves amendment history for an LC.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="historyList"/>
+        </out-parameters>
+        <actions>
+            <entity-find entity-name="moqui.trade.finance.LcAmendment" list="amendments">
+                <econdition field-name="lcId"/>
+                <econdition field-name="amendmentSeqId"/>
+                <order-by field-name="-amendmentDate"/>
+            </entity-find>
+            
+            <entity-find entity-name="moqui.trade.finance.LcAmendmentBeneficiaryResponse" list="responses">
+                <econdition field-name="lcId"/>
+                <econdition field-name="amendmentSeqId"/>
+                <order-by field-name="-responseDate"/>
+            </entity-find>
+            
+            <set field="historyList" from="[amendments:amendments, responses:responses]"/>
+            <log level="info" message="Retrieved ${amendments.size()} amendments for LC ${lcId}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Get Effective Terms Service                                -->
+    <!-- ========================================================= -->
+    <service verb="get" noun="EffectiveTerms">
+        <description>Retrieves effective LC terms after amendments.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="effectiveAmount"/>
+            <parameter name="effectiveExpiryDate"/>
+            <parameter name="amendmentNumber"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <if condition="!lc"><return error="true" message="LC not found."/></if>
+            
+            <set field="effectiveAmount" from="lc.amount"/>
+            <set field="effectiveExpiryDate" from="lc.expiryDate"/>
+            <set field="amendmentNumber" from="lc.amendmentNumber"/>
+            
+            <log level="info" message="Retrieved effective terms for LC ${lcId}: amount=${effectiveAmount}, amendment#=${amendmentNumber}"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Adjust Provisions for Amendment Service                     -->
+    <!-- ========================================================= -->
+    <service verb="adjust" noun="ProvisionsForAmendment">
+        <description>Adjusts provisions when LC amount changes via amendment.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="amendmentSeqId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
+            <if condition="!lc || !amendment"><return error="true" message="LC or Amendment not found."/></if>
+            
+            <set field="originalAmount" from="lc.amount"/>
+            <set field="amendedAmount" from="amendment.amount ?: lc.amount"/>
+            
+            <if condition="amendedAmount != originalAmount">
+                <service-call name="moqui.trade.finance.FinancialServices.adjust#LcProvision"
+                    in-map="[lcId:lcId, newAmount:amendedAmount]"/>
+                <log level="info" message="Adjusted provisions for amendment ${amendmentSeqId}: ${originalAmount} -> ${amendedAmount}"/>
+            </if>
+            <if condition="amendedAmount == originalAmount">
+                <log level="info" message="No provision adjustment needed - amount unchanged for amendment ${amendmentSeqId}"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Acquire Amendment Lock Service                             -->
+    <!-- ========================================================= -->
+    <service verb="acquire" noun="AmendmentLock">
+        <description>Acquires a lock on LC for amendment processing.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="lockTimeoutMinutes" type="Integer" default="30"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="lockAcquired"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendmentLock" value-field="existingLock"/>
+            
+            <if condition="existingLock">
+                <set field="lockAcquired" value="false"/>
+                <return error="true" message="LC is currently locked for amendment by ${existingLock.lockedByUserId}."/>
+            </if>
+            <if condition="!existingLock">
+                <set field="now" from="ec.user.nowTimestamp"/>
+                <set field="expiry" from="new java.sql.Timestamp(now.getTime() + lockTimeoutMinutes * 60000)"/>
+                
+                <service-call name="create#moqui.trade.finance.LcAmendmentLock" in-map="[
+                    lcId:lcId,
+                    lockType:'AMENDMENT',
+                    lockedByUserId:ec.user.userId,
+                    lockedAt:now,
+                    lockExpiry:expiry
+                ]"/>
+                
+                <set field="lockAcquired" value="true"/>
+                <log level="info" message="Acquired amendment lock for LC ${lcId} by user ${ec.user.userId}"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Release Amendment Lock Service                             -->
+    <!-- ========================================================= -->
+    <service verb="release" noun="AmendmentLock">
+        <description>Releases the amendment lock on an LC.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendmentLock" value-field="lock"/>
+            
+            <if condition="lock">
+                <entity-delete value-field="lock"/>
+                <log level="info" message="Released amendment lock for LC ${lcId}"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Check Amendment Lock Status Service                        -->
+    <!-- ========================================================= -->
+    <service verb="check" noun="AmendmentLockStatus">
+        <description>Checks the lock status of an LC for amendment.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isLocked"/>
+            <parameter name="lockedByUserId"/>
+            <parameter name="lockExpiry"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendmentLock" value-field="lock"/>
+            
+            <if condition="lock">
+                <set field="isLocked" value="true"/>
+                <set field="lockedByUserId" from="lock.lockedByUserId"/>
+                <set field="lockExpiry" from="lock.lockExpiry"/>
+            </if>
+            <if condition="!lock">
+                <set field="isLocked" value="false"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Force Release Amendment Lock Service                       -->
+    <!-- ========================================================= -->
+    <service verb="forceRelease" noun="AmendmentLock">
+        <description>Force releases a stale lock on an LC. Requires admin authentication.</description>
+        <in-parameters>
+            <parameter name="lcId" required="true"/>
+            <parameter name="reason"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.trade.finance.LcAmendmentLock" value-field="lock"/>
+            
+            <if condition="lock">
+                <set field="originalUser" from="lock.lockedByUserId"/>
+                <entity-delete value-field="lock"/>
+                <log level="info" message="Force released amendment lock for LC ${lcId} - was locked by ${originalUser}. Reason: ${reason}"/>
+            </if>
+            <if condition="!lock">
+                <log level="info" message="No lock found for LC ${lcId}"/>
+            </if>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Get All Active Locks Service                                 -->
+    <!-- ========================================================= -->
+    <service verb="get" noun="AllActiveLocks">
+        <description>Retrieves all active (non-expired) amendment locks for admin management screen.</description>
+        <in-parameters>
+            <parameter name="filterLcNumber"/>
+            <parameter name="filterUserId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="lockList"/>
+        </out-parameters>
+        <actions>
+            <set field="lockList" from="[]"/>
+            <set field="now" from="ec.user.nowTimestamp"/>
+            
+            <script><![CDATA[
+                // Resolve lcNumber to lcId if provided
+                def filterLcId = null
+                if (filterLcNumber && filterLcNumber.trim()) {
+                    def lc = ec.entity.find("moqui.trade.finance.LetterOfCredit").condition("lcNumber", filterLcNumber).one()
+                    if (lc) filterLcId = lc.lcId
+                }
+                
+                // Get all locks
+                def allLocks = ec.entity.find("moqui.trade.finance.LcAmendmentLock").orderBy("-lockedAt").list()
+                
+                // Filter to only active locks (no expiry or expiry > now)
+                def locks = allLocks.findAll { lock ->
+                    (!lock.lockExpiry || lock.lockExpiry > now)
+                }
+                
+                // Apply filters
+                if (filterLcId) {
+                    locks = locks.findAll { it.lcId == filterLcId }
+                }
+                if (filterUserId && filterUserId.trim()) {
+                    locks = locks.findAll { it.lockedByUserId == filterUserId }
+                }
+                
+                // Enrich locks with LC number
+                def enrichedList = []
+                locks.each { lock ->
+                    def lc = ec.entity.find("moqui.trade.finance.LetterOfCredit").condition("lcId", lock.lcId).one()
+                    enrichedList.add([
+                        lcId: lock.lcId,
+                        lcNumber: lc?.lcNumber ?: 'Unknown',
+                        userId: lock.lockedByUserId,
+                        acquiredTime: lock.lockedAt,
+                        expireTime: lock.lockExpiry,
+                        lockType: lock.lockType,
+                        amendmentSeqId: lock.amendmentSeqId
+                    ])
+                }
+                lockList = enrichedList
+            ]]></script>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Get Locked LC Numbers for Dropdown                        -->
+    <!-- ========================================================= -->
+    <service verb="get" noun="LockedLcNumbers">
+        <description>Returns list of LC numbers that have active locks, for dropdown population.</description>
+        <out-parameters>
+            <parameter name="lcNumberList"/>
+        </out-parameters>
+        <actions>
+            <entity-find entity-name="moqui.trade.finance.LcAmendmentLock" list="locks">
+                <select-field field-name="lcId"/>
+            </entity-find>
+            <set field="lcIds" from="locks*.lcId"/>
+            
+            <entity-find entity-name="moqui.trade.finance.LetterOfCredit" list="lcs">
+                <econdition field-name="lcId" operator="in" from="lcIds"/>
+                <select-field field-name="lcId"/>
+                <select-field field-name="lcNumber"/>
+            </entity-find>
+            
+            <set field="lcNumberList" from="lcs*.lcNumber"/>
+        </actions>
+    </service>
+
+    <!-- ========================================================= -->
+    <!-- Expire Locks Service                                        -->
+    <!-- ========================================================= -->
+    <service verb="expire" noun="Locks">
+        <description>Automatically expires locks that have passed their expiry time.</description>
+        <actions>
+            <set field="now" from="ec.user.nowTimestamp"/>
+            
+            <entity-find entity-name="moqui.trade.finance.LcAmendmentLock" list="expiredLocks">
+                <econdition field-name="lockExpiry" operator="less-equals" from="now"/>
+            </entity-find>
+            
+            <script>
+                expiredLocks.each { lock ->
+                    lock.delete()
+                    ec.logger.info("Auto-expired amendment lock for LC: " + lock.lcId)
+                }
+            </script>
+            
+            <log level="info" message="Expired ${expiredLocks?.size()} amendment locks"/>
         </actions>
     </service>
 

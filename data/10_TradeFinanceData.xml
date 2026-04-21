@@ -93,6 +93,9 @@
     <moqui.basic.StatusItem statusId="LcTxRejected" statusTypeId="LcTransaction" description="Rejected" sequenceNum="7"/>
     <moqui.basic.StatusItem statusId="LcTxCancelled" statusTypeId="LcTransaction" description="Cancelled" sequenceNum="8"/>
     <moqui.basic.StatusItem statusId="LcTxClosed" statusTypeId="LcTransaction" description="Closed" sequenceNum="9"/>
+    <!-- Amendment workflow statuses -->
+    <moqui.basic.StatusItem statusId="LcTxSupervisorApproved" statusTypeId="LcTransaction" description="Supervisor Approved" sequenceNum="4.5"/>
+    <moqui.basic.StatusItem statusId="LcTxIpcApproved" statusTypeId="LcTransaction" description="IPC Approved" sequenceNum="4.6"/>
 
     <!-- LC Transaction StatusFlow Transitions -->
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxDraft"/>
@@ -105,12 +108,21 @@
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxRejected"/>
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxCancelled"/>
     <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxClosed"/>
+    <!-- Amendment workflow status flow items -->
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxSupervisorApproved"/>
+    <moqui.basic.StatusFlowItem statusFlowId="LcTransaction" statusId="LcTxIpcApproved"/>
 
     <!-- Valid Transitions: Draft -> Submitted -> Approved/Rejected, Approved -> Closed -->
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxSubmitted" transitionName="Submit"/>
-    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxApproved" transitionName="Approve"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxSupervisorApproved" transitionName="Supervisor Approve"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxRejected" transitionName="Reject"/>
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSubmitted" toStatusId="LcTxReturned" transitionName="Return"/>
+    
+    <!-- Amendment workflow: Supervisor -> IPC -> Approved -->
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSupervisorApproved" toStatusId="LcTxIpcApproved" transitionName="IPC Approve"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxSupervisorApproved" toStatusId="LcTxRejected" transitionName="Supervisor Reject"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxIpcApproved" toStatusId="LcTxApproved" transitionName="Final Approve"/>
+    <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxIpcApproved" toStatusId="LcTxRejected" transitionName="IPC Reject"/>
 
     <!-- Valid Transitions: Draft -> Pending Review -> Pending Processing -> Pending Approval -> Approved -->
     <moqui.basic.StatusFlowTransition statusFlowId="LcTransaction" statusId="LcTxDraft" toStatusId="LcTxPendingReview" transitionName="Submit for Review"/>

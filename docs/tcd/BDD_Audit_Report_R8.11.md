@@ -80,3 +80,10 @@ This audit was performed following the **Stateless Audit Rule**, using raw text 
 2.  **Gherkin-to-Code Disconnect (R8.11-UC3):** [RESOLVED] Updated `check#LcExpiry` to call `FinancialServices.release#LcProvision`.
 3.  **Missing Event Coverage (BR3):** [RESOLVED] Added triggers to Amendment and Drawing services.
 4.  **Audit Reinforcement (BR9):** [RESOLVED] Added assertions to check `LcHistory` for CBS reference numbers.
+
+## 7. Test Execution Summary
+
+| Status | Count | Percentage |
+|--------|-------|------------|
+| PASSED | 18 | 69% |
+| FAILED | 8 | 31% |

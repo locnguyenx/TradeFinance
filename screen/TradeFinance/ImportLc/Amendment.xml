@@ -9,13 +9,14 @@
 
     <transition name="transitionAmendmentStatus">
         <service-call name="moqui.trade.finance.AmendmentServices.transition#AmendmentStatus"/>
-        <default-response url="." parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId]"/>
+        <default-response url="." parameter-map="[amendmentSeqId:null]"/>
     </transition>
 
     <actions>
         <set field="lcId" from="lcId ?: lcSeqId"/>
         <set field="amendmentSeqId" from="amendmentSeqId ?: amendmentId"/>
-        <if condition="lcId &amp;&amp; amendmentSeqId">
+        <set field="targetScreenName" from="sri.screenUrlInfo.targetScreen?.getScreenName()"/>
+        <if condition="lcId &amp;&amp; amendmentSeqId &amp;&amp; targetScreenName &amp;&amp; targetScreenName != 'FindAmendment'">
             <entity-find-one entity-name="moqui.trade.finance.LcAmendment" value-field="amendment"/>
         </if>
         <if condition="amendment">

@@ -4,6 +4,7 @@
     
     <transition name="AmendmentDetail"><default-response url="../AmendmentDetail"/></transition>
     <transition name="LcDetail"><default-response url="../../Lc/MainLC"/></transition>
+    <transition name="LockManagement"><default-response url="../LockManagement"/></transition>
     <transition-include name="CreateAmendment" location="component://TradeFinance/template/lc/AmendmentTransitions.xml"/>
 
     <actions>
@@ -17,21 +18,24 @@
         <container style="q-pa-md">
             <container style="row justify-between items-center q-mb-md">
                 <label text="Import LC Amendments" type="h5" style="text-weight-bold text-primary"/>
-                <container-dialog id="CreateAmendmentDialog" button-text="Initiate New Request" button-style="q-btn bg-primary text-white">
-                    <form-single name="CreateAmendmentForm" transition="CreateAmendment">
-                        <field name="lcId"><default-field title="Select LC">
-                            <drop-down allow-empty="false">
-                                <entity-options key="${lcId}" text="${lcNumber}">
-                                    <entity-find entity-name="moqui.trade.finance.LetterOfCredit">
-                                        <econdition field-name="lcStatusId" operator="in" value="LcLfIssued,LcLfAmended"/>
-                                    </entity-find>
-                                </entity-options>
-                            </drop-down>
-                        </default-field></field>
-                        <field name="remarks"><default-field title="Justification / Summary"><text-area rows="3"/></default-field></field>
-                        <field name="submitButton"><default-field title="Create Draft Amendment"><submit/></default-field></field>
-                    </form-single>
-                </container-dialog>
+                <container style="q-gutter-sm row items-center">
+                    <link url="LockManagement" text="Lock Management" style="q-btn q-btn-outline" url-type="screen"/>
+                    <container-dialog id="CreateAmendmentDialog" button-text="Initiate New Request" button-style="q-btn bg-primary text-white">
+                        <form-single name="CreateAmendmentForm" transition="CreateAmendment">
+                            <field name="lcId"><default-field title="Select LC">
+                                <drop-down allow-empty="false">
+                                    <entity-options key="${lcId}" text="${lcNumber}">
+                                        <entity-find entity-name="moqui.trade.finance.LetterOfCredit">
+                                            <econdition field-name="lcStatusId" operator="in" value="LcLfIssued,LcLfAmended"/>
+                                        </entity-find>
+                                    </entity-options>
+                                </drop-down>
+                            </default-field></field>
+                            <field name="remarks"><default-field title="Justification / Summary"><text-area rows="3"/></default-field></field>
+                            <field name="submitButton"><default-field title="Create Draft Amendment"><submit/></default-field></field>
+                        </form-single>
+                    </container-dialog>
+                </container>
             </container>
 
             <form-list name="AmendmentList" list="amendmentList">
@@ -70,6 +74,15 @@
                     <header-field title="Counterparty"><text-find hide-options="true"/></header-field>
                     <default-field>
                         <display-entity entity-name="moqui.basic.StatusItem" key-field-name="statusId" text="${description}"/>
+                    </default-field>
+                </field>
+                
+                <field name="cancelAction">
+                    <default-field title="Action">
+                        <link url="../../Amendment/transitionAmendmentStatus" text="Cancel" 
+                              parameter-map="[lcId:lcId, amendmentSeqId:amendmentSeqId, toStatusId:'LcTxCancelled']"
+                              condition="amendmentStatusId == 'LcTxDraft'"
+                              style="q-btn--flat text-negative"/>
                     </default-field>
                 </field>
             </form-list>

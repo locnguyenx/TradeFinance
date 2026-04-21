@@ -9,26 +9,33 @@
     <transition-include name="SubmitLc" location="component://TradeFinance/template/lc/LcTransitions.xml"/>
     <transition name="IssueLc">
         <service-call name="moqui.trade.finance.LifecycleServices.issue#LetterOfCredit"/>
-        <default-response url="." parameter-map="[lcId:lcId]"/>
+        <default-response url="//${appRoot}/ImportLc/Lc/MainLC" parameter-map="[lcId:lcId]"/>
     </transition>
     <transition name="transitionLcStatus">
-        <service-call name="update#moqui.trade.finance.LetterOfCredit"/>
-        <default-response url="." parameter-map="[lcId:lcId]"/>
+        <service-call name="moqui.trade.finance.TradeFinanceServices.transition#TransactionStatus" 
+                      in-map="[lcId:lcId, toStatusId:toStatusId]"/>
+        <default-response url="//${appRoot}/ImportLc/Lc/MainLC" parameter-map="[lcId:lcId]"/>
     </transition>
 
     <actions>
         <set field="lcId" from="lcId ?: lcSeqId"/>
-        <if condition="lcId">
+        <set field="targetScreenName" from="sri.screenUrlInfo.targetScreen?.getScreenName()"/>
+        <if condition="lcId &amp;&amp; targetScreenName &amp;&amp; targetScreenName != 'FindLc'">
             <entity-find-one entity-name="moqui.trade.finance.LetterOfCredit" value-field="lc"/>
         </if>
         <if condition="lc">
-            <set field="statusColorMap" from="['LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8']"/>
-            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatus" is-pk="true">
+            <set field="txStatusColorMap" from="['LcTxDraft':'grey-7', 'LcTxSubmitted':'blue-8', 'LcTxApproved':'green-8', 'LcTxRejected':'red-8', 'LcTxClosed':'purple-8']"/>
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="txStatusItem" is-pk="true">
                 <field-map field-name="statusId" from="lc.transactionStatusId"/></entity-find-one>
-            <set field="lcStatusDesc" from="lcStatus?.description ?: (lc.transactionStatusId ?: 'N/A')"/>
-            <set field="lcStatusColor" from="statusColorMap[lc.transactionStatusId] ?: 'grey-7'"/>
+            <set field="txStatusDesc" from="txStatusItem?.description ?: (lc.transactionStatusId ?: 'N/A')"/>
+            <set field="txStatusColor" from="txStatusColorMap[lc.transactionStatusId] ?: 'grey-7'"/>
+            
+            <set field="lcStatusColorMap" from="['LcLfDraft':'grey-7', 'LcLfApplied':'blue-6', 'LcLfIssued':'green-8', 'LcLfAmended':'orange-8', 'LcLfNegotiated':'cyan-8', 'LcLfClosed':'purple-8', 'LcLfCancelled':'red-8']"/>
+            <entity-find-one entity-name="moqui.basic.StatusItem" value-field="lcStatusItem" is-pk="true">
+                <field-map field-name="statusId" from="lc.lcStatusId"/></entity-find-one>
+            <set field="lcLifecycleStatusDesc" from="lcStatusItem?.description ?: (lc.lcStatusId ?: 'N/A')"/>
+            <set field="lcLifecycleStatusColor" from="lcStatusColorMap[lc.lcStatusId] ?: 'grey-7'"/>
 
-            <!-- Fetch valid LC Transitions (for the header buttons) -->
             <entity-find entity-name="moqui.basic.StatusFlowTransition" list="stList">
                 <econdition field-name="statusFlowId" value="LcTransaction"/>
                 <econdition field-name="statusId" from="lc.transactionStatusId"/>
@@ -39,7 +46,8 @@
     <subscreens default-item="FindLc">
         <subscreens-item name="MainLC" menu-title="Letter of Credit Detail" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/MainLC.xml"
                          parameter-map="[lcId:lcId]" menu-index="1"/>
-        <subscreens-item name="FindLc" menu-title="Find LC" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/FindLc.xml" menu-include="false"/>
+        <subscreens-item name="FindLc" menu-title="Find LC" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/FindLc.xml" menu-include="false">
+            <parameter-map lcId="null"/></subscreens-item>
         <subscreens-item name="Amendments" menu-title="Amendments" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/Amendments.xml"
                          parameter-map="[lcId:lcId]" menu-index="2"/>
         <subscreens-item name="Drawings" menu-title="Drawings" location="component://TradeFinance/screen/TradeFinance/ImportLc/Lc/Drawings.xml"
@@ -59,15 +67,14 @@
                             <label text="Letter of Credit" type="h4" style="text-primary text-weight-bold q-mb-xs"/>
                             <container style="row items-center q-gutter-sm">
                                 <label text="LC: ${lc?.lcNumber ?: 'N/A'} | ID: ${lcId}" style="text-subtitle2 text-grey-7"/>
-                                <label text="${lcStatusDesc}" style="q-chip bg-${lcStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                <label text="${lcLifecycleStatusDesc}" style="q-chip bg-${lcLifecycleStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
+                                <label text="${txStatusDesc}" style="q-chip bg-${txStatusColor} text-white shadow-1 text-weight-bold q-px-sm"/>
                             </container>
                         </container>
                         <container style="q-gutter-sm row items-center">
-                            <!-- Status Transitions -->
                             <section-iterate name="LcTransitions" list="stList" entry="st">
                                 <widgets>
-                                    <!-- Map generic status transitions to specific services where needed -->
-                                    <link url="${st.toStatusId == 'LcTxSubmitted' ? 'SubmitLc' : (st.toStatusId == 'LcTxApproved' ? 'IssueLc' : 'transitionLcStatus')}" 
+                                    <link url="transitionLcStatus" 
                                           text="${st.transitionName}" 
                                           parameter-map="[lcId:lcId, toStatusId:st.toStatusId]"
                                           style="${st.toStatusId == 'LcTxRejected' ? 'q-btn-outline text-red' : 'q-btn bg-primary text-white'}"/>
@@ -81,15 +88,6 @@
             </widgets>
         </section>
 
-        <section name="LcContentTabs" condition="lc">
-            <widgets>
-                <container style="q-pa-md pt-none">
-                    <subscreens-panel id="LcTabs" type="tab"/>
-                </container>
-            </widgets>
-            <fail-widgets>
-                <subscreens-panel id="LcMainPanel" type="none"/>
-            </fail-widgets>
-        </section>
+        <subscreens-panel id="LcPanel" type="tab"/>
     </widgets>
 </screen>

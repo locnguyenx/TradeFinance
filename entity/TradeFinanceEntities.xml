@@ -524,4 +524,51 @@
         </relationship>
     </entity>
 
+    <!-- ========================================================= -->
+    <!-- LC Amendment Beneficiary Response: Tracks beneficiary acceptance/rejection -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcAmendmentBeneficiaryResponse" package="moqui.trade.finance">
+        <field name="responseId" type="id" is-pk="true"/>
+        <field name="lcId" type="id"/>
+        <field name="amendmentSeqId" type="id"/>
+        <field name="responseDate" type="date-time"/>
+        <field name="responseTypeEnumId" type="id"/>
+        <field name="beneficiaryPartyId" type="id"/>
+        <field name="contactName" type="text-medium"/>
+        <field name="contactMethod" type="id"/>
+        <field name="responseReference" type="text-short"/>
+        <field name="reason" type="text-medium"/>
+        <field name="receivedByUserId" type="id"/>
+        
+        <relationship type="one" related="moqui.trade.finance.LcAmendment">
+            <key-map field-name="lcId"/><key-map field-name="amendmentSeqId"/>
+        </relationship>
+        <relationship type="one" title="ResponseType" related="moqui.basic.Enumeration">
+            <key-map field-name="responseTypeEnumId"/>
+        </relationship>
+        <relationship type="one" title="Beneficiary" related="mantle.party.Party">
+            <key-map field-name="beneficiaryPartyId"/>
+        </relationship>
+        <relationship type="one" related="moqui.security.UserAccount">
+            <key-map field-name="receivedByUserId" related="userId"/>
+        </relationship>
+    </entity>
+
+    <!-- ========================================================= -->
+    <!-- LC Amendment Lock: Concurrency control for amendments -->
+    <!-- ========================================================= -->
+    <entity entity-name="LcAmendmentLock" package="moqui.trade.finance">
+        <field name="lcId" type="id" is-pk="true"/>
+        <field name="lockType" type="id" is-pk="true" default="'AMENDMENT'"/>
+        <field name="lockedByUserId" type="id"/>
+        <field name="lockedAt" type="date-time"/>
+        <field name="lockExpiry" type="date-time"/>
+        <field name="amendmentSeqId" type="id"/>
+        
+        <relationship type="one" related="moqui.trade.finance.LetterOfCredit"/>
+        <relationship type="one" related="moqui.security.UserAccount">
+            <key-map field-name="lockedByUserId" related="userId"/>
+        </relationship>
+    </entity>
+
 </entities>
